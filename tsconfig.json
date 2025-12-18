@@ -1,0 +1,59 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "target": "ES6",
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      "@/types": ["./types"],
+      "@/types/*": ["./types/*"],
+      "@/components": ["./components"],
+      "@/components/*": ["./components/*"],
+      "@/hooks": ["./hooks"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/lib": ["./lib"],
+      "@/lib/*": ["./lib/*"],
+      "@/services": ["./services"],
+      "@/services/*": ["./services/*"],
+      "@/config": ["./config"],
+      "@/config/*": ["./config/*"],
+      "@/app": ["./app"],
+      "@/app/*": ["./app/*"],
+      "@/styles": ["./styles"],
+      "@/styles/*": ["./styles/*"],
+      "@/public": ["./public"],
+      "@/public/*": ["./public/*"],
+      "@/store": ["./store"],
+      "@/store/*": ["./store/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
