@@ -6,33 +6,20 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { getCurrentUser, type User } from "@/lib/auth"
 import { initializeRequisitionsData } from "@/lib/data"
 import CrearRequisicion from "@/components/requisiciones/crear-requisicion"
 import HistorialRequisiciones from "@/components/requisiciones/historial-requisiciones"
+import { useAuthStore } from "@/store/auth.store"
 
 export default function RequisicionesPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      router.push("/")
-      return
-    }
-    setUser(currentUser)
-    initializeRequisitionsData()
-  }, [router])
-
-  if (!user) return null
+  const {user} = useAuthStore()
 
   const canCreate =
-    user.role === "Administrador" ||
-    user.role === "Responsable de Área" ||
-    user.role === "Caja Menor" ||
-    user.role === "Consultor" ||
-    user.role === "Pagos"
+    user?.rol.nombre === "admin" ||
+    user?.rol.nombre === "responsable_area" ||
+    user?.rol.nombre === "Caja Menor" ||
+    user?.rol.nombre === "Consultor" ||
+    user?.rol.nombre === "Pagos"
 
   return (
     <div className="min-h-screen bg-background">

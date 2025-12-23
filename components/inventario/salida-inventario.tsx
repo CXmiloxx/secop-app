@@ -208,7 +208,7 @@ export default function SalidaInventario({ user }: SalidaInventarioProps) {
 
   return (
     <div className="space-y-6">
-      {user.role === 'Responsable de Área' && (
+      {user.role === 'responsable_area' && (
         <Card>
           <CardHeader>
             <CardTitle>Solicitar Salida de Inventario</CardTitle>

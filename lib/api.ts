@@ -1,9 +1,11 @@
 import { envs } from '@/config/envs';
+import { ApiError } from '@/utils/api-error';
 import axios from 'axios';
 import type {
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
+  AxiosError
 } from 'axios';
 
 interface FailedRequest {
@@ -13,9 +15,7 @@ interface FailedRequest {
 }
 
 type ApiResponse<T> = {
-  data?: {
-    data: T;
-  };
+  data?: T;
   user?: T;
   paginacion?: T;
   message: string;
@@ -73,25 +73,24 @@ class ApiClient {
     // Response interceptor
     this.axiosInstance.interceptors.response.use(
       (response: AxiosResponse) => response,
-      async (error) => {
-        const originalRequest = error.config;
+      async (error: AxiosError) => {
+        const originalRequest: any = error.config;
         const isAuthRoute = originalRequest?.url?.includes('/auth/login');
 
-        if (
-          error.response?.status === 401 &&
-          !originalRequest._retry &&
-          !isAuthRoute
-        ) {
+        // 🟡 ERROR DE RED
+        if (!error.response) {
+          throw new ApiError('Error de conexión con el servidor', 0);
+        }
+
+        const status = error.response.status;
+        const data: any = error.response.data;
+
+        // 🔁 MANEJO DE REFRESH TOKEN
+        if (status === 401 && !originalRequest?._retry && !isAuthRoute) {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
-              this.failedQueue.push({
-                resolve,
-                reject,
-                config: originalRequest,
-              });
-            })
-              .then(() => this.axiosInstance(originalRequest))
-              .catch((err) => Promise.reject(err));
+              this.failedQueue.push({ resolve, reject, config: originalRequest });
+            }).then(() => this.axiosInstance(originalRequest));
           }
 
           originalRequest._retry = true;
@@ -112,23 +111,29 @@ class ApiClient {
             this.processQueue(refreshError, null);
             this.isRefreshing = false;
 
-            // Disparar evento global para que el hook lo capture
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new Event('sessionExpired'));
             }
 
-            return Promise.reject(refreshError);
+            throw new ApiError('Sesión expirada', 401);
           }
         }
 
-        return Promise.reject(error);
+        // 🔴 NORMALIZACIÓN DE ERRORES
+        const message =
+          data?.message ||
+          data?.error ||
+          error.message ||
+          'Error inesperado';
+
+        throw new ApiError(message, status, data);
       },
     );
   }
 
   private normalizeResponse<T>(res: AxiosResponse<ApiResponse<T>>): ApiResult<T> {
     return {
-      data: res.data.data?.data,
+      data: res.data.data,
       paginacion: res.data.paginacion,
       status: res.status,
       message: res.data.message,

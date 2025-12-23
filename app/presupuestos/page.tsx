@@ -8,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
 import { DollarSign, TrendingDown, TrendingUp, Plus, Eye, History, AlertTriangle } from "lucide-react"
-import { getCurrentUser, type User } from "@/lib/auth"
 import { areas, initializeBudgetData } from "@/lib/data"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthStore } from "@/store/auth.store"
+import { UserType } from "@/types/user.types"
+import ToggleTheme from "@/components/ToggleTheme"
 
 interface Budget {
   area: string
@@ -57,7 +58,7 @@ interface CuentaContablePresupuesto {
 
 export default function PresupuestosPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserType | null>(null)
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [newArea, setNewArea] = useState("")
@@ -223,7 +224,7 @@ export default function PresupuestosPage() {
       const matchesYear = b.año === currentYear
       // Admin and Auditoría can see all budgets, other roles only see their own area
       console.log("user-rol", user?.rol?.nombre);
-      const matchesRole = user?.rol?.nombre === "Admin" || user?.rol?.nombre === "Auditoría" ? true : b.area === user.area
+      const matchesRole = user?.rol?.nombre === "admin" || user?.rol?.nombre === "Auditoría" ? true : b.area === user.area.nombre
       return matchesYear && matchesRole
     })
 
@@ -307,7 +308,7 @@ export default function PresupuestosPage() {
     setCuentasContables(cuentasArray)
   }, [selectedArea])
 
-  const isAdmin = user?.rol?.nombre === "Admin"
+  const isAdmin = user?.rol?.nombre === "admin"
 
   return (
     <section>
@@ -320,7 +321,7 @@ export default function PresupuestosPage() {
                 <div>
                   <h1 className="text-2xl font-bold">Gestión de Presupuestos</h1>
                   <p className="text-sm text-muted-foreground">
-                    {user?.rol?.nombre === "Admin" ? "Todas las áreas" : user?.area}
+                    {user?.rol?.nombre === "admin" ? "Todas las áreas" : user?.area.nombre}
                   </p>
                 </div>
               </div>
@@ -346,6 +347,7 @@ export default function PresupuestosPage() {
                     Agregar Presupuesto
                   </Button>
                 )}
+                <ToggleTheme/>
               </div>
             </div>
           </div>
@@ -416,7 +418,7 @@ export default function PresupuestosPage() {
             <CardContent>
               {displayBudgets.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  {user?.rol?.nombre === "Admin"
+                  {user?.rol?.nombre === "admin"
                     ? `No hay presupuestos registrados para el año ${currentYear}`
                     : `No hay presupuesto asignado para ${user?.area} en el año ${currentYear}`}
                 </p>

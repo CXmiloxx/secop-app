@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Plus, Users, DollarSign, Trash2, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { getCurrentUser, type User } from "@/lib/auth"
 import { areas, initializeAreasData } from "@/lib/data"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useAuthStore } from "@/store/auth.store"
 
 interface AreaPersonal {
   area: string
@@ -26,7 +26,6 @@ interface Budget {
 
 export default function AreasPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
   const [areasData, setAreasData] = useState<AreaPersonal[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [selectedArea, setSelectedArea] = useState<string | null>(null)
@@ -40,20 +39,18 @@ export default function AreasPage() {
   const [editBudgetYear, setEditBudgetYear] = useState(new Date().getFullYear().toString())
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
-
+  const {user} =useAuthStore()
+  
   useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
+    if (!user) {
       router.push("/")
       return
     }
 
-    if (currentUser.role !== "Administrador") {
+    if (user.rol.nombre !== "admin") {
       router.push("/presupuestos")
       return
     }
-
-    setUser(currentUser)
     initializeAreasData()
     loadData()
   }, [router])

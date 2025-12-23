@@ -2,17 +2,16 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import {  useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FileText, CheckCircle2, Plus, Trash2 } from "lucide-react"
-import { getCurrentUser, type User } from "@/lib/auth"
-import { initializeBudgetRequestsData, cuentasContables } from "@/lib/data"
+import {  cuentasContables } from "@/lib/data"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuthStore } from "@/store/auth.store"
 
 interface Articulo {
   id: string
@@ -23,8 +22,6 @@ interface Articulo {
 }
 
 export default function SolicitarPresupuestoPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
   const [formData, setFormData] = useState({
     periodo: new Date().getFullYear().toString(),
     justificacion: "",
@@ -36,27 +33,7 @@ export default function SolicitarPresupuestoPage() {
   const [valorEstimado, setValorEstimado] = useState("")
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
-
-  useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      router.push("/")
-      return
-    }
-
-    if (!["Responsable de Área", "Consultor", "Caja Menor"].includes(currentUser.role)) {
-      router.push("/presupuestos")
-      return
-    }
-
-    setUser(currentUser)
-    initializeBudgetRequestsData()
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser")
-    router.push("/")
-  }
+  const {user}=useAuthStore()
 
   const handleAgregarArticulo = () => {
     if (!cuentaSeleccionada || !conceptoSeleccionado || !cantidad || !valorEstimado) {
@@ -113,8 +90,8 @@ export default function SolicitarPresupuestoPage() {
     const newSolicitud = {
       id: Date.now().toString(),
       area: user.area,
-      solicitante: user.username,
-      rol: user.role,
+      solicitante: user.nombre + user.apellido,
+      rol: user.rol.nombre,
       monto: calcularTotal(),
       articulos: articulos,
       justificacion: formData.justificacion,
@@ -180,12 +157,12 @@ export default function SolicitarPresupuestoPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Área</Label>
-                    <Input value={user.area} disabled className="bg-muted" />
+                    <Input value={user.area?.nombre} disabled className="bg-muted" />
                   </div>
 
                   <div className="space-y-2">
                     <Label>Solicitante</Label>
-                    <Input value={user.username} disabled className="bg-muted" />
+                    <Input value={user.nombre + user.apellido} disabled className="bg-muted" />
                   </div>
 
                   <div className="space-y-2">

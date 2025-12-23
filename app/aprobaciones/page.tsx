@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Eye, Hash, CheckCircle, X } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth"
 import { initializeRequisicionesData } from "@/lib/data"
 import {
   Dialog,
@@ -28,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { UploadIcon, FileTextIcon, ChevronLeft } from "lucide-react"
 import TimelineTrazabilidad from "@/components/tesoreria/timeline-trazabilidad"
+import { useAuthStore } from "@/store/auth.store"
 
 interface Requisicion {
   id: string
@@ -62,7 +62,7 @@ interface Requisicion {
 
 export default function AprobacionesPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([])
   const [activeTab, setActiveTab] = useState("pendientes")
   const [selectedRequisicion, setSelectedRequisicion] = useState<Requisicion | null>(null)
@@ -90,7 +90,7 @@ export default function AprobacionesPage() {
         return
       }
 
-      if (user.role !== "Consultor" && user.role !== "Rector") {
+      if (user.rol?.nombre !== "Consultor" && user.rol?.nombre !== "Rector") {
         router.push("/presupuestos")
         return
       }

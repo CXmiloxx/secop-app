@@ -1,39 +1,14 @@
 'use client';
 
-import { useRequireAuth } from '@/hooks';
 import { PageHeader, PageContainer } from '@/components/layout/page-layout';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { initializeActivosData } from '@/lib/data';
-import { useEffect } from 'react';
 import RegistroActivos from '@/components/activos/registro-activos';
 import ConsultaActivos from '@/components/activos/consulta-activos';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function ActivosPage() {
-  const { user, isLoading } = useRequireAuth([
-    'Administrador',
-    'Responsable de Área',
-    'Auditoría',
-  ]);
-
-  useEffect(() => {
-    if (user) {
-      initializeActivosData();
-    }
-  }, [user]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Cargando...</p>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
-  const canManageActivos = user.role === 'Administrador';
-
+  const {user} = useAuthStore()
+  const userAdmin = user?.rol?.nombre
   return (
     <>
       <PageHeader
@@ -45,7 +20,7 @@ export default function ActivosPage() {
         <Tabs defaultValue="consulta" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="consulta">Consulta de Activos</TabsTrigger>
-            {canManageActivos && (
+            {userAdmin && (
               <TabsTrigger value="registro">Registrar Activo</TabsTrigger>
             )}
           </TabsList>
@@ -54,7 +29,7 @@ export default function ActivosPage() {
             <ConsultaActivos user={user} />
           </TabsContent>
 
-          {canManageActivos && (
+          {userAdmin && (
             <TabsContent value="registro">
               <RegistroActivos user={user} />
             </TabsContent>

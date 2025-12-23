@@ -74,7 +74,7 @@ export default function ProductosInventario({ user }: ProductosInventarioProps) 
     setError('')
     setSuccess('')
 
-    if (user.role === 'Responsable de Área') {
+    if (user.role === 'responsable_area') {
       if (!formData.ubicacion || !formData.stockMinimo || !formData.stockMaximo) {
         setError('Por favor complete todos los campos obligatorios')
         return
@@ -105,7 +105,7 @@ export default function ProductosInventario({ user }: ProductosInventarioProps) 
     if (editingId) {
       const updatedProducts = currentProducts.map((p: Product) => {
         if (p.id === editingId) {
-          if (user.role === 'Responsable de Área') {
+          if (user.role === 'responsable_area') {
             return {
               ...p,
               ubicacion: formData.ubicacion,
@@ -186,7 +186,7 @@ export default function ProductosInventario({ user }: ProductosInventarioProps) 
     setEditingId(null)
   }
 
-  const canManage = user.role === 'Responsable de Área' || user.role === 'Consultor'
+  const canManage = user.role === 'responsable_area' || user.role === 'Consultor'
 
   if (!canManage) {
     return (
@@ -212,7 +212,7 @@ export default function ProductosInventario({ user }: ProductosInventarioProps) 
           <CardHeader>
             <CardTitle>{editingId ? 'Editar Producto' : 'Nuevo Producto'}</CardTitle>
             <CardDescription>
-              {user.role === 'Responsable de Área' 
+              {user.role === 'responsable_area' 
                 ? 'Actualice stock mínimo, máximo y ubicación'
                 : 'Complete la información del producto'
               }
@@ -275,7 +275,7 @@ export default function ProductosInventario({ user }: ProductosInventarioProps) 
                   <Select 
                     value={formData.ubicacion}
                     onValueChange={(value) => setFormData({ ...formData, ubicacion: value })}
-                    disabled={user.role === 'Responsable de Área' && !editingId}
+                    disabled={user.role === 'responsable_area' && !editingId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione ubicación" />

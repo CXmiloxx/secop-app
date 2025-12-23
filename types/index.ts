@@ -1,4 +1,3 @@
-export * from './user';
 export * from './presupuesto';
 export * from './requisicion';
 export * from './compra';

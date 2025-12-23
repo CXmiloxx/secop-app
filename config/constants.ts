@@ -51,7 +51,7 @@ export const ESTADOS_ACTIVO = [
 
 export const ROLES_USUARIO = [
   'Administrador',
-  'Responsable de Área',
+  'responsable_area',
   'Auditoría',
   'Rector',
   'Consultor',

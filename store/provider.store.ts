@@ -1,41 +1,34 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { UserType } from '@/types/user.types'
+import { ProvidersType } from '@/types/provider.types'
 
 interface AuthState {
-  user: UserType | null
+  providers: ProvidersType | null
   isLoading: boolean
   error: string | null
   hasHydrated: boolean
 
-  setUser: (user: UserType | null) => void
+  setProvider: (provider: ProvidersType | null) => void
   setIsLoading: (isLoading: boolean) => void
   setError: (error: string | null) => void
-  clearAuth: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
+export const useProvidersStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
+      providers: null,
       isLoading: false,
       error: null,
       hasHydrated: false,
 
-      setUser: (user) => set({ user }),
+      setProvider: (providers) => set({ providers }),
       setIsLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
-      clearAuth: () =>
-        set({
-          user: null,
-          isLoading: false,
-          error: null,
-        }),
     }),
     {
-      name: 'auth-storage',
+      name: 'providers',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({ user: state.providers }),
       onRehydrateStorage: () => (state) => {
         if (state) state.hasHydrated = true
       },

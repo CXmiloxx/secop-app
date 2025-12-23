@@ -1,37 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { getCurrentUser, type User as UserType } from "@/lib/auth"
 import { GestionarConceptos } from "@/components/admin/gestionar-conceptos"
 import { Tags } from "lucide-react"
 
 export default function ConceptosPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<UserType | null>(null)
-
-  useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      router.push("/")
-      return
-    }
-
-    if (currentUser.role !== "Administrador") {
-      router.push("/presupuestos")
-      return
-    }
-
-    setUser(currentUser)
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser")
-    router.push("/")
-  }
-
-  if (!user) return null
-
   return (
     <section>
       <div>

@@ -1,13 +1,21 @@
 import api from "@/lib/api";
-import { LoginSchema } from "@/schema/auth.schema";
-import { User } from "@/types";
+import { LoginSchema, RegisterSchema } from "@/schema/auth.schema";
 
 export const loginRequest = async ({ correo, contrasena }: LoginSchema) => {
-  const { data, status } = await api.post("/auth/login", { correo, contrasena });
-  return { data, status };
+  return await api.post("/auth/login", { correo, contrasena });
 };
 
-export const createUserRequest = async (user: User) => {
+export const registerRequest = async (user: RegisterSchema) => {
   const response = await api.post("/auth/create-user", user);
   return response;
 };
+
+export const findAll = async (param: string) => {
+  return await api.get(`/auth/findAll/${param}`)
+};
+
+export const findAllUser = async () => {
+  return await api.get(`/auth/users`)
+};
+
+

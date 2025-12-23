@@ -6,30 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { getCurrentUser, type User } from "@/lib/auth"
 import { initializeInventoryData } from "@/lib/data"
 import EntradaInventario from "@/components/inventario/entrada-inventario"
 import SalidaInventario from "@/components/inventario/salida-inventario"
 import ConsultaInventario from "@/components/inventario/consulta-inventario"
+import { useAuthStore } from "@/store/auth.store"
 
 export default function InventarioPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const {user} = useAuthStore()
 
-  useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      router.push("/")
-      return
-    }
-    setUser(currentUser)
-    initializeInventoryData()
-  }, [router])
-
-  if (!user) return null
-
-  const canManageMovements = user.role === "Consultor"
-  const canRequestWithdrawal = user.role === "Responsable de Área"
+  const canManageMovements = user?.rol?.nombre === "Consultor"
+  const canRequestWithdrawal = user?.rol?.nombre === "responsable_area"
 
   return (
     <div className="min-h-screen bg-background">

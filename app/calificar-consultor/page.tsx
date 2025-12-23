@@ -48,7 +48,7 @@ export default function CalificarConsultorPage() {
 
   useEffect(() => {
     const currentUser = getCurrentUser()
-    if (!currentUser || currentUser.role !== "Responsable de Área") {
+    if (!currentUser || currentUser.role !== "responsable_area") {
       router.push("/")
       return
     }

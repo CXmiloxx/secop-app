@@ -12,10 +12,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Plus, FileText } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
 import { areas, getCuentasContables } from "@/lib/data"
 import { generarNumeroPartida } from "@/lib/numeracion"
-import { useAuth } from "@/hooks"
+import { useAuthStore } from "@/store/auth.store"
+import { toast } from "@/components/ui/use-toast"
 
 interface PartidaNoPresupuestada {
   id: number
@@ -56,7 +56,7 @@ interface Proveedor {
 
 export default function PartidasNoPresupuestadasPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const [partidas, setPartidas] = useState<PartidaNoPresupuestada[]>([])
   const [showForm, setShowForm] = useState(false)
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
@@ -122,15 +122,15 @@ export default function PartidasNoPresupuestadasPage() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === "Responsable de Área") {
-        setArea(user.area)
+      if (user.rol.nombre === "responsable_area") {
+        setArea(user.area.nombre)
       }
 
       // Load partidas from localStorage
       const stored = localStorage.getItem("partidasNoPresupuestadas")
       if (stored) {
         const allPartidas: PartidaNoPresupuestada[] = JSON.parse(stored)
-        setPartidas(allPartidas.filter((p) => p.area === user.area))
+        setPartidas(allPartidas.filter((p) => p.area === user.area.nombre))
       }
 
       // Load proveedores
@@ -203,17 +203,17 @@ export default function PartidasNoPresupuestadasPage() {
       justificacion,
       estado: "Pendiente",
       fechaSolicitud: new Date().toISOString(),
-      usuario: user?.username || "Sistema",
+      usuario: user?.nombre || "Sistema",
       cotizaciones: cotizaciones.length > 0 ? cotizaciones : undefined,
     }
 
     const updatedPartidas = [...allPartidas, nuevaPartida]
     localStorage.setItem("partidasNoPresupuestadas", JSON.stringify(updatedPartidas))
 
-    setPartidas(updatedPartidas.filter((p) => p.area === user.area))
+    setPartidas(updatedPartidas.filter((p) => p.area === user?.area?.nombre))
 
     // Reset form
-    setArea(user.role === "Responsable de Área" ? user.area : "")
+    setArea(user?.area?.nombre === "responsable_area" ? user?.area?.nombre : "")
     setProveedor("")
     setCuentaSeleccionada("")
     setConceptoSeleccionado("")
@@ -236,7 +236,7 @@ export default function PartidasNoPresupuestadasPage() {
   const partidasPendientes = partidas.filter((p) => p.estado === "Pendiente")
   const partidasHistorial = partidas.filter((p) => p.estado !== "Pendiente")
   const conceptos = cuentasContables.find((c) => c.codigo === cuentaSeleccionada)?.conceptos || []
-  const shouldShowCode = user?.role === "Administrador"
+  const shouldShowCode = user?.rol?.nombre === "admin"
 
   if (!user) {
     return (
@@ -273,7 +273,7 @@ export default function PartidasNoPresupuestadasPage() {
               <Select
                 value={area}
                 onValueChange={setArea}
-                disabled={user.role === "Responsable de Área" || user.role === "Consultor"}
+                disabled={user.rol?.nombre === "responsable_area" || user?.rol?.nombre === "Consultor"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione el área" />

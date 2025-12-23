@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import type { User } from "@/lib/auth"
 import { Search, AlertTriangle, Package, Pencil } from "lucide-react"
+import { UserType } from "@/types/user.types"
 
 interface Product {
   id: string
@@ -37,7 +37,7 @@ interface ProductWithStock extends Product {
 }
 
 interface ConsultaInventarioProps {
-  user: User
+  user: UserType
 }
 
 export default function ConsultaInventario({ user }: ConsultaInventarioProps) {
@@ -147,7 +147,7 @@ export default function ConsultaInventario({ user }: ConsultaInventarioProps) {
     loadInventory()
   }
 
-  const canEdit = user.area === "Ciencias Naturales"
+  const canEdit = user?.area?.nombre === "Ciencias Naturales"
 
   const renderProductTable = (products: ProductWithStock[]) => (
     <div className="overflow-x-auto">

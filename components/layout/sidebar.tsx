@@ -6,32 +6,19 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
-  DollarSign,
-  ShoppingCart,
-  Package,
-  FileText,
-  User,
-  ClipboardList,
-  CheckSquare,
-  CreditCard,
   Menu,
   X,
   LogOut,
-  Star,
-  Building2,
-  Tags,
-  Calculator,
   ChevronDown,
   ChevronRight,
-  Wallet,
-  Activity,
-  Box,
-  ArrowRightLeft,
 } from "lucide-react"
-import type { CurrentUser } from '@/types'
+import { UserType } from "@/types/user.types"
+import { menuItems, modules } from "@/routes/routes"
+import { useThemeState } from "@/store/theme.store"
+import ToggleTheme from "../ToggleTheme"
 
 interface SidebarProps {
-  user: CurrentUser | null
+  user: UserType | null
   onLogout: () => void
 }
 
@@ -39,6 +26,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState<string[]>(["contabilidad"])
+  const {theme} = useThemeState()
 
   if (!user) {
     return null
@@ -48,147 +36,13 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
     setExpandedModules((prev) => (prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]))
   }
 
-  const menuItems = [
-    {
-      title: "Áreas",
-      icon: User,
-      href: "/areas",
-      roles: ["Admin"],
-    },
-    {
-      title: "Proveedores",
-      icon: Building2,
-      href: "/proveedores",
-      roles: ["Admin"],
-    },
-    {
-      title: "Conceptos",
-      icon: Tags,
-      href: "/conceptos",
-      roles: ["Admin"],
-    },
-    {
-      title: "Presupuestos",
-      icon: DollarSign,
-      href: "/presupuestos",
-      roles: ["Admin", "Responsable de Área", "Auditoría", "Consultor", "Caja Menor", "Tesorería"],
-    },
-    {
-      title: "Solicitar Presupuesto",
-      icon: FileText,
-      href: "/solicitar-presupuesto",
-      roles: ["Responsable de Área", "Consultor", "Caja Menor", "Tesorería"],
-    },
-    {
-      title: "Aprobación de Presupuesto Áreas",
-      icon: CheckSquare,
-      href: "/aprobaciones-presupuesto",
-      roles: ["Admin"],
-    },
-    {
-      title: "Requisiciones",
-      icon: ClipboardList,
-      href: "/requisiciones",
-      roles: ["Admin", "Responsable de Área", "Consultor", "Caja Menor", "Tesorería"],
-    },
-    {
-      title: "Partidas No Presupuestadas",
-      icon: FileText,
-      href: "/partidas-no-presupuestadas",
-      roles: ["Admin", "Responsable de Área", "Consultor", "Caja Menor", "Tesorería", "Auditoría"],
-    },
-    {
-      title: "Aprobaciones",
-      icon: CheckSquare,
-      href: "/aprobaciones",
-      roles: ["Rector", "Consultor"],
-    },
-    {
-      title: "Caja Menor",
-      icon: Wallet,
-      href: "/caja-menor",
-      roles: ["Caja Menor", "Admin"],
-    },
-    {
-      title: "Tesorería",
-      icon: CreditCard,
-      href: "/tesoreria",
-      roles: ["Tesorería", "Caja Menor"],
-    },
-    {
-      title: "Calificaciones",
-      icon: Star,
-      href: "/calificaciones",
-      roles: ["Consultor"],
-    },
-    {
-      title: "Calificar Consultor",
-      icon: Star,
-      href: "/calificar-consultor",
-      roles: ["Responsable de Área"],
-    },
-    {
-      title: "Compras",
-      icon: ShoppingCart,
-      href: "/compras",
-      roles: ["Admin", "Responsable de Área", "Auditoría", "Consultor"],
-    },
-    {
-      title: "Inventario",
-      icon: Package,
-      href: "/inventario",
-      roles: ["Admin", "Responsable de Área", "Auditoría", "Consultor"],
-    },
-    {
-      title: "Inventario de Activos",
-      icon: Box,
-      href: "/activos",
-      roles: ["Admin", "Responsable de Área", "Auditoría"],
-    },
-    {
-      title: "Traslados de Activos",
-      icon: ArrowRightLeft,
-      href: "/traslados-activos",
-      roles: ["Admin", "Responsable de Área"],
-    },
-    {
-      title: "Reportes",
-      icon: FileText,
-      href: "/reportes",
-      roles: ["Admin", "Auditoría", "Responsable de Área", "Consultor"],
-    },
-    {
-      title: "Supervisión del Consultor",
-      icon: Activity,
-      href: "/supervision-consultor",
-      roles: ["Admin"],
-    },
-  ]
 
-  const modules = [
-    {
-      id: "contabilidad",
-      title: "Contabilidad",
-      icon: Calculator,
-          roles: ["Admin"],
-      items: [
-        {
-          title: "Proyección",
-          href: "/proyeccion",
-        },
-        {
-          title: "Proyectos de Inversión",
-          href: "/proyectos-inversion",
-        },
-      ],
-    },
-  ]
 
   const availableMenuItems = menuItems.filter((item) => {
-    if (!item.roles.includes(user.rol.nombre)) return false
+    if (!item.roles.includes(user?.rol?.nombre)) return false
 
     // Exclude reports for Ciencias Naturales area
-    if (item.href === "/reportes" && user.area === "Ciencias Naturales") {
+    if (item.href === "/reportes" && user?.area?.nombre === "ciencias") {
       return false
     }
 
@@ -212,27 +66,45 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card transition-transform duration-300",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          // Use responsive width: 64 for md+, 20 (5rem) for small screens
+          "fixed left-0 top-0 z-40 h-screen md:w-64 sm:w-20 w-20 border-r bg-card transition-transform duration-300 flex flex-col",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="border-b p-6">
-            <h2 className="text-lg font-bold">Sistema de Gestión</h2>
-            <p className="text-xs text-muted-foreground mt-1">Colegio Bilingüe Lacordaire</p>
+          <div className="border-b p-4 md:p-6 flex items-center justify-between gap-2 md:gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base md:text-lg font-bold whitespace-nowrap">Sistema de Gestión</h2>
+              <p className="text-xs text-muted-foreground mt-1 hidden md:block whitespace-nowrap">
+                Colegio Bilingüe Lacordaire
+              </p>
+            </div>
+            {/* Image */}
+            <div className="flex items-center justify-end w-12 h-12 md:w-20 md:h-20 shrink-0 ml-32">
+              <div className="relative w-10 h-10 md:w-16 md:h-16">
+                <img
+                  src={theme === 'dark' ? '/icon-secop-dark.webp' : '/icon-secop-removebg-preview.webp'}
+                  alt="Logo"
+                  className="object-contain w-full h-full rounded-md border bg-muted"
+                  style={{ aspectRatio: '1 / 1' }}
+                  draggable={false}
+                />
+              </div>
+            </div>
           </div>
 
           {/* User Info */}
-          <div className="border-b p-4 bg-muted/50">
-            <p className="text-sm font-medium truncate">{user.username}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.rol.nombre}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.area}</p>
+          <div className="border-b p-3 md:p-4 bg-muted/50 flex gap-2 items-center">
+            <div>
+              <p className="text-xs md:text-sm font-medium truncate">{user.nombre} {user.apellido}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground truncate">{user.area.nombre}</p>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-2">
+          <nav className="flex-1 overflow-y-auto p-2 md:p-4">
+            <ul className="space-y-1 md:space-y-2">
               {availableMenuItems.map((item) => {
                 const isActive = pathname === item.href
                 return (
@@ -240,13 +112,13 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                        "flex items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
                         isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </Link>
                   </li>
                 )
@@ -261,19 +133,23 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                     <button
                       onClick={() => toggleModule(module.id)}
                       className={cn(
-                        "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                        "flex w-full items-center justify-between gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
                         isModuleActive ? "bg-primary/10 text-primary" : "hover:bg-muted",
                       )}
                     >
-                      <div className="flex items-center gap-3">
-                        <module.icon className="h-4 w-4" />
-                        <span>{module.title}</span>
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <module.icon className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                        <span className="truncate">{module.title}</span>
                       </div>
-                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                      )}
                     </button>
 
                     {isExpanded && (
-                      <ul className="mt-1 ml-7 space-y-1">
+                      <ul className="mt-0.5 md:mt-1 ml-4 md:ml-7 space-y-0.5 md:space-y-1">
                         {module.items.map((subItem) => {
                           const isActive = pathname === subItem.href
                           return (
@@ -281,7 +157,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                               <Link
                                 href={subItem.href}
                                 className={cn(
-                                  "block rounded-lg px-3 py-2 text-sm transition-colors",
+                                  "block rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
                                   isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                                 )}
                                 onClick={() => setIsMobileMenuOpen(false)}
@@ -300,11 +176,12 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
           </nav>
 
           {/* Logout */}
-          <div className="border-t p-4">
-            <Button variant="outline" className="w-full justify-start bg-transparent" onClick={onLogout}>
-              <LogOut className="h-4 w-4 mr-3" />
-              Cerrar Sesión
+          <div className="flex flex-row items-center gap-2 justify-center border-t p-3 md:p-4 mt-auto">
+            <Button variant="outline" className="justify-start bg-transparent" onClick={onLogout}>
+              <LogOut className="h-4 w-4 md:h-5 md:w-5 mr-2 md:mr-3" />
+              <span className="text-xs md:text-sm">Cerrar Sesión</span>
             </Button>
+            <ToggleTheme/>
           </div>
         </div>
       </aside>

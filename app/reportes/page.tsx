@@ -60,7 +60,7 @@ export default function ReportesPage() {
   if (!user) return null
 
   const showBudgetReport = user.role === "Administrador" || user.role === "Auditoría"
-  const showRatingsReports = user.role === "Administrador" || user.role === "Responsable de Área"
+  const showRatingsReports = user.role === "Administrador" || user.role === "responsable_area"
   const showExecutionReport = user.role === "Administrador"
   const showActivosReport = user.role === "Administrador" || user.role === "Auditoría"
   const isConsultor = user.role === "Consultor"

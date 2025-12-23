@@ -63,7 +63,7 @@ export default function HistorialRequisiciones({ user }: HistorialRequisicionesP
         const stored = JSON.parse(localStorage.getItem("requisiciones") || "[]")
 
         let filtered = stored
-        if (user.role === "Responsable de Área") {
+        if (user.role === "responsable_area") {
           filtered = stored.filter((r: Requisicion) => r.area === user.area)
         } else if (user.role === "Consultor") {
           filtered = stored

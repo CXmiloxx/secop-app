@@ -4,10 +4,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { AprobarSolicitudes } from "@/components/presupuestos/aprobar-solicitudes"
-import { useAuth } from "@/hooks"
+import { useAuthStore } from "@/store/auth.store"
 
 export default function AprobacionesPresupuestoPage() {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const router = useRouter()
 
   if (!user || user.role !== "Administrador") {

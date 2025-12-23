@@ -30,7 +30,7 @@ interface CrearRequisicionProps {
 
 export default function CrearRequisicion({ user }: CrearRequisicionProps) {
   const [area, setArea] = useState(
-    user.role === "Caja Menor" ? "Caja Menor" : user.role === "Responsable de Área" ? user.area : "",
+    user.role === "Caja Menor" ? "Caja Menor" : user.role === "responsable_area" ? user.area : "",
   )
   const [proveedor, setProveedor] = useState("")
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState("")
@@ -179,7 +179,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
     localStorage.setItem("requisiciones", JSON.stringify(requisiciones))
 
     setSuccess("Requisición creada exitosamente. Pendiente de aprobación en el módulo de Aprobaciones.")
-    setArea(user.role === "Responsable de Área" ? user.area : "")
+    setArea(user.role === "responsable_area" ? user.area : "")
     setProveedor("")
     setCuentaSeleccionada("")
     setConceptoSeleccionado("")
@@ -207,7 +207,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
             <Select
               value={area}
               onValueChange={setArea}
-              disabled={user.role === "Caja Menor" || user.role === "Responsable de Área" || user.role === "Consultor"}
+              disabled={user.role === "Caja Menor" || user.role === "responsable_area" || user.role === "Consultor"}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccione el área" />

@@ -55,7 +55,7 @@ export default function TrasladosActivosPage() {
 
   if (!user) return null
 
-  const canRequestTraslado = ["Administrador", "Responsable de Área"].includes(user.role)
+  const canRequestTraslado = ["Administrador", "responsable_area"].includes(user.role)
   const canApproveTraslado = user.role === "Administrador"
 
   return (
