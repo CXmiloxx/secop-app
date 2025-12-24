@@ -1,9 +1,9 @@
 import api from "@/lib/api";
-import { RegisterSchema } from "@/schema/providers.schema";
+import { RegisterProviderSchema } from "@/schema/providers.schema";
 
 export const ProvidersService = {
-  async registerRequest(proveedor: RegisterSchema) {
-    const response = await api.post("/proveedor", proveedor);
+  async registerRequest(proveedor: RegisterProviderSchema) {
+    const response = await api.post("/provider", proveedor);
     return response;
   },
 
