@@ -1,29 +1,43 @@
-import { findAll } from "@/services/providers.service";
+import { ProvidersService } from "@/services/providers.service";
 import { useProvidersStore } from "@/store/provider.store";
 import { ProvidersType } from "@/types/provider.types";
 import { ApiError } from "@/utils/api-error";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export default function useProviders() {
+  const { providers, setProviders } = useProvidersStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { providers, setProvider, setError, } = useProvidersStore()
 
-  const getProviders = useCallback(async () => {
+  const fetchProviders = useCallback(async (): Promise<ProvidersType[] | undefined> => {
+    setLoading(true);
+    setError(null);
     try {
-      const { data, message, status } = await findAll()
-      setProvider(data as ProvidersType)
-      return {
-        data
+      const { data, status } = await ProvidersService.findAll();
+      if (status === 200 && Array.isArray(data)) {
+        setProviders(data as ProvidersType[]);
+        return data as ProvidersType[];
+      } else {
+        setError("No se pudo obtener la lista de proveedores correctamente.");
       }
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setError(error.message)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Error desconocido al obtener proveedores.");
       }
+    } finally {
+      setLoading(false);
     }
-  }, [findAll])
+  }, [setProviders]);
 
   return {
-    getProviders,
-  }
-
+    providers,
+    loading,
+    error,
+    fetchProviders,
+  };
 }
