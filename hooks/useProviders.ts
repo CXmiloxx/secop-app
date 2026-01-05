@@ -4,6 +4,7 @@ import { useProvidersStore } from "@/store/provider.store";
 import { ProvidersType } from "@/types/provider.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 export default function useProviders() {
   const { providers, setProviders } = useProvidersStore();
@@ -20,6 +21,7 @@ export default function useProviders() {
         setProviders(data as ProvidersType[]);
         return data as ProvidersType[];
       } else {
+        console.log("No se pudo obtener la lista de proveedores correctamente")
         setError("No se pudo obtener la lista de proveedores correctamente.");
       }
     } catch (err) {
@@ -40,9 +42,8 @@ export default function useProviders() {
     setLoading(true);
     setError(null);
     try {
-      const { data, status } = await ProvidersService.registerRequest(registerData);
+      const { status } = await ProvidersService.registerRequest(registerData);
       if (status === 201) {
-        console.log("proveedor creado");
         
       } else {
         setError("No se pudo obtener la lista de proveedores correctamente.");
