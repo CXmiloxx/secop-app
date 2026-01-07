@@ -5,12 +5,23 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { AprobarSolicitudes } from "@/components/presupuestos/aprobar-solicitudes"
 import { useAuthStore } from "@/store/auth.store"
+import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
+import { useCallback, useEffect } from "react"
 
 export default function AprobacionesPresupuestoPage() {
   const { user } = useAuthStore()
   const router = useRouter()
+  const { presupuestos, loading, error, fetchSolicitudes } = useSolicitudPresupuesto()
 
-  if (!user || user.role !== "Administrador") {
+  const getSolicitudes = useCallback(async () => {
+    await fetchSolicitudes();
+  }, [fetchSolicitudes]);
+
+  useEffect(() => {
+    getSolicitudes();
+  }, [getSolicitudes]);
+
+  if (!user || user.rol.nombre !== "admin") {
     return (
       <div className="p-8">
         <Card>
@@ -34,7 +45,7 @@ export default function AprobacionesPresupuestoPage() {
         <p className="text-muted-foreground mt-2">Revisar y aprobar solicitudes de presupuesto para el siguiente año</p>
       </div>
 
-      <AprobarSolicitudes />
+      <AprobarSolicitudes solicitudes={presupuestos} loading={loading} error={error} />
     </div>
   )
 }

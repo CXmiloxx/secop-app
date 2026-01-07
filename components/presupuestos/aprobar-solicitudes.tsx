@@ -1,145 +1,99 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Percent } from "lucide-react"
+import { CheckCircle2, Percent, XCircle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AprobarSolicitudPresupuesto } from "@/types"
+import { SolicitudArticuloPresupuesto } from "@/types/articulos-presupuesto.types"
+import { useForm } from "react-hook-form"
+import { EditSolicitudPresupuestoSchema, editSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema"
+import { zodResolver } from "@hookform/resolvers/zod"
+import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
+import { useAuthStore } from "@/store/auth.store"
 
-interface Articulo {
-  id: string
-  cuenta: string
-  concepto: string
-  cantidad: number
-  valorEstimado: number
+interface AprobarSolicitudesProps {
+  solicitudes: AprobarSolicitudPresupuesto[]
+  loading: boolean
+  error: string | null
 }
 
-interface SolicitudPresupuesto {
-  id: string
-  area: string
-  solicitante: string
-  rol: string
-  monto: number
-  articulos: Articulo[]
-  justificacion: string
-  periodo: string
-  estado: string
-  fechaSolicitud: string
-  porcentajeAprobado?: number
-  montoAprobado?: number
-  observaciones?: string
-  fechaAprobacion?: string
-  responsable?: string
-}
-
-export function AprobarSolicitudes() {
-  const [solicitudes, setSolicitudes] = useState<SolicitudPresupuesto[]>([])
-  const [selectedSolicitud, setSelectedSolicitud] = useState<any>(null)
+export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolicitudesProps) {
+  const [selectedSolicitud, setSelectedSolicitud] = useState<AprobarSolicitudPresupuesto | null>(null)
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
-  const [porcentajeAprobacion, setPorcentajeAprobacion] = useState<number>(100)
-  const [observaciones, setObservaciones] = useState("")
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [observacionesRechazo, setObservacionesRechazo] = useState<string>("")
+  const { aprobarSolicitud, loading: processingLoading } = useSolicitudPresupuesto()
+  const { user } = useAuthStore()
 
+  const {
+    handleSubmit,
+    setValue,
+    reset,
+    register,
+    watch,
+    formState: { isSubmitting, errors },
+  } = useForm<EditSolicitudPresupuestoSchema>({
+    resolver: zodResolver(editSolicitudPresupuestoSchema),
+    mode: "onChange",
+  });
+
+  const porcentajeAprobacion = watch("porcentajeAprobacion") || 100
+
+  //ver errores del formulario de react-hook-form
   useEffect(() => {
-    loadSolicitudes()
-  }, [])
+    console.log(errors);
+  }, [errors]);
 
-  const loadSolicitudes = () => {
-    const stored = localStorage.getItem("solicitudesPresupuesto")
-    if (stored) {
-      setSolicitudes(JSON.parse(stored))
-    }
-  }
-
-  const handleViewDetail = (solicitud: any) => {
+  const handleOpenApproval = (solicitud: AprobarSolicitudPresupuesto) => {
     setSelectedSolicitud(solicitud)
-    setShowApprovalDialog(false)
-  }
-
-  const handleOpenApproval = (solicitud: any) => {
-    setSelectedSolicitud(solicitud)
-    setPorcentajeAprobacion(100)
-    setObservaciones("")
     setShowApprovalDialog(true)
+
+    // Configurar valores del formulario
+    const montoAprobado = solicitud.montoSolicitado
+    reset({
+      id: solicitud.id,
+      porcentajeAprobacion: 100,
+      montoAprobado: montoAprobado,
+      aprobadoPorId: user?.id || "",
+      fechaAprobacion: new Date().toISOString(),
+      
+    })
   }
 
-  const handleApprove = () => {
-    if (!selectedSolicitud) return
-
-    const montoAprobado = (selectedSolicitud.monto || 0) * (porcentajeAprobacion / 100)
-
-    const updatedSolicitudes = solicitudes.map((s) =>
-      s.id === selectedSolicitud.id
-        ? {
-            ...s,
-            estado: "Aprobado",
-            porcentajeAprobado: porcentajeAprobacion,
-            montoAprobado,
-            observaciones,
-            fechaAprobacion: new Date().toISOString(),
-          }
-        : s,
-    )
-
-    localStorage.setItem("solicitudesPresupuesto", JSON.stringify(updatedSolicitudes))
-    setSolicitudes(updatedSolicitudes)
-
-    // Add to proyecciones as presupuestoProyectado
-    const proyecciones = JSON.parse(localStorage.getItem("proyecciones") || "[]")
-    const periodo = Number.parseInt(selectedSolicitud.periodo)
-
-    selectedSolicitud.articulos.forEach((articulo: any) => {
-      const proyeccionIndex = proyecciones.findIndex((p: any) => p.concepto === articulo.concepto && p.año === periodo)
-
-      const valorAprobado = (articulo.cantidad * articulo.valorEstimado * porcentajeAprobacion) / 100
-
-      if (proyeccionIndex >= 0) {
-        proyecciones[proyeccionIndex].presupuestoProyectado =
-          (proyecciones[proyeccionIndex].presupuestoProyectado || 0) + valorAprobado
-      } else {
-        proyecciones.push({
-          id: Date.now().toString() + Math.random(),
-          concepto: articulo.concepto,
-          año: periodo,
-          presupuesto2025: 0,
-          ejecutadoMes: 0,
-          presupuestoProyectado: valorAprobado,
-          area: selectedSolicitud.area,
-        })
-      }
-    })
-
-    localStorage.setItem("proyecciones", JSON.stringify(proyecciones))
-
-    // Create notification for the area
-    const notificaciones = JSON.parse(localStorage.getItem("notificaciones") || "[]")
-    const montoSolicitado = selectedSolicitud.monto || 0
-    notificaciones.push({
-      id: Date.now().toString(),
-      area: selectedSolicitud.area,
-      tipo: "aprobacion_presupuesto",
-      titulo: "Solicitud de Presupuesto Aprobada",
-      mensaje:
-        porcentajeAprobacion === 100
-          ? `Su solicitud de presupuesto para ${selectedSolicitud.periodo} ha sido aprobada al 100%. Monto aprobado: ${montoAprobado.toLocaleString("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 })}${observaciones ? `. Observaciones: ${observaciones}` : ""}`
-          : `Su solicitud de presupuesto para ${selectedSolicitud.periodo} ha sido aprobada al ${porcentajeAprobacion}%. Monto aprobado: ${montoAprobado.toLocaleString("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 })} de ${montoSolicitado.toLocaleString("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 })} solicitados.${observaciones ? ` Observaciones: ${observaciones}` : ""}`,
-      fecha: new Date().toISOString(),
-      leida: false,
-    })
-    localStorage.setItem("notificaciones", JSON.stringify(notificaciones))
-
-    setShowApprovalDialog(false)
-    setSelectedSolicitud(null)
+  const handleOpenReject = (solicitud: AprobarSolicitudPresupuesto) => {
+    setSelectedSolicitud(solicitud)
+    setObservacionesRechazo("")
+    setShowRejectDialog(true)
   }
 
-  const pendientes = solicitudes.filter((s) => s.estado === "Pendiente")
-  const aprobadas = solicitudes.filter((s) => s.estado === "Aprobado")
+  const onSubmitApproval = handleSubmit(async (data) => {
+    if (!selectedSolicitud || !user?.id) return
 
-  const renderTable = (data: any[], showActions = true) => (
+    console.log("Datos del formulario:", data)
+
+    const success = await aprobarSolicitud(data)
+
+    if (success) {
+      setShowApprovalDialog(false)
+      setSelectedSolicitud(null)
+      reset()
+    }
+  })
+
+
+  const pendientes = solicitudes.filter((s) => s.estado === "PENDIENTE")
+  const aprobadas = solicitudes.filter((s) => s.estado === "APROBADO")
+  const rechazadas = solicitudes.filter((s) => s.estado === "RECHAZADO")
+
+  const renderTable = (data: AprobarSolicitudPresupuesto[], showActions = true) => (
     <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
@@ -169,11 +123,11 @@ export function AprobarSolicitudes() {
           ) : (
             data.map((solicitud) => (
               <TableRow key={solicitud.id}>
-                <TableCell className="font-medium">{solicitud.area}</TableCell>
-                <TableCell>{solicitud.solicitante}</TableCell>
+                <TableCell className="font-medium">{solicitud.area.nombre}</TableCell>
+                <TableCell>{solicitud.usuarioSolicitante.nombre}</TableCell>
                 <TableCell>{solicitud.periodo}</TableCell>
                 <TableCell className="text-right font-medium">
-                  {(solicitud.monto || 0).toLocaleString("es-CO", {
+                  {(solicitud.montoSolicitado || 0).toLocaleString("es-CO", {
                     style: "currency",
                     currency: "COP",
                     minimumFractionDigits: 0,
@@ -195,16 +149,16 @@ export function AprobarSolicitudes() {
                   </>
                 )}
                 <TableCell>
-                  {new Date(solicitud.fechaAprobacion || solicitud.fechaSolicitud).toLocaleDateString("es-CO")}
+                  {new Date(solicitud.createdAt).toLocaleDateString("es-CO")}
                 </TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      solicitud.estado === "Aprobado"
+                      solicitud.estado === "APROBADO"
                         ? "default"
-                        : solicitud.estado === "Rechazado"
+                        : solicitud.estado === "RECHAZADO"
                           ? "destructive"
-                          : "secondary"
+                          : "outline"
                     }
                   >
                     {solicitud.estado}
@@ -212,16 +166,27 @@ export function AprobarSolicitudes() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {showActions && solicitud.estado === "Pendiente" && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleOpenApproval(solicitud)}
-                        className="gap-1"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Aprobar
-                      </Button>
+                    {showActions && solicitud.estado === "PENDIENTE" && (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleOpenApproval(solicitud)}
+                          className="gap-1"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Aprobar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleOpenReject(solicitud)}
+                          className="gap-1"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Rechazar
+                        </Button>
+                      </>
                     )}
                   </div>
                 </TableCell>
@@ -241,56 +206,81 @@ export function AprobarSolicitudes() {
           <CardDescription>Gestione las solicitudes de presupuesto para el siguiente período</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="pendientes" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="pendientes" className="gap-2">
-                Pendientes
-                {pendientes.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {pendientes.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="aprobadas">
-                Aprobadas
-                {aprobadas.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {aprobadas.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
+          {loading && (
+            <div className="text-center py-8 text-muted-foreground">
+              Cargando solicitudes...
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8 text-destructive">
+              Error: {error}
+            </div>
+          )}
+          {!loading && !error && (
+            <Tabs defaultValue="pendientes" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="pendientes" className="gap-2">
+                  Pendientes
+                  {pendientes.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {pendientes.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="aprobadas">
+                  Aprobadas
+                  {aprobadas.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {aprobadas.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="rechazadas">
+                  Rechazadas
+                  {rechazadas.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {rechazadas.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="pendientes" className="space-y-4">
-              {renderTable(pendientes, true)}
-            </TabsContent>
+              <TabsContent value="pendientes" className="space-y-4">
+                {renderTable(pendientes, true)}
+              </TabsContent>
 
-            <TabsContent value="aprobadas" className="space-y-4">
-              {renderTable(aprobadas, false)}
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="aprobadas" className="space-y-4">
+                {renderTable(aprobadas, false)}
+              </TabsContent>
+
+              <TabsContent value="rechazadas" className="space-y-4">
+                {renderTable(rechazadas, false)}
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
+      {/* Approval Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Aprobar Solicitud de Presupuesto</DialogTitle>
-            <DialogDescription>Defina el porcentaje de aprobación para {selectedSolicitud?.area}</DialogDescription>
+            <DialogDescription>Defina el porcentaje de aprobación para {selectedSolicitud?.area.nombre}</DialogDescription>
           </DialogHeader>
           {selectedSolicitud && (
-            <div className="space-y-4">
+            <form onSubmit={onSubmitApproval} className="space-y-4">
               <div className="p-4 bg-muted rounded-lg space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium">Área: {selectedSolicitud.area}</p>
-                    <p className="text-sm text-muted-foreground">Responsable: {selectedSolicitud.responsable}</p>
+                    <p className="font-medium">Área: {selectedSolicitud.area.nombre}</p>
+                    <p className="text-sm text-muted-foreground">Solicitante: {selectedSolicitud.usuarioSolicitante.nombre}</p>
+                    <p className="text-sm text-muted-foreground">Período: {selectedSolicitud.periodo}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Monto Solicitado</p>
                     <p className="text-lg font-semibold">
-                      {(selectedSolicitud.monto || 0).toLocaleString("es-CO", {
+                      {(selectedSolicitud.montoSolicitado || 0).toLocaleString("es-CO", {
                         style: "currency",
                         currency: "COP",
                         minimumFractionDigits: 0,
@@ -298,6 +288,12 @@ export function AprobarSolicitudes() {
                     </p>
                   </div>
                 </div>
+                {selectedSolicitud.justificacion && (
+                  <div>
+                    <Label className="text-sm font-medium">Justificación</Label>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedSolicitud.justificacion}</p>
+                  </div>
+                )}
               </div>
 
               {selectedSolicitud.articulos && selectedSolicitud.articulos.length > 0 && (
@@ -309,26 +305,16 @@ export function AprobarSolicitudes() {
                         <TableRow>
                           <TableHead className="min-w-[120px]">Cuenta</TableHead>
                           <TableHead className="min-w-[150px]">Concepto</TableHead>
-                          <TableHead className="text-right min-w-[80px]">Cantidad</TableHead>
-                          <TableHead className="text-right min-w-[120px]">Valor Unitario</TableHead>
-                          <TableHead className="text-right min-w-[120px]">Total</TableHead>
+                          <TableHead className="text-right min-w-[120px]">Valor</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedSolicitud.articulos.map((art: any) => (
-                          <TableRow key={art.id}>
-                            <TableCell className="text-sm">{art.cuenta}</TableCell>
-                            <TableCell className="text-sm">{art.concepto}</TableCell>
-                            <TableCell className="text-right">{art.cantidad}</TableCell>
+                        {selectedSolicitud.articulos.map((art: SolicitudArticuloPresupuesto, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-sm">{art.cuentaContable.nombre}</TableCell>
+                            <TableCell className="text-sm">{art.conceptoContable.nombre}</TableCell>
                             <TableCell className="text-right">
                               {art.valorEstimado.toLocaleString("es-CO", {
-                                style: "currency",
-                                currency: "COP",
-                                minimumFractionDigits: 0,
-                              })}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {(art.cantidad * art.valorEstimado).toLocaleString("es-CO", {
                                 style: "currency",
                                 currency: "COP",
                                 minimumFractionDigits: 0,
@@ -342,6 +328,9 @@ export function AprobarSolicitudes() {
                 </div>
               )}
 
+              <input type="hidden" {...register("id", { valueAsNumber: true })} />
+              <input type="hidden" {...register("aprobadoPorId")} />
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="porcentaje">Porcentaje de Aprobación (%)</Label>
@@ -352,28 +341,44 @@ export function AprobarSolicitudes() {
                       min="0"
                       max="100"
                       step="1"
-                      value={porcentajeAprobacion}
-                      onChange={(e) => setPorcentajeAprobacion(Number.parseInt(e.target.value))}
+                      {...register("porcentajeAprobacion", {
+                        valueAsNumber: true,
+                        onChange: (e) => {
+                          const value = Number(e.target.value)
+                          if (value >= 0 && value <= 100) {
+                            const montoAprobado = (selectedSolicitud.montoSolicitado || 0) * (value / 100)
+                            setValue("montoAprobado", montoAprobado)
+                          }
+                        }
+                      })}
                       className="flex-1"
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setPorcentajeAprobacion(100)}
+                      onClick={() => {
+                        setValue("porcentajeAprobacion", 100)
+                        const montoAprobado = selectedSolicitud?.montoSolicitado || 0
+                        setValue("montoAprobado", montoAprobado)
+                      }}
                       className="gap-1"
                     >
                       <Percent className="h-4 w-4" />
                       100%
                     </Button>
                   </div>
+                  {errors.porcentajeAprobacion && (
+                    <p className="text-xs text-destructive">{errors.porcentajeAprobacion.message}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">Ingrese un valor entre 0 y 100</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Monto a Aprobar</Label>
+                  <input type="hidden" {...register("montoAprobado", { valueAsNumber: true })} />
                   <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                     <p className="text-2xl font-bold text-primary">
-                      {((selectedSolicitud.monto || 0) * (porcentajeAprobacion / 100)).toLocaleString("es-CO", {
+                      {((selectedSolicitud.montoSolicitado || 0) * (porcentajeAprobacion / 100)).toLocaleString("es-CO", {
                         style: "currency",
                         currency: "COP",
                         minimumFractionDigits: 0,
@@ -381,7 +386,62 @@ export function AprobarSolicitudes() {
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {porcentajeAprobacion}% de{" "}
-                      {(selectedSolicitud.monto || 0).toLocaleString("es-CO", {
+                      {(selectedSolicitud.montoSolicitado || 0).toLocaleString("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                      })}
+                    </p>
+                  </div>
+                  {errors.montoAprobado && (
+                    <p className="text-xs text-destructive">{errors.montoAprobado.message}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowApprovalDialog(false)}
+                  disabled={isSubmitting || processingLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="gap-2"
+                  disabled={isSubmitting || processingLoading}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {isSubmitting || processingLoading ? "Aprobando..." : "Confirmar Aprobación"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rechazar Solicitud de Presupuesto</DialogTitle>
+            <DialogDescription>
+              Está a punto de rechazar la solicitud de {selectedSolicitud?.area.nombre}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedSolicitud && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <div>
+                    <p className="font-medium">Área: {selectedSolicitud.area.nombre}</p>
+                    <p className="text-sm text-muted-foreground">Solicitante: {selectedSolicitud.usuarioSolicitante.nombre}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Monto Solicitado</p>
+                    <p className="font-semibold">
+                      {(selectedSolicitud.montoSolicitado || 0).toLocaleString("es-CO", {
                         style: "currency",
                         currency: "COP",
                         minimumFractionDigits: 0,
@@ -391,14 +451,17 @@ export function AprobarSolicitudes() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleApprove} className="gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Confirmar Aprobación
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="observacionesRechazo">Motivo del Rechazo *</Label>
+                <Textarea
+                  id="observacionesRechazo"
+                  value={observacionesRechazo}
+                  onChange={(e) => setObservacionesRechazo(e.target.value)}
+                  placeholder="Debe especificar el motivo del rechazo..."
+                  rows={4}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Este mensaje será enviado al solicitante</p>
               </div>
             </div>
           )}
