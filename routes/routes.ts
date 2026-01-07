@@ -1,3 +1,4 @@
+import { ModuleRouterType, RouterType } from "@/types/router.types"
 import {
   DollarSign,
   ShoppingCart,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react"
 
 
-const menuItems = [
+const menuItems: RouterType[] = [
   {
     title: "Áreas",
     icon: User,
@@ -47,13 +48,13 @@ const menuItems = [
     title: "Presupuestos",
     icon: DollarSign,
     href: "/presupuestos",
-    roles: ["admin", "responsable_area", "Auditoría", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["admin", "responsableArea", "Auditoría", "Consultor", "Caja Menor", "Tesorería"],
   },
   {
     title: "Solicitar Presupuesto",
     icon: FileText,
     href: "/solicitar-presupuesto",
-    roles: ["responsable_area", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["responsableArea", "Consultor", "Caja Menor", "Tesorería"],
   },
   {
     title: "Aprobación de Presupuesto Áreas",
@@ -65,13 +66,13 @@ const menuItems = [
     title: "Requisiciones",
     icon: ClipboardList,
     href: "/requisiciones",
-    roles: ["admin", "responsable_area", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["admin", "responsableArea", "Consultor", "Caja Menor", "Tesorería"],
   },
   {
     title: "Partidas No Presupuestadas",
     icon: FileText,
     href: "/partidas-no-presupuestadas",
-    roles: ["admin", "responsable_area", "Consultor", "Caja Menor", "Tesorería", "Auditoría"],
+    roles: ["admin", "responsableArea", "Consultor", "Caja Menor", "Tesorería", "Auditoría"],
   },
   {
     title: "Aprobaciones",
@@ -101,37 +102,37 @@ const menuItems = [
     title: "Calificar Consultor",
     icon: Star,
     href: "/calificar-consultor",
-    roles: ["responsable_area"],
+    roles: ["responsableArea"],
   },
   {
     title: "Compras",
     icon: ShoppingCart,
     href: "/compras",
-    roles: ["admin", "responsable_area", "Auditoría", "Consultor"],
+    roles: ["admin", "responsableArea", "Auditoría", "Consultor"],
   },
   {
     title: "Inventario",
     icon: Package,
     href: "/inventario",
-    roles: ["admin", "responsable_area", "Auditoría", "Consultor"],
+    roles: ["admin", "responsableArea", "Auditoría", "Consultor"],
   },
   {
     title: "Inventario de Activos",
     icon: Box,
     href: "/activos",
-    roles: ["admin", "responsable_area", "Auditoría"],
+    roles: ["admin", "responsableArea", "Auditoría"],
   },
   {
     title: "Traslados de Activos",
     icon: ArrowRightLeft,
     href: "/traslados-activos",
-    roles: ["admin", "responsable_area"],
+    roles: ["admin", "responsableArea"],
   },
   {
     title: "Reportes",
     icon: FileText,
     href: "/reportes",
-    roles: ["admin", "Auditoría", "responsable_area", "Consultor"],
+    roles: ["admin", "Auditoría", "responsableArea", "Consultor"],
   },
   {
     title: "Supervisión del Consultor",
@@ -141,7 +142,7 @@ const menuItems = [
   }
 ]
 
-const modules = [
+const modules: ModuleRouterType[] = [
   {
     id: "contabilidad",
     title: "Contabilidad",
@@ -156,7 +157,7 @@ const modules = [
         title: "Proyectos de Inversión",
         href: "/proyectos-inversion",
       },
-    ],
+    ]
   },
 ]
 
