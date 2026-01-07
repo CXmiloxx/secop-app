@@ -51,7 +51,8 @@ export default function SolicitarPresupuestoPage() {
     }
   });
 
-  // Setea el id_area y usuarioSolicitanteId al usuario cuando esté disponible
+
+  // Setea el areaId y usuarioSolicitanteId al usuario cuando esté disponible
   useEffect(() => {
     if (user?.area?.id) {
       setValue("areaId", user.area.id);

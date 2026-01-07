@@ -15,11 +15,13 @@ export const registerSolicitudPresupuestoSchema = z.object({
   articulos: z.array(articuloPresupuestoSchema).min(1, 'Debe agregar al menos un artículo'),
 });
 
-export const editSolicitudPresupuestoSchema = registerSolicitudPresupuestoSchema
-  .extend({
-    id: z.number(),
-    porcentajeAprobacion: z.number().optional(),
-  });
+export const editSolicitudPresupuestoSchema = z.object({
+  id: z.number(),
+  porcentajeAprobacion: z.number().min(0).max(100, 'El porcentaje debe estar entre 0 y 100'),
+  montoAprobado: z.number().min(0),
+  aprobadoPorId: z.string().min(1, 'El aprobador es obligatorio'),
+  fechaAprobacion: z.string().optional(),
+});
 
 export type ArticuloPresupuestoSchema = z.infer<typeof articuloPresupuestoSchema>;
 export type EditSolicitudPresupuestoSchema = z.infer<typeof editSolicitudPresupuestoSchema>;

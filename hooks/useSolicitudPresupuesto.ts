@@ -1,4 +1,4 @@
-import { RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
+import { EditSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 import { SolicitudPresupuestoService } from "@/services/solicitud-presupuesto.service";
 import { AprobarSolicitudPresupuesto } from "@/types";
 import { ApiError } from "@/utils/api-error";
@@ -66,11 +66,43 @@ export default function useSolicitudPresupuesto() {
     }
   }, []);
 
+  const aprobarSolicitud = useCallback(async (aprobarData: EditSolicitudPresupuestoSchema) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await SolicitudPresupuestoService.aprobarSolicitud(aprobarData);
+      if (response.status === 200) {
+        toast.success("Solicitud de presupuesto aprobada exitosamente");
+        await fetchSolicitudes();
+        return true;
+      } else {
+        const errorMsg = response.message || "No se pudo aprobar la solicitud del presupuesto correctamente.";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return false;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al aprobar la solicitud del presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchSolicitudes]);
+
+
   return {
     presupuestos,
     loading,
     error,
     createSolicitud,
-    fetchSolicitudes
+    fetchSolicitudes,
+    aprobarSolicitud,
   };
 }

@@ -11,3 +11,13 @@ export interface ArticuloPresupuestoLocal {
   cuentaNombre: string
   conceptoNombre: string
 }
+
+export interface SolicitudArticuloPresupuesto {
+  conceptoContable: {
+    nombre: string
+  }
+  cuentaContable: {
+    nombre: string
+  }
+  valorEstimado: number
+}

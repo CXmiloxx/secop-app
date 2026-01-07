@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
+import { EditSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 
 export const SolicitudPresupuestoService = {
   async SolicitudPresupuesRequest(presupuesto: RegisterSolicitudPresupuestoSchema) {
@@ -10,6 +10,12 @@ export const SolicitudPresupuestoService = {
   async findAll() {
     return await api.get(`/solicitud-presupuesto`)
   },
+
+  async aprobarSolicitud(aprobarData: EditSolicitudPresupuestoSchema) {
+    const response = await api.patch(`/solicitud-presupuesto/${aprobarData.id}`, aprobarData);
+    return response;
+  },
+
 
 }
 
