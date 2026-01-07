@@ -4,13 +4,9 @@ import { UserType } from '@/types/user.types'
 
 interface AuthState {
   user: UserType | null
-  isLoading: boolean
-  error: string | null
   hasHydrated: boolean
 
   setUser: (user: UserType | null) => void
-  setIsLoading: (isLoading: boolean) => void
-  setError: (error: string | null) => void
   clearAuth: () => void
 }
 
@@ -18,18 +14,12 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      isLoading: false,
-      error: null,
       hasHydrated: false,
 
       setUser: (user) => set({ user }),
-      setIsLoading: (isLoading) => set({ isLoading }),
-      setError: (error) => set({ error }),
       clearAuth: () =>
         set({
           user: null,
-          isLoading: false,
-          error: null,
         }),
     }),
     {

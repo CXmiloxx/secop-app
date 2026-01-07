@@ -6,13 +6,16 @@ import {
   CardTitle,
   CardDescription,
 } from '../ui/card'
-import { FileText, EyeClosed, Eye } from 'lucide-react'
+import { Mail, Lock, FileText, EyeClosed, Eye, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
 import { useForm } from 'react-hook-form'
 import { loginSchema, LoginSchema } from '@/schema/auth.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
-import useAuthUser from '@/hooks/use-auth-user'
+import useAuthUser from '@/hooks/useAuth'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export default function Login() {
   const {
@@ -23,7 +26,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   })
 
-  const { login, error: authError, isLoading } = useAuthUser()
+  const { login, error: authError, loading } = useAuthUser()
   const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = async (data: LoginSchema) => {
@@ -36,7 +39,7 @@ export default function Login() {
         <Card className="overflow-visible rounded-3xl shadow-[0_10px_40px_0_rgba(36,63,177,0.16)] border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg transition-all duration-300">
           <CardHeader className="gap-3 flex flex-col items-center text-center pb-6 pt-10">
             <div className="w-20 h-20 bg-linear-to-br from-blue-700 to-indigo-600 rounded-3xl flex items-center justify-center shadow-xl mb-2 ring-4 ring-blue-300/10 dark:ring-blue-900/20">
-              <FileText className="w-10 h-10 drop-shadow-lg" />
+              <FileText className="w-10 h-10 drop-shadow-lg text-blue-100 dark:text-blue-400" />
             </div>
             <CardTitle className="text-3xl xl:text-4xl font-extrabold tracking-tight bg-linear-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
               Sistema de Gestión Presupuestal
@@ -61,68 +64,76 @@ export default function Login() {
               onSubmit={handleSubmit(onSubmit)}
               noValidate
             >
+              {/* Campo de correo */}
               <div className="space-y-2">
-                <label
+                <Label
                   htmlFor="correo"
-                  className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1"
+                  className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1 flex gap-2 items-center"
                 >
+                  <Mail className="w-4 h-4 text-blue-800/80 dark:text-indigo-400/70" />
                   Correo electrónico
-                </label>
-                <input
-                  type="email"
-                  id="correo"
-                  autoComplete="email"
-                  {...register('correo')}
-                  className={`block w-full px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:outline-none bg-white/90 dark:bg-gray-950/60 border-gray-300 dark:border-gray-800 transition-shadow
-                    ${
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="email"
+                    id="correo"
+                    autoComplete="email"
+                    {...register('correo')}
+                    className={cn(
+                      "pl-10 block w-full px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:outline-none bg-white/90 dark:bg-gray-950/60 border-gray-300 dark:border-gray-800 transition-shadow",
                       errors.correo
-                        ? 'border-red-400 focus:ring-red-300'
-                        : 'focus:ring-blue-400 dark:focus:ring-blue-600'
-                    }`}
-                  placeholder="tucorreo@ejemplo.com"
-                  disabled={isSubmitting || isLoading}
-                />
+                        ? "border-red-400 focus:ring-red-300"
+                        : "focus:ring-blue-400 dark:focus:ring-blue-600"
+                    )}
+                    placeholder="tucorreo@ejemplo.com"
+                    disabled={isSubmitting || loading}
+                  />
+                </div>
                 {errors.correo && (
                   <span className="text-red-600 text-xs mt-1 block font-semibold">
                     {errors.correo.message}
                   </span>
                 )}
               </div>
-              <div className="space-y-2 relative">
-                <label
+              {/* Campo de contraseña */}
+              <div className="space-y-2">
+                <Label
                   htmlFor="contrasena"
-                  className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1"
+                  className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1 flex gap-2 items-center"
                 >
+                  <Lock className="w-4 h-4 text-blue-800/80 dark:text-indigo-400/70" />
                   Contraseña
-                </label>
+                </Label>
                 <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
+                  <Input
+                    type={showPassword ? "text" : "password"}
                     id="contrasena"
                     autoComplete="current-password"
                     {...register('contrasena')}
-                    className={`block w-full px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:outline-none bg-white/90 dark:bg-gray-950/60 border-gray-300 dark:border-gray-800 pr-12 transition-shadow
-                      ${
-                        errors.contrasena
-                          ? 'border-red-400 focus:ring-red-300'
-                          : 'focus:ring-blue-400 dark:focus:ring-blue-600'
-                      }`}
+                    className={cn(
+                      "pl-10 pr-12 block w-full px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:outline-none bg-white/90 dark:bg-gray-950/60 border-gray-300 dark:border-gray-800 transition-shadow",
+                      errors.contrasena
+                        ? "border-red-400 focus:ring-red-300"
+                        : "focus:ring-blue-400 dark:focus:ring-blue-600"
+                    )}
                     placeholder="Tu contraseña"
-                    disabled={isSubmitting || isLoading}
+                    disabled={isSubmitting || loading}
                   />
-                  <button
+                  <Button
                     type="button"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-gray-800/50 rounded-full p-1 focus:outline-none"
+                    variant="ghost"
+                    size="icon"
                     tabIndex={-1}
                     onClick={() => setShowPassword((sp) => !sp)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 h-7 w-7 text-gray-400 hover:text-blue-700 dark:hover:text-indigo-400 bg-transparent hover:bg-blue-50 dark:hover:bg-gray-800/60 rounded-full p-0"
                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showPassword ? (
-                      <Eye/>
+                      <Eye className="w-5 h-5" />
                     ) : (
-                      <EyeClosed/>
+                      <EyeClosed className="w-5 h-5" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {errors.contrasena && (
                   <span className="text-red-600 text-xs mt-1 block font-semibold">
@@ -130,37 +141,22 @@ export default function Login() {
                   </span>
                 )}
               </div>
+              {/* Botón de envío */}
               <Button
                 type="submit"
-                className="w-full py-2.5 mt-5 rounded-xl text-base font-semibold bg-linear-to-r from-blue-600 to-indigo-700 shadow-lg hover:from-blue-700 hover:to-indigo-800 transition-all"
-                disabled={isSubmitting || isLoading}
+                className="w-full py-2.5 mt-5 rounded-xl text-base font-semibold bg-linear-to-r from-blue-600 to-indigo-700 shadow-lg hover:from-blue-700 hover:to-indigo-800 transition-all flex items-center justify-center gap-2"
+                disabled={isSubmitting || loading}
               >
-                {isSubmitting || isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
+                {isSubmitting || loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5 text-white" />
                     Ingresando...
-                  </span>
+                  </>
                 ) : (
-                  'Ingresar'
+                  <>
+                    <FileText className="w-5 h-5 mr-1" />
+                    Ingresar
+                  </>
                 )}
               </Button>
             </form>

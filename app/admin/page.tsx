@@ -1,24 +1,28 @@
 'use client'
 import ListUsers from '@/components/users/ListUsers'
-import useAuthUser from '@/hooks/use-auth-user'
-import { UserType } from '@/types/user.types'
-import { useCallback, useEffect, useState } from 'react'
+import useAuthUser from '@/hooks/useAuth'
+import { useCallback, useEffect } from 'react'
 
-export default function page() {
-  const { allUsers, isLoading } = useAuthUser()
-  const [users, setUsers] = useState<UserType[]>([])
+export default function AdminPage() {
+  const { allUsers, loading, error, users, deleteUser } = useAuthUser()
 
   const getUsers = useCallback(async () => {
-    const data = await allUsers()
-    setUsers(Array.isArray(data) ? data : [])
+    await allUsers()
   }, [allUsers])
 
   useEffect(() => {
     getUsers()
   }, [getUsers])
+
   return (
-    <div>
-      <ListUsers users={users} loading={isLoading}/>
+    <div className="container mx-auto px-4 py-8">
+      <ListUsers
+        users={users}
+        loading={loading}
+        error={error}
+        onUserDeleted={getUsers}
+        onDeleteUser={deleteUser}
+      />
     </div>
   )
 }

@@ -1,22 +1,22 @@
 export type RolNombre =
   | 'admin'
-  | 'responsable_area'
+  | 'responsableArea'
   | 'Auditoría'
   | 'Rector'
   | 'Consultor'
   | 'Tesorería'
   | 'Caja Menor'
   | 'Contratista'
-  | 'ciencias'
+  | 'Ciencias'
   | 'Pagos'
 
   ;
 
-export interface Rol {
+export interface RolType {
   id: number;
   nombre: RolNombre;
 }
-export interface Area {
+export interface AreaType {
   id: number;
   nombre: string;
 }
@@ -25,10 +25,10 @@ export interface UserType {
   id: string;
   nombre: string;
   apellido: string;
-  tipo_documento: string;
+  tipoDocumento: string;
   documento: string;
   correo: string;
   telefono: string;
-  rol: Rol;
-  area: Area;
+  rol: RolType;
+  area: AreaType;
 }
