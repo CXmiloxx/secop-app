@@ -1,6 +1,13 @@
-import  { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,6 +15,8 @@ interface ModalProps {
   children: ReactNode;
   backdropClassName?: string;
   modalClassName?: string;
+  title?: string;
+  description?: string;
   closeButtonLabel?: string;
 }
 
@@ -15,53 +24,41 @@ export default function Modal({
   isOpen,
   onClose,
   children,
-  backdropClassName = '',
   modalClassName = '',
+  title = 'Title',
+  description,
   closeButtonLabel = 'Cerrar',
 }: ModalProps) {
-  // Cierra el modal al presionar Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Evita el scroll del fondo cuando el modal está abierto
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/70 transition-colors ${backdropClassName}`}
-      onClick={onClose}
-      aria-modal="true"
-      role="dialog"
-    >
-      <div
-        className={`relative bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 ${modalClassName}`}
-        onClick={e => e.stopPropagation()} // evita cerrar al hacer click dentro
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className={cn(
+          'sm:max-w-lg rounded-xl shadow-2xl border bg-background',
+          'animate-in fade-in-90 slide-in-from-top-1',
+          modalClassName
+        )}
       >
-        <button
-          className="absolute top-2 right-2 p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-          onClick={onClose}
+        {(title || description) && (
+          <DialogHeader>
+            {title && (
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+                {title}
+              </DialogTitle>
+            )}
+            {description && (
+              <DialogDescription className="text-muted-foreground">
+                {description}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+        )}
+        <DialogClose
           aria-label={closeButtonLabel}
-          type="button"
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground rounded-md transition-colors"
         >
-          <X className="h-5 w-5" />
-        </button>
-        {children}
-      </div>
-    </div>
+        </DialogClose>
+        <div className="py-2">{children}</div>
+      </DialogContent>
+    </Dialog>
   );
 }
