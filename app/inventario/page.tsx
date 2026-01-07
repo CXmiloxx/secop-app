@@ -13,17 +13,17 @@ import ConsultaInventario from "@/components/inventario/consulta-inventario"
 import { useAuthStore } from "@/store/auth.store"
 
 export default function InventarioPage() {
-  const {user} = useAuthStore()
+  const { user } = useAuthStore()
 
   const canManageMovements = user?.rol?.nombre === "Consultor"
-  const canRequestWithdrawal = user?.rol?.nombre === "responsable_area"
+  const canRequestWithdrawal = user?.rol?.nombre === "responsableArea"
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard">
+            <Link href="/presupuestos">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
