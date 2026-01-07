@@ -1,25 +1,24 @@
 import { z } from 'zod';
 
 export const articuloPresupuestoSchema = z.object({
-  id_cuenta_contable: z.number(),
-  id_concepto_contable: z.number(),
-  id_producto_contable: z.number(),
-  cantidad: z.number().min(1, 'La cantidad debe ser mayor a 0'),
-  valor_unitario: z.number().min(0.01, 'El valor estimado debe ser mayor a 0'),
+  conceptoContableId: z.number(),
+  cuentaContableId: z.number(),
+  valorEstimado: z.number().min(0.01, 'El valor estimado debe ser mayor a 0'),
 });
 
 export const registerSolicitudPresupuestoSchema = z.object({
-  id_area: z.number().min(1, 'El área es obligatoria'),
-  anio: z.string().min(4, 'El año es obligatorio'),
+  areaId: z.number().min(1, 'El área es obligatoria'),
+  periodo: z.number().min(1, 'El periodo es obligatorio'),
+  usuarioSolicitanteId: z.string().min(1, 'El usuario solicitante es obligatorio'),
+  montoSolicitado: z.number().min(0.01, 'El monto solicitado debe ser mayor a 0'),
   justificacion: z.string().min(10, 'La justificación debe tener al menos 10 caracteres'),
-  valor_solicitado: z.number().min(0.01, 'El valor solicitado debe ser mayor a 0'),
-  articulos_presupuestos: z.array(articuloPresupuestoSchema).min(1, 'Debe agregar al menos un artículo'),
+  articulos: z.array(articuloPresupuestoSchema).min(1, 'Debe agregar al menos un artículo'),
 });
 
 export const editSolicitudPresupuestoSchema = registerSolicitudPresupuestoSchema
   .extend({
     id: z.number(),
-    porcentaje_aprobacion: z.number().optional(),
+    porcentajeAprobacion: z.number().optional(),
   });
 
 export type ArticuloPresupuestoSchema = z.infer<typeof articuloPresupuestoSchema>;

@@ -1,3 +1,5 @@
+import { AreaType } from "./user.types";
+
 export interface Presupuesto {
   area: string;
   presupuestoAnual: number;
@@ -18,6 +20,23 @@ export interface SolicitudPresupuesto {
   fechaAprobacion: string | null;
   periodo: string;
   articulos: ArticuloPresupuesto[];
+}
+
+export interface AprobarSolicitudPresupuesto {
+  id: number;
+  periodo: number;
+  montoSolicitado: number;
+  createdAt: string;
+  estado: 'PENDIENTE' | 'APROBADO';
+  porcentajeAprobado?: number;
+  montoAprobado?: number;
+  observaciones?: string;
+  fechaAprobacion?: string;
+  usuarioSolicitante: {
+    id: number;
+    nombre: string;
+  }
+  area: AreaType
 }
 
 export interface ArticuloPresupuesto {

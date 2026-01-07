@@ -17,11 +17,24 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
 import { ArticuloPresupuestoLocal } from "@/types/articulos-presupuesto.types"
 import { ConceptosType } from "@/types/conceptos.types"
-import useProductos from "@/hooks/useProductos"
 import { CuentasContablesType } from "@/types/cuentas-contables.types"
-import { ProductosType } from "@/types/productos.types"
 
 export default function SolicitarPresupuestoPage() {
+  const [articulos, setArticulos] = useState<ArticuloPresupuestoLocal[]>([]);
+
+  // Estados para los selects de artículos
+  const [cuentaId, setCuentaId] = useState<number | null>(null);
+  const [conceptoId, setConceptoId] = useState<number | null>(null);
+
+  const [valorEstimado, setValorEstimado] = useState("");
+  const [errorArticulo, setErrorArticulo] = useState("");
+
+  const { user } = useAuthStore();
+  const { fetchCuentasContables, cuentasContables } = useCuentasContables();
+  const { conceptos, fetchCoceptos, errorConceptos, loadingConceptos } = useConceptos();
+  const { error: erroSPresupuesto, loading: loadingSPresupuesto, createSolicitud } = useSolicitudPresupuesto();
+
+
   // Formulario principal
   const {
     register,
@@ -31,34 +44,20 @@ export default function SolicitarPresupuestoPage() {
   } = useForm<RegisterSolicitudPresupuestoSchema>({
     resolver: zodResolver(registerSolicitudPresupuestoSchema),
     defaultValues: {
-      anio: new Date().getFullYear().toString(),
+      periodo: new Date().getFullYear(),
       justificacion: "",
-      valor_solicitado: 0,
-      articulos_presupuestos: [],
-    },
+      montoSolicitado: 0,
+      articulos: [],
+    }
   });
 
-  const [articulos, setArticulos] = useState<ArticuloPresupuestoLocal[]>([]);
-
-  // Estados para los selects de artículos
-  const [cuentaId, setCuentaId] = useState<number | null>(null);
-  const [conceptoId, setConceptoId] = useState<number | null>(null);
-  const [productoId, setProductoId] = useState<number | null>(null);
-
-  const [cantidad, setCantidad] = useState("");
-  const [valorEstimado, setValorEstimado] = useState("");
-  const [errorArticulo, setErrorArticulo] = useState("");
-
-  const { user } = useAuthStore();
-  const { fetchCuentasContables, cuentasContables } = useCuentasContables();
-  const { conceptos, fetchCoceptos } = useConceptos();
-  const { productos, fetchProductos } = useProductos();
-  const { error: erroSPresupuesto, loading: loadingSPresupuesto, createSolicitud } = useSolicitudPresupuesto();
-
-  // Setea el id_area al usuario cuando esté disponible
+  // Setea el id_area y usuarioSolicitanteId al usuario cuando esté disponible
   useEffect(() => {
     if (user?.area?.id) {
-      setValue("id_area", user.area.id);
+      setValue("areaId", user.area.id);
+    }
+    if (user?.id) {
+      setValue("usuarioSolicitanteId", user.id);
     }
   }, [user, setValue]);
 
@@ -74,27 +73,19 @@ export default function SolicitarPresupuestoPage() {
     }
   }, [cuentaId, fetchCoceptos]);
 
-  // Traer productos al seleccionar concepto
-  useEffect(() => {
-    if (conceptoId) {
-      fetchProductos(conceptoId);
-    }
-  }, [conceptoId, fetchProductos]);
 
   // Calcular total y asignar articulos seleccionados al form principal
   useEffect(() => {
     setValue(
-      "valor_solicitado",
-      articulos.reduce((acc, art) => acc + art.valor_estimado, 0)
+      "montoSolicitado",
+      articulos.reduce((acc, art) => acc + art.valorEstimado, 0)
     );
     setValue(
-      "articulos_presupuestos",
+      "articulos",
       articulos.map((a) => ({
-        id_cuenta_contable: a.id_cuenta_contable,
-        id_concepto_contable: a.id_concepto,
-        cantidad: a.cantidad,
-        valor_unitario: a.valor_estimado,
-        id_producto_contable: a.id_producto_contable
+        cuentaContableId: a.cuentaContableId,
+        conceptoContableId: a.conceptoContableId,
+        valorEstimado: a.valorEstimado
       }))
     );
   }, [articulos, setValue]);
@@ -102,29 +93,14 @@ export default function SolicitarPresupuestoPage() {
   // Agregar un artículo al array con validación: solo un producto por concepto
   const handleAgregarArticulo = () => {
     setErrorArticulo("");
-    if (!cuentaId || !conceptoId || !productoId || !cantidad || !valorEstimado) {
+    if (!cuentaId || !conceptoId || !valorEstimado) {
       setErrorArticulo("Complete todos los campos del artículo");
       setTimeout(() => setErrorArticulo(""), 3000);
       return;
     }
 
-    // Validacion para que solo se permita un producto por concepto
-    const productoExists = articulos.some(
-      (a) => a.id_concepto === conceptoId && a.id_producto_contable === productoId
-    );
-    if (productoExists) {
-      setErrorArticulo("Ya ha agregado este producto para el mismo concepto. Solo se permite un producto por concepto.");
-      setTimeout(() => setErrorArticulo(""), 4000);
-      return;
-    }
 
-    const numCantidad = Number(cantidad);
     const numValor = Number(valorEstimado.replace(/\D/g, ""));
-    if (numCantidad <= 0 || isNaN(numCantidad)) {
-      setErrorArticulo("La cantidad debe ser mayor a 0");
-      setTimeout(() => setErrorArticulo(""), 3000);
-      return;
-    }
     if (numValor <= 0 || isNaN(numValor)) {
       setErrorArticulo("El valor estimado debe ser mayor a 0");
       setTimeout(() => setErrorArticulo(""), 3000);
@@ -133,67 +109,77 @@ export default function SolicitarPresupuestoPage() {
     // Nombres para mostrar en tabla (obtenidos por id)
     const cuentaObj = cuentasContables?.find((c: CuentasContablesType) => c.id === cuentaId);
     const conceptoObj = conceptos?.find((c: ConceptosType) => c.id === conceptoId);
-    const productoObj = productos?.find((p: ProductosType) => p.id === productoId);
 
     const nuevoArticulo: ArticuloPresupuestoLocal = {
-      id_cuenta_contable: cuentaId,
-      id_concepto: conceptoId,
-      id_producto_contable: productoId,
-      cantidad: numCantidad,
-      valor_estimado: numValor,
-      cuenta_nombre: cuentaObj ? cuentaObj.nombre : "",
-      concepto_nombre: conceptoObj ? conceptoObj.nombre : "",
-      producto_nombre: productoObj ? productoObj.nombre : ""
+      cuentaContableId: cuentaId,
+      conceptoContableId: conceptoId,
+      valorEstimado: numValor,
+      cuentaNombre: cuentaObj ? cuentaObj.nombre : "",
+      conceptoNombre: conceptoObj ? conceptoObj.nombre : "",
     };
 
     setArticulos((prev) => [...prev, nuevoArticulo]);
     // Reset campos de item
     setCuentaId(null);
     setConceptoId(null);
-    setProductoId(null);
-    setCantidad("");
     setValorEstimado("");
   };
 
-  // Eliminar un artículo por id_producto_contable
-  const handleEliminarArticulo = (idProducto: number) => {
-    setArticulos(articulos.filter((a) => a.id_producto_contable !== idProducto));
+  // Eliminar un artículo por conceptoContableId
+  const handleEliminarArticulo = (idConcepto: number) => {
+    setArticulos(articulos.filter((a) => a.conceptoContableId !== idConcepto));
   };
 
   // calcula el total sumando el valor estmado de cada articulo
   const calcularTotal = () => {
-    const sum = articulos.reduce((total, a) => total + a.valor_estimado, 0);
+    const sum = articulos.reduce((total, a) => total + a.valorEstimado, 0);
     return isNaN(sum) ? 0 : sum;
   };
 
   // Envío del formulario principal
   const onSubmit = async (data: RegisterSolicitudPresupuestoSchema) => {
+    console.log("Iniciando envío de solicitud...");
+    console.log("Datos del formulario:", data);
+    console.log("Artículos:", articulos);
+    console.log("Usuario:", user);
+
     if (articulos.length === 0) {
       setErrorArticulo("Debe agregar al menos un artículo");
       return;
     }
     if (!user?.area?.id) {
+      setErrorArticulo("No se pudo obtener el área del usuario");
       return;
     }
+    if (!user?.id) {
+      setErrorArticulo("No se pudo obtener el ID del usuario");
+      return;
+    }
+
     try {
-      await createSolicitud({
+      const solicitudData = {
         ...data,
-        id_area: user.area.id,
-        articulos_presupuestos: articulos.map((a) => ({
-          id_cuenta_contable: a.id_cuenta_contable,
-          id_concepto_contable: a.id_concepto,
-          id_producto_contable: a.id_producto_contable,
-          cantidad: a.cantidad,
-          valor_unitario: a.valor_estimado,
+        areaId: user.area.id,
+        usuarioSolicitanteId: user.id,
+        articulos: articulos.map((a) => ({
+          cuentaContableId: a.cuentaContableId,
+          conceptoContableId: a.conceptoContableId,
+          valorEstimado: a.valorEstimado,
         })),
-        valor_solicitado: calcularTotal(),
-      });
-      // Limpiar todo tras submit
+        montoSolicitado: calcularTotal(),
+      };
+
+      console.log("Datos a enviar:", solicitudData);
+
+      await createSolicitud(solicitudData);
+
+      // Limpiar todo tras submit exitoso
       setArticulos([]);
       setValue("justificacion", "");
-      setValue("anio", new Date().getFullYear().toString());
+      setValue("periodo", new Date().getFullYear());
     } catch (error) {
       console.error("Error al enviar solicitud:", error);
+      setErrorArticulo("Error al enviar la solicitud. Por favor, intente nuevamente.");
     }
   };
 
@@ -201,6 +187,8 @@ export default function SolicitarPresupuestoPage() {
     "min-w-[230px] max-w-full w-full";
   const inputFieldClass =
     "min-w-[120px] max-w-full w-full";
+
+
 
   return (
     <div>
@@ -248,26 +236,23 @@ export default function SolicitarPresupuestoPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="anio">Período (Año) *</Label>
+                  <Label htmlFor="periodo">Período (Año) *</Label>
                   <Input
-                    id="anio"
+                    id="periodo"
                     type="number"
                     autoComplete="off"
-                    {...register("anio", {
-                      setValueAs: (value) => value.toString(),
+                    {...register("periodo", {
+                      setValueAs: (value) => Number(value),
                     })}
                     min={new Date().getFullYear()}
                     max={new Date().getFullYear() + 5}
-                    className={errors.anio ? "border-red-500" : ""}
+                    className={errors.periodo ? "border-red-500" : ""}
                   />
-                  {errors.anio && (
-                    <p className="text-sm text-red-600">{errors.anio.message}</p>
+                  {errors.periodo && (
+                    <p className="text-sm text-red-600">{errors.periodo.message}</p>
                   )}
                 </div>
               </div>
-              {errors.id_area && (
-                <p className="text-sm text-red-600 mt-2">{errors.id_area.message}</p>
-              )}
             </CardContent>
           </Card>
 
@@ -287,7 +272,6 @@ export default function SolicitarPresupuestoPage() {
                     onValueChange={(value) => {
                       setCuentaId(Number(value));
                       setConceptoId(null);
-                      setProductoId(null);
                     }}
                   >
                     <SelectTrigger className={`${selectFieldClass} ${errorArticulo && !cuentaId ? "border-red-500" : ""}`}>
@@ -309,7 +293,6 @@ export default function SolicitarPresupuestoPage() {
                     value={conceptoId?.toString() || ""}
                     onValueChange={(value) => {
                       setConceptoId(Number(value));
-                      setProductoId(null);
                     }}
                     disabled={!cuentaId}
                   >
@@ -323,52 +306,23 @@ export default function SolicitarPresupuestoPage() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {conceptos.map((concepto: ConceptosType) => (
-                        <SelectItem className="truncate" key={concepto.id} value={concepto.id.toString()}>
-                          {concepto.nombre}
+                      {errorConceptos ? (
+                        <SelectItem disabled className="truncate" value="error" key="error">
+                          <span className="text-muted-foreground">{errorConceptos}</span>
                         </SelectItem>
-                      ))}
+                      ) : conceptos.length === 0 ? (
+                        <SelectItem disabled className="truncate" value="no-conceptos" key="no-conceptos">
+                          <span className="text-muted-foreground">No hay conceptos disponibles</span>
+                        </SelectItem>
+                      ) : (
+                        conceptos.map((concepto: ConceptosType) => (
+                          <SelectItem className="truncate" key={concepto.id} value={concepto.id.toString()}>
+                            {concepto.nombre}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="space-y-2 col-span-1">
-                  <Label>Producto *</Label>
-                  <Select
-                    value={productoId?.toString() || ""}
-                    onValueChange={(value) => setProductoId(Number(value))}
-                    disabled={!conceptoId}
-                  >
-                    <SelectTrigger
-                      className={`${selectFieldClass} ${errorArticulo && !productoId ? "border-red-500" : ""}`}
-                      disabled={!conceptoId}
-                    >
-                      <SelectValue
-                        placeholder={conceptoId ? "Seleccione..." : "Seleccione concepto primero"}
-                        className="truncate"
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {productos.map((producto) => (
-                        <SelectItem className="truncate" key={producto.id} value={producto.id.toString()}>
-                          {producto.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 col-span-1">
-                  <Label>Cantidad *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value)}
-                    placeholder="0"
-                    className={`${inputFieldClass} ${errorArticulo && !cantidad ? "border-red-500" : ""}`}
-                  />
                 </div>
 
                 <div className="space-y-2 col-span-1">
@@ -399,9 +353,9 @@ export default function SolicitarPresupuestoPage() {
                 </div>
               )}
 
-              {errors.articulos_presupuestos && (
+              {errors.articulos && (
                 <div className="text-sm text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
-                  {errors.articulos_presupuestos.message}
+                  {errors.articulos.message}
                 </div>
               )}
 
@@ -412,40 +366,37 @@ export default function SolicitarPresupuestoPage() {
                       <tr>
                         <th className="text-left p-3 text-sm font-medium min-w-[180px]">Cuenta</th>
                         <th className="text-left p-3 text-sm font-medium min-w-[180px]">Concepto</th>
-                        <th className="text-left p-3 text-sm font-medium min-w-[180px]">Producto</th>
-                        <th className="text-right p-3 text-sm font-medium min-w-[90px]">Cantidad</th>
                         <th className="text-right p-3 text-sm font-medium min-w-[110px]">Valor Total</th>
                         <th className="text-right p-3 text-sm font-medium min-w-[110px]">Total</th>
+                        <th className="text-right p-3 text-sm font-medium min-w-[110px]">Acciones</th>
                         <th className="w-16"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {articulos.map((art) => (
-                        <tr key={art.id_producto_contable} className="border-t">
-                          <td className="p-3 text-sm max-w-[240px] truncate">{art.cuenta_nombre}</td>
-                          <td className="p-3 text-sm max-w-[240px] truncate">{art.concepto_nombre}</td>
-                          <td className="p-3 text-sm max-w-[240px] truncate">{art.producto_nombre || "-"}</td>
-                          <td className="p-3 text-sm text-right">{art.cantidad}</td>
+                        <tr key={art.cuentaContableId} className="border-t">
+                          <td className="p-3 text-sm max-w-[240px] truncate">{art.cuentaNombre}</td>
+                          <td className="p-3 text-sm max-w-[240px] truncate">{art.conceptoNombre}</td>
                           <td className="p-3 text-sm text-right">
                             {new Intl.NumberFormat("es-CO", {
                               style: "currency",
                               currency: "COP",
                               minimumFractionDigits: 0,
-                            }).format(art.valor_estimado)}
+                            }).format(art.valorEstimado)}
                           </td>
                           <td className="p-3 text-sm text-right font-semibold">
                             {new Intl.NumberFormat("es-CO", {
                               style: "currency",
                               currency: "COP",
                               minimumFractionDigits: 0,
-                            }).format(art.valor_estimado)}
+                            }).format(art.valorEstimado)}
                           </td>
                           <td className="p-3">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEliminarArticulo(art.id_producto_contable)}
+                              onClick={() => handleEliminarArticulo(art.cuentaContableId)}
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
@@ -493,9 +444,9 @@ export default function SolicitarPresupuestoPage() {
             </CardContent>
           </Card>
 
-          {errors.valor_solicitado && (
+          {errors.montoSolicitado && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
-              {errors.valor_solicitado.message}
+              {errors.montoSolicitado.message}
             </div>
           )}
 

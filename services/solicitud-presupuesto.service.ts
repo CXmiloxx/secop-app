@@ -3,12 +3,12 @@ import { RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupues
 
 export const SolicitudPresupuestoService = {
   async SolicitudPresupuesRequest(presupuesto: RegisterSolicitudPresupuestoSchema) {
-    const response = await api.post("/presupuesto", presupuesto);
+    const response = await api.post("/solicitud-presupuesto", presupuesto);
     return response;
   },
 
   async findAll() {
-    return await api.get(`/presupuesto`)
+    return await api.get(`/solicitud-presupuesto`)
   },
 
 }

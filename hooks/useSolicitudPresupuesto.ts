@@ -1,31 +1,66 @@
 import { RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 import { SolicitudPresupuestoService } from "@/services/solicitud-presupuesto.service";
+import { AprobarSolicitudPresupuesto } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 export default function useSolicitudPresupuesto() {
-  const [presupuestos, setPresupuestos] = useState([]);
+  const [presupuestos, setPresupuestos] = useState<AprobarSolicitudPresupuesto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createSolicitud = useCallback(async (registerData: RegisterSolicitudPresupuestoSchema) => {
     setLoading(true);
     setError(null);
+
     try {
-      const { status } = await SolicitudPresupuestoService.SolicitudPresupuesRequest(registerData);
-      if (status === 201) {
-        // Success - could reset form or show success message here
+      const response = await SolicitudPresupuestoService.SolicitudPresupuesRequest(registerData);
+      if (response.status === 201) {
+        toast.success("Solicitud de presupuesto creada exitosamente");
+        return true;
       } else {
-        setError("No se pudo crear la solicitud del presupuesto correctamente.");
+        const errorMsg = response.message || "No se pudo crear la solicitud del presupuesto correctamente.";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return false;
       }
     } catch (err) {
+      let errorMessage = "Error desconocido al crear la solicitud del presupuesto.";
+
       if (err instanceof ApiError) {
-        setError(err.message);
+        errorMessage = err.message;
       } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Error desconocido al crear la solicitud del presupuesto.");
+        errorMessage = err.message;
       }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchSolicitudes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, status } = await SolicitudPresupuestoService.findAll();
+      if (status === 200) {
+        setPresupuestos(data as AprobarSolicitudPresupuesto[]);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener las solicitudes de presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -35,6 +70,7 @@ export default function useSolicitudPresupuesto() {
     presupuestos,
     loading,
     error,
-    createSolicitud
+    createSolicitud,
+    fetchSolicitudes
   };
 }
