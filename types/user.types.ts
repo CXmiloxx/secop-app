@@ -19,6 +19,7 @@ export interface RolType {
 export interface AreaType {
   id: number;
   nombre: string;
+  descripcion?: string;
 }
 
 export interface UserType {

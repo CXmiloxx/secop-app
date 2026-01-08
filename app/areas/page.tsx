@@ -1,444 +1,313 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Plus, Users, DollarSign, Trash2, CheckCircle2, AlertCircle } from "lucide-react"
-import Link from "next/link"
-import { areas, initializeAreasData } from "@/lib/data"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useAuthStore } from "@/store/auth.store"
-
-interface AreaPersonal {
-  area: string
-  personal: string[]
-}
-
-interface Budget {
-  area: string
-  presupuestoAnual: number
-  totalGastado: number
-  año: number
-}
+import { Plus, AlertCircle, Building2, Edit, Trash2 } from "lucide-react"
+import useAreas from "@/hooks/useAreas"
+import { editAreaSchema, registerAreaSchema, RegisterAreaSchema, EditAreaSchema } from "@/schema/area.schema"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Textarea } from "@/components/ui/textarea"
+import Navbar from "@/components/Navbar"
+import Modal from "@/components/Modal"
+import { AreaType } from "@/types/user.types"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function AreasPage() {
-  const router = useRouter()
-  const [areasData, setAreasData] = useState<AreaPersonal[]>([])
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [selectedArea, setSelectedArea] = useState<string | null>(null)
-  const [showAddPersonDialog, setShowAddPersonDialog] = useState(false)
   const [showAddAreaDialog, setShowAddAreaDialog] = useState(false)
-  const [showEditBudgetDialog, setShowEditBudgetDialog] = useState(false)
-  const [newPersonName, setNewPersonName] = useState("")
-  const [newAreaName, setNewAreaName] = useState("")
-  const [newAreaBudget, setNewAreaBudget] = useState("")
-  const [editBudgetValue, setEditBudgetValue] = useState("")
-  const [editBudgetYear, setEditBudgetYear] = useState(new Date().getFullYear().toString())
-  const [success, setSuccess] = useState("")
-  const [error, setError] = useState("")
-  const {user} =useAuthStore()
-  
+  const [showEditAreaDialog, setShowEditAreaDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [selectedArea, setSelectedArea] = useState<AreaType | null>(null)
+
+  const { areas, fetchAreas, fetchCreateArea, fetchUpdateArea, fetchDeleteArea } = useAreas()
+
+  const getData = useCallback(async () => {
+    await fetchAreas()
+  }, [fetchAreas])
+
   useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
-    }
+    getData()
+  }, [getData])
 
-    if (user.rol.nombre !== "admin") {
-      router.push("/presupuestos")
-      return
-    }
-    initializeAreasData()
-    loadData()
-  }, [router])
+  const {
+    register: registerCreate,
+    handleSubmit: handleSubmitCreate,
+    reset: resetCreate,
+    formState: { errors: errorsCreate, isSubmitting: isSubmittingCreate },
+  } = useForm<RegisterAreaSchema>({
+    resolver: zodResolver(registerAreaSchema),
+  });
 
-  const loadData = () => {
-    const stored = localStorage.getItem("areasPersonal")
-    if (stored) {
-      setAreasData(JSON.parse(stored))
-    }
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    setValue: setValueEdit,
+    formState: { errors: errorsEdit, isSubmitting: isSubmittingEdit },
+  } = useForm<EditAreaSchema>({
+    resolver: zodResolver(editAreaSchema),
+  });
 
-    const budgetsData = localStorage.getItem("presupuestos")
-    if (budgetsData) {
-      setBudgets(JSON.parse(budgetsData))
-    }
-  }
-
-  const handleAddPerson = () => {
-    if (!selectedArea || !newPersonName.trim()) {
-      setError("Complete todos los campos")
-      return
-    }
-
-    const updated = areasData.map((a) =>
-      a.area === selectedArea ? { ...a, personal: [...a.personal, newPersonName.trim()] } : a,
-    )
-
-    localStorage.setItem("areasPersonal", JSON.stringify(updated))
-    setAreasData(updated)
-    setNewPersonName("")
-    setShowAddPersonDialog(false)
-    setSuccess("Personal agregado exitosamente")
-    setTimeout(() => setSuccess(""), 3000)
-  }
-
-  const handleRemovePerson = (area: string, personIndex: number) => {
-    if (confirm("¿Eliminar esta persona del área?")) {
-      const updated = areasData.map((a) =>
-        a.area === area ? { ...a, personal: a.personal.filter((_, i) => i !== personIndex) } : a,
-      )
-
-      localStorage.setItem("areasPersonal", JSON.stringify(updated))
-      setAreasData(updated)
-      setSuccess("Personal eliminado exitosamente")
-      setTimeout(() => setSuccess(""), 3000)
+  const handleAddArea = async (data: RegisterAreaSchema) => {
+    const res = await fetchCreateArea(data)
+    if (res) {
+      setShowAddAreaDialog(false)
+      resetCreate()
     }
   }
 
-  const handleAddArea = () => {
-    if (!newAreaName.trim() || !newAreaBudget) {
-      setError("Complete todos los campos")
-      return
-    }
-
-    const budgetValue = Number.parseFloat(newAreaBudget)
-    if (isNaN(budgetValue) || budgetValue < 0) {
-      setError("Ingrese un presupuesto válido")
-      return
-    }
-
-    if (areas.includes(newAreaName.trim()) || areasData.some((a) => a.area === newAreaName.trim())) {
-      setError("Esta área ya existe")
-      return
-    }
-
-    const newArea: AreaPersonal = {
-      area: newAreaName.trim(),
-      personal: [],
-    }
-
-    const newBudget: Budget = {
-      area: newAreaName.trim(),
-      presupuestoAnual: budgetValue,
-      totalGastado: 0,
-      año: new Date().getFullYear(),
-    }
-
-    const updatedAreas = [...areasData, newArea]
-    const updatedBudgets = [...budgets, newBudget]
-
-    localStorage.setItem("areasPersonal", JSON.stringify(updatedAreas))
-    localStorage.setItem("presupuestos", JSON.stringify(updatedBudgets))
-
-    setAreasData(updatedAreas)
-    setBudgets(updatedBudgets)
-    setNewAreaName("")
-    setNewAreaBudget("")
-    setShowAddAreaDialog(false)
-    setSuccess("Área agregada exitosamente")
-    setTimeout(() => setSuccess(""), 3000)
+  const handleEdit = (area: AreaType) => {
+    setSelectedArea(area)
+    setValueEdit("nombre", area.nombre)
+    setValueEdit("descripcion", area.descripcion || "")
+    setShowEditAreaDialog(true)
   }
 
-  const handleEditBudget = () => {
-    if (!selectedArea || !editBudgetValue || !editBudgetYear) {
-      setError("Complete todos los campos")
-      return
+  const handleUpdateArea = async (data: EditAreaSchema) => {
+    if (!selectedArea) return
+    const res = await fetchUpdateArea(selectedArea.id, data)
+    if (res) {
+      setShowEditAreaDialog(false)
+      resetEdit()
+      setSelectedArea(null)
     }
-
-    const budgetValue = Number.parseFloat(editBudgetValue)
-    const yearValue = Number.parseInt(editBudgetYear)
-
-    if (isNaN(budgetValue) || budgetValue < 0) {
-      setError("Ingrese un presupuesto válido")
-      return
-    }
-
-    const existingBudget = budgets.find((b) => b.area === selectedArea && b.año === yearValue)
-
-    let updatedBudgets
-    if (existingBudget) {
-      updatedBudgets = budgets.map((b) =>
-        b.area === selectedArea && b.año === yearValue ? { ...b, presupuestoAnual: budgetValue } : b,
-      )
-    } else {
-      updatedBudgets = [
-        ...budgets,
-        {
-          area: selectedArea,
-          presupuestoAnual: budgetValue,
-          totalGastado: 0,
-          año: yearValue,
-        },
-      ]
-    }
-
-    localStorage.setItem("presupuestos", JSON.stringify(updatedBudgets))
-    setBudgets(updatedBudgets)
-    setEditBudgetValue("")
-    setEditBudgetYear(new Date().getFullYear().toString())
-    setShowEditBudgetDialog(false)
-    setSuccess("Presupuesto actualizado exitosamente")
-    setTimeout(() => setSuccess(""), 3000)
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-    }).format(value)
+  const handleDelete = (area: AreaType) => {
+    setSelectedArea(area)
+    setShowDeleteDialog(true)
   }
 
-  const getAreaBudget = (area: string) => {
-    const currentYear = new Date().getFullYear()
-    return budgets.find((b) => b.area === area && b.año === currentYear)
+  const confirmDelete = async () => {
+    if (!selectedArea) return
+    const res = await fetchDeleteArea(selectedArea.id)
+    if (res) {
+      setShowDeleteDialog(false)
+      setSelectedArea(null)
+    }
   }
-
-  if (!user) return null
 
   return (
     <section>
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/presupuestos">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold">Gestión de Áreas</h1>
-                <p className="text-sm text-muted-foreground">Administrar áreas, personal y presupuestos</p>
+      <Navbar
+        title="Áreas"
+        actionButtonText="Crear Área"
+        subTitle="Gestión de áreas"
+        Icon={Building2}
+        viewPeriodo={true}
+        actionModal={{
+          isOpen: showAddAreaDialog,
+          onOpenChange: setShowAddAreaDialog,
+          modalTitle: "Nueva Área",
+          modalDescription: "Crear nueva área con presupuesto inicial",
+          modalClassName: "sm:max-w-2xl max-h-[90vh] overflow-y-auto",
+          modalContent: (
+            <form onSubmit={handleSubmitCreate(handleAddArea)} className="space-y-6">
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="create-area-name">Nombre del Área</Label>
+                  <Input
+                    id="create-area-name"
+                    {...registerCreate("nombre")}
+                    placeholder="Ej: Departamento de Inglés"
+                  />
+                  {errorsCreate.nombre && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                      <AlertCircle className="h-4 w-4" />
+                      {errorsCreate.nombre.message}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="create-descripcion">Descripción</Label>
+                  <Textarea
+                    id="create-descripcion"
+                    {...registerCreate("descripcion")}
+                    placeholder="Descripción del área"
+                    rows={3}
+                  />
+                  {errorsCreate.descripcion && (
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                      <AlertCircle className="h-4 w-4" />
+                      {errorsCreate.descripcion.message}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <Button onClick={() => setShowAddAreaDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Área
-            </Button>
-          </div>
-        </div>
-      </div>
+
+              <div className="flex justify-end gap-2 py-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddAreaDialog(false)
+                    resetCreate()
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmittingCreate}>
+                  Crear Área
+                </Button>
+              </div>
+            </form>
+          )
+        }}
+      />
 
       <div className="container mx-auto px-4 py-8">
-        {success && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-md">
-            <CheckCircle2 className="h-4 w-4" />
-            {success}
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {areas.map((area) => (
+            <Card key={area.id} className="relative overflow-hidden shadow-md border-2 border-muted transition-transform hover:scale-[1.025] hover:border-primary group">
+              <div className="bg-primary/10 flex items-center gap-3 px-4 py-5">
+                <div className="bg-primary/20 rounded-full p-3 text-primary">
+                  <Building2 className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-lg font-semibold">{area.nombre}</CardTitle>
+                  {area.descripcion && (
+                    <CardDescription className="mt-1 text-muted-foreground truncate">{area.descripcion}</CardDescription>
+                  )}
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 flex gap-2 opacity-80 group-hover:opacity-100 transition-opacity z-10">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => handleEdit(area)}
+                  aria-label="Editar área"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => handleDelete(area)}
+                  aria-label="Eliminar área"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <CardContent>
+                {area.descripcion && (
+                  <p className="mt-2 text-muted-foreground text-sm line-clamp-3">{area.descripcion}</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {areas.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Building2 className="w-16 h-16 text-muted-foreground mb-4" />
+            <p className="text-xl text-muted-foreground font-semibold">No hay áreas registradas aún.</p>
           </div>
         )}
-
-        <div className="grid gap-6">
-          {areas.map((area) => {
-            const areaData = areasData.find((a) => a.area === area) || { area, personal: [] }
-            const budget = getAreaBudget(area)
-
-            return (
-              <Card key={area}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>{area}</CardTitle>
-                      <CardDescription>{areaData.personal.length} persona(s) asignada(s)</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedArea(area)
-                          setShowAddPersonDialog(true)
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Agregar Personal
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedArea(area)
-                          setEditBudgetValue(budget?.presupuestoAnual.toString() || "")
-                          setShowEditBudgetDialog(true)
-                        }}
-                      >
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        Editar Presupuesto
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {budget && (
-                      <div className="p-4 bg-muted rounded-lg grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Presupuesto {budget.año}</p>
-                          <p className="text-lg font-semibold">{formatCurrency(budget.presupuestoAnual)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Gastado</p>
-                          <p className="text-lg font-semibold text-destructive">
-                            {formatCurrency(budget.totalGastado)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Disponible</p>
-                          <p className="text-lg font-semibold text-primary">
-                            {formatCurrency(budget.presupuestoAnual - budget.totalGastado)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Personal Asignado
-                      </h4>
-                      {areaData.personal.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No hay personal asignado</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {areaData.personal.map((person, index) => (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center p-2 bg-background rounded border"
-                            >
-                              <span>{person}</span>
-                              <Button size="sm" variant="ghost" onClick={() => handleRemovePerson(area, index)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
       </div>
 
-      {/* Add Person Dialog */}
-      <Dialog open={showAddPersonDialog} onOpenChange={setShowAddPersonDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Agregar Personal</DialogTitle>
-            <DialogDescription>Agregar persona a {selectedArea}</DialogDescription>
-          </DialogHeader>
+      <Modal
+        isOpen={showEditAreaDialog}
+        onClose={() => {
+          setShowEditAreaDialog(false)
+          resetEdit()
+          setSelectedArea(null)
+        }}
+        title="Editar Área"
+        description="Actualizar información del área"
+        modalClassName="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <form onSubmit={handleSubmitEdit(handleUpdateArea)} className="space-y-6">
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="person-name">Nombre Completo</Label>
+              <Label htmlFor="edit-area-name">Nombre del Área</Label>
               <Input
-                id="person-name"
-                value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
-                placeholder="Ingrese el nombre"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowAddPersonDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAddPerson}>Agregar</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Area Dialog */}
-      <Dialog open={showAddAreaDialog} onOpenChange={setShowAddAreaDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nueva Área</DialogTitle>
-            <DialogDescription>Crear nueva área con presupuesto inicial</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="area-name">Nombre del Área</Label>
-              <Input
-                id="area-name"
-                value={newAreaName}
-                onChange={(e) => setNewAreaName(e.target.value)}
+                id="edit-area-name"
+                {...registerEdit("nombre")}
                 placeholder="Ej: Departamento de Inglés"
               />
+              {errorsEdit.nombre && (
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  {errorsEdit.nombre.message}
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="area-budget">Presupuesto Inicial (COP)</Label>
-              <Input
-                id="area-budget"
-                type="number"
-                value={newAreaBudget}
-                onChange={(e) => setNewAreaBudget(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowAddAreaDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAddArea}>Crear Área</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Budget Dialog */}
-      <Dialog open={showEditBudgetDialog} onOpenChange={setShowEditBudgetDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Presupuesto</DialogTitle>
-            <DialogDescription>Modificar presupuesto de {selectedArea}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="budget-year">Año</Label>
-              <Input
-                id="budget-year"
-                type="number"
-                value={editBudgetYear}
-                onChange={(e) => setEditBudgetYear(e.target.value)}
-                min="2020"
-                max="2100"
+              <Label htmlFor="edit-descripcion">Descripción</Label>
+              <Textarea
+                id="edit-descripcion"
+                {...registerEdit("descripcion")}
+                placeholder="Descripción del área"
+                rows={3}
               />
+              {errorsEdit.descripcion && (
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  {errorsEdit.descripcion.message}
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="budget-value">Presupuesto Anual (COP)</Label>
-              <Input
-                id="budget-value"
-                type="number"
-                value={editBudgetValue}
-                onChange={(e) => setEditBudgetValue(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowEditBudgetDialog(false)}>
+
+          <div className="flex justify-end gap-2 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowEditAreaDialog(false)
+                resetEdit()
+                setSelectedArea(null)
+              }}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleEditBudget}>Guardar</Button>
+            <Button type="submit" disabled={isSubmittingEdit}>
+              Actualizar Área
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </form>
+      </Modal>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el área{" "}
+              <span className="font-semibold text-foreground">
+                {selectedArea?.nombre}
+              </span>
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedArea(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
