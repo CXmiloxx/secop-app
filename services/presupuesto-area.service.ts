@@ -11,8 +11,8 @@ export const PresupuestoAreaService = {
     return await api.get(`/presupuesto/area/${idArea}`)
   },
 
-  async findAll() {
-    return await api.get("/presupuesto")
+  async findAll(periodo: number) {
+    return await api.get(`/presupuesto?periodo=${periodo}`)
   },
 
   async aprobarSolicitud(aprobarData: EditSolicitudPresupuestoSchema) {

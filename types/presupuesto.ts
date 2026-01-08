@@ -3,8 +3,7 @@ import { AreaType } from "./user.types";
 
 export interface Presupuesto {
   id?: number;
-  area: string;
-  idArea?: number;
+  area: AreaType;
   presupuestoAnual: number;
   totalGastado: number;
   montoComprometido: number;
