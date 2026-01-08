@@ -39,11 +39,11 @@ export default function usePresupuesto() {
     }
   }, []);
 
-  const fetchPresupuestos = useCallback(async () => {
+  const fetchPresupuestos = useCallback(async (periodo: number) => {
     setLoadingPresupuestos(true);
     setErrorPresupuestos(null);
     try {
-      const { data, status } = await PresupuestoAreaService.findAll();
+      const { data, status } = await PresupuestoAreaService.findAll(periodo);
       if (status === 200) {
         setPresupuestos(data as Presupuesto[]);
         return true;
