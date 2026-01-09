@@ -3,7 +3,7 @@ export type RolNombre =
   | 'responsableArea'
   | 'Auditoría'
   | 'Rector'
-  | 'Consultor'
+  | 'consultor'
   | 'Tesorería'
   | 'Caja Menor'
   | 'Contratista'

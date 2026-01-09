@@ -3,7 +3,7 @@ export interface ProvidersType {
   nit: string,
   nombre: string,
   correo: string,
-  tipo_insumo: string,
+  tipoInsumo: string,
   responsable: string,
   telefono: string,
 }
