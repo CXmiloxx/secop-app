@@ -3,15 +3,16 @@
 import { useCallback, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DollarSign, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react"
+import { DollarSign, TrendingDown, TrendingUp, AlertTriangle, Wallet } from "lucide-react"
 import { useAuthStore } from "@/store/auth.store"
-import ToggleTheme from "@/components/ToggleTheme"
 import usePresupuesto from "@/hooks/usePresupuesto"
 import usePresupuestoGeneral from "@/hooks/usePresupuestoGeneral"
+import Navbar from "@/components/Navbar"
+import { usePeriodoStore } from "@/store/periodo.store"
 
 export default function PresupuestosPage() {
   const { user } = useAuthStore()
-
+  const { periodo } = usePeriodoStore()
   const {
     presupuestoArea,
     loadingPresupuestoArea,
@@ -27,14 +28,15 @@ export default function PresupuestosPage() {
 
   const isAdmin = user?.rol?.nombre === "admin"
 
+
   const getPresupuesto = useCallback(async () => {
     if (isAdmin) {
-      await fetchPresupuestoGeneral()
-      await fetchPresupuestos()
+      await fetchPresupuestoGeneral(periodo)
+      await fetchPresupuestos(periodo)
     } else if (user?.area?.id) {
       await fetchPresupuestoArea(user.area.id)
     }
-  }, [isAdmin, user?.area?.id, fetchPresupuestoArea, fetchPresupuestos, fetchPresupuestoGeneral])
+  }, [isAdmin, user?.area?.id, fetchPresupuestoArea, fetchPresupuestos, fetchPresupuestoGeneral, periodo])
 
   useEffect(() => {
     if (user) {
@@ -63,8 +65,6 @@ export default function PresupuestosPage() {
     ? (errorPresupuestoGeneral || errorPresupuestos)
     : errorPresupuestoArea
 
-  const periodo = isAdmin ? presupuestoGeneral?.periodo : presupuestoArea?.periodo
-
   const totalPresupuestoActual = isAdmin
     ? presupuestoGeneral?.presupuestoTotal || 0
     : presupuestoArea?.presupuestoAnual || 0
@@ -84,24 +84,12 @@ export default function PresupuestosPage() {
   return (
     <section>
 
-      {/* Header */}
-      <div className="border-b bg-card sticky top-0 z-10">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 className="text-2xl font-bold">Gestión de Presupuestos</h1>
-                <p className="text-sm text-muted-foreground">
-                  {isAdmin ? "Todas las áreas" : user?.area.nombre}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <ToggleTheme />
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar
+        title="Gestión de Presupuestos"
+        subTitle={isAdmin ? `Presupuesto de Todas las Áreas - ${periodo}` : `Presupuesto de ${user?.area.nombre} - ${periodo}`}
+        Icon={Wallet}
+        viewPeriodo={true}
+      />
 
       {/* Main Content */}
       <main className="px-6 py-8">
@@ -200,8 +188,8 @@ export default function PresupuestosPage() {
                           )
 
                           return (
-                            <TableRow key={presupuesto.idArea || presupuesto.area}>
-                              <TableCell className="font-medium">{presupuesto.area}</TableCell>
+                            <TableRow key={presupuesto.area.id || presupuesto.area.nombre}>
+                              <TableCell className="font-medium">{presupuesto.area.nombre}</TableCell>
                               <TableCell className="text-right">
                                 {formatCurrency(presupuesto.presupuestoAnual)}
                               </TableCell>
@@ -242,7 +230,7 @@ export default function PresupuestosPage() {
                       </TableHeader>
                       <TableBody>
                         <TableRow>
-                          <TableCell className="font-medium">{presupuestoArea.area}</TableCell>
+                          <TableCell className="font-medium">{presupuestoArea.area.nombre}</TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(presupuestoArea.presupuestoAnual)}
                           </TableCell>
