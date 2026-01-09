@@ -1,3 +1,7 @@
+import { CuentasContablesType } from "./cuentas-contables.types";
+import { ProvidersType } from "./provider.types";
+import { AreaType } from "./user.types";
+
 export type EstadoRequisicion =
   | 'Pendiente'
   | 'Aprobada'
@@ -7,12 +11,26 @@ export type EstadoRequisicion =
 
 export type TipoPago = 'Pago' | 'Caja Menor' | null;
 
-export interface Requisicion {
-  id: string;
-  numero?: string;
+export interface RequisicionHistorialType {
   area: string;
+  fecha: string;
+  estado: EstadoRequisicion;
   proveedor: string;
   cuenta: string;
+  concepto: string;
+  producto: string;
+  cantidad: number;
+  valor: number;
+  justificacion: string;
+  aprobadoPor: string | null;
+  motivoRechazo: string | null;
+}
+export interface RequisicionType {
+  id: string;
+  numero?: string;
+  area: AreaType;
+  proveedor: ProvidersType;
+  cuenta: CuentasContablesType;
   nombreCuenta: string;
   concepto: string;
   cantidad: number;

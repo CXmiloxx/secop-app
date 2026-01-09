@@ -2,9 +2,11 @@ import { ConceptosService } from "@/services/concepts.service";
 import { ConceptosType } from "@/types/conceptos.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 export default function useConceptos() {
   const [conceptos, setConceptos] = useState<ConceptosType[]>([]);
+  const [conceptosPermitidos, setConceptosPermitidos] = useState<ConceptosType[]>([]);
   const [loadingConceptos, setLoadingConceptos] = useState(false);
   const [errorConceptos, setErrorConceptos] = useState<string | null>(null);
 
@@ -34,10 +36,35 @@ export default function useConceptos() {
     }
   }, [setConceptos]);
 
+  const fetchConceptosPermitidos = useCallback(async (areaId: number, periodo: number, cuentaContableId: number): Promise<ConceptosType[] | undefined> => {
+    setLoadingConceptos(true);
+    setErrorConceptos(null);
+    try {
+      const { data, status } = await ConceptosService.conceptosPermitidos(areaId, periodo, cuentaContableId);
+      if (status === 200 && Array.isArray(data)) {
+        setConceptosPermitidos(data as ConceptosType[]);
+        return data as ConceptosType[];
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener conceptos permitidos.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorConceptos(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoadingConceptos(false);
+    }
+  }, [setConceptos]);
+
   return {
     conceptos,
     loadingConceptos,
     errorConceptos,
     fetchCoceptos,
+    fetchConceptosPermitidos,
+    conceptosPermitidos
   };
 }

@@ -11,6 +11,10 @@ export const cuentasContablesService = {
     return await api.get(`/cuentas-contables`)
   },
 
+  async findCuentasContablesPermitidos(areaId: number, periodo: number) {
+    return await api.get(`/cuentas-contables/cuentas-permitidas?areaId=${areaId}&periodo=${periodo}`)
+  },
+
 }
 
 
