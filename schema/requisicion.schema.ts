@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const registerRequisicionSchema = z.object({
   areaId: z.number(),
+  usuarioId: z.string(),
   productoId: z.number({
     required_error: 'Debe seleccionar un producto',
     invalid_type_error: 'Debe seleccionar un producto válido',
@@ -18,11 +19,16 @@ export const registerRequisicionSchema = z.object({
   periodo: z.number(),
 });
 
-export const editRequisicionSchema = registerRequisicionSchema
+export const aprobarRequisicionSchema = registerRequisicionSchema
   .extend({
-    id: z.number(),
+    ivaDefinido: z.number().min(0, 'El IVA no puede ser negativo'),
+    valorDefinido: z.number().min(0, 'El valor no puede ser negativo'),
+    numeroComite: z.string().min(1, 'El número de comité es requerido'),
+    rector: z.boolean().default(false),
+    vicerrrector: z.boolean().default(false),
+    sindico: z.boolean().default(false),
   });
 
-export type EditRequisicionSchema = z.infer<typeof editRequisicionSchema>;
+export type EditRequisicionSchema = z.infer<typeof aprobarRequisicionSchema>;
 
 export type RegisterRequisicionSchema = z.infer<typeof registerRequisicionSchema>;

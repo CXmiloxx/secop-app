@@ -10,6 +10,10 @@ export const RequisicionService = {
     return await api.get(`/requisicion?periodo=${periodo}&areaId=${areaId}`)
   },
 
+  async findAll(periodo: number) {
+    return await api.get(`/requisicion/periodo?=${periodo}`)
+  },
+
 
   async createRequisicion(requisicion: RegisterRequisicionSchema) {
     return await api.post("/requisicion", requisicion)

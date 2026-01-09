@@ -1,7 +1,3 @@
-import { CuentasContablesType } from "./cuentas-contables.types";
-import { ProvidersType } from "./provider.types";
-import { AreaType } from "./user.types";
-
 export type EstadoRequisicion =
   | 'Pendiente'
   | 'Aprobada'
@@ -28,14 +24,15 @@ export interface RequisicionHistorialType {
 export interface RequisicionType {
   id: string;
   numero?: string;
-  area: AreaType;
-  proveedor: ProvidersType;
-  cuenta: CuentasContablesType;
+  area: string;
+  proveedor: string;
+  cuenta: string;
   nombreCuenta: string;
   concepto: string;
   cantidad: number;
   valor: number;
-  iva: number;
+  valorPresupuestado: number;
+  ivaPresupuestado: number;
   valorTotal: number;
   justificacion: string;
   fecha: string;

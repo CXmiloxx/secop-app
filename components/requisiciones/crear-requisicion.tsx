@@ -69,6 +69,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
       ivaPresupuestado: 0,
       justificacion: "",
       periodo: periodo,
+      usuarioId: user.id
     },
   });
 
