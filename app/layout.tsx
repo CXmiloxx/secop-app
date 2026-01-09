@@ -1,7 +1,6 @@
 import type React from 'react';
 import type { Metadata } from 'next';
 import '@/styles/globals.css';
-import { NumeracionInitializer } from '@/components/numeracion-initializer';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Toaster } from 'sonner';
 
@@ -42,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className="font-sans antialiased ">
-        <NumeracionInitializer />
         <AppLayout>{children}</AppLayout>
         <Toaster position="top-right" />
       </body>
