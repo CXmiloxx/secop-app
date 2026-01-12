@@ -8,6 +8,7 @@ export interface ArticuloPresupuestoLocal {
   conceptoContableId: number
   cuentaContableId: number
   valorEstimado: number
+  valorAprobado?: number
   cuentaNombre: string
   conceptoNombre: string
 }
@@ -18,6 +19,8 @@ export interface SolicitudArticuloPresupuesto {
   }
   cuentaContable: {
     nombre: string
+    id?: number
   }
   valorEstimado: number
+  valorAprobado?: number
 }

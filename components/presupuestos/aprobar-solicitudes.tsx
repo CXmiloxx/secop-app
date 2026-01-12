@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Percent, XCircle } from "lucide-react"
@@ -29,7 +28,8 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
   const [selectedSolicitud, setSelectedSolicitud] = useState<AprobarSolicitudPresupuesto | null>(null)
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
-  const [observacionesRechazo, setObservacionesRechazo] = useState<string>("")
+  const [articulosConAprobacion, setArticulosConAprobacion] = useState<SolicitudArticuloPresupuesto[]>([]);
+
   const { aprobarSolicitud, loading: processingLoading } = useSolicitudPresupuesto()
   const { user } = useAuthStore()
 
@@ -47,43 +47,77 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
 
   const porcentajeAprobacion = watch("porcentajeAprobacion") || 100
 
-  //ver errores del formulario de react-hook-form
+  // se sincronizan los artículos aprobados con el porcentaje de aprobacion actual
   useEffect(() => {
-    console.log(errors);
-  }, [errors]);
+    if (!selectedSolicitud || !selectedSolicitud.articulos) {
+      setArticulosConAprobacion([]);
+      return;
+    }
+
+    // se recalcula el valorAprobado de cada articulo según el porcentaje de aprobación actual
+    const nuevosArticulos = selectedSolicitud.articulos.map((art) => ({
+      ...art,
+      valorAprobado: Math.round(Number(art.valorEstimado) * (porcentajeAprobacion / 100)),
+    }));
+
+    setArticulosConAprobacion(nuevosArticulos);
+
+    // se mapean los artículos para que se envien al backend con el formato correcto
+    const articulosFormato = nuevosArticulos
+      .filter((art) => art.cuentaContable?.id)
+      .map((art) => ({
+        cuentaContableId: Number(art.cuentaContable!.id),
+        valorAprobado: Number(art.valorAprobado ?? 0),
+      }));
+
+    setValue("articulos", articulosFormato);
+  }, [porcentajeAprobacion, selectedSolicitud, setValue]);
 
   const handleOpenApproval = (solicitud: AprobarSolicitudPresupuesto) => {
     setSelectedSolicitud(solicitud)
     setShowApprovalDialog(true)
 
-    // Configurar valores del formulario
     const montoAprobado = solicitud.montoSolicitado
+
+    // inicializamos los artículos aprobados para el 100%
+    const inicialArticulos = (solicitud.articulos || []).map((art) => ({
+      ...art,
+      valorAprobado: Number(art.valorEstimado)
+    }));
+    setArticulosConAprobacion(inicialArticulos);
+
+    // se mapean los artículos para que se envien al backend con el formato correcto
+    const articulosIniciales = inicialArticulos
+      .filter((art) => art.cuentaContable?.id)
+      .map((art) => ({
+        cuentaContableId: Number(art.cuentaContable!.id),
+        valorAprobado: Number(art.valorAprobado ?? art.valorEstimado),
+      }));
+
     reset({
       id: solicitud.id,
       porcentajeAprobacion: 100,
       montoAprobado: montoAprobado,
       aprobadoPorId: user?.id || "",
       fechaAprobacion: new Date().toISOString(),
-      
+      articulos: articulosIniciales,
     })
   }
 
   const handleOpenReject = (solicitud: AprobarSolicitudPresupuesto) => {
     setSelectedSolicitud(solicitud)
-    setObservacionesRechazo("")
     setShowRejectDialog(true)
   }
 
   const onSubmitApproval = handleSubmit(async (data) => {
-    if (!selectedSolicitud || !user?.id) return
+    if (!selectedSolicitud || !user?.id) return;
 
-    console.log("Datos del formulario:", data)
-
-    const success = await aprobarSolicitud(data)
+    const success = await aprobarSolicitud(data);
 
     if (success) {
       setShowApprovalDialog(false)
       setSelectedSolicitud(null)
+      setArticulosConAprobacion([]);
       reset()
     }
   })
@@ -91,7 +125,6 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
 
   const pendientes = solicitudes.filter((s) => s.estado === "PENDIENTE")
   const aprobadas = solicitudes.filter((s) => s.estado === "APROBADO")
-  const rechazadas = solicitudes.filter((s) => s.estado === "RECHAZADO")
 
   const renderTable = (data: AprobarSolicitudPresupuesto[], showActions = true) => (
     <div className="overflow-x-auto rounded-md border">
@@ -235,14 +268,6 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="rechazadas">
-                  Rechazadas
-                  {rechazadas.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {rechazadas.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="pendientes" className="space-y-4">
@@ -251,10 +276,6 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
 
               <TabsContent value="aprobadas" className="space-y-4">
                 {renderTable(aprobadas, false)}
-              </TabsContent>
-
-              <TabsContent value="rechazadas" className="space-y-4">
-                {renderTable(rechazadas, false)}
               </TabsContent>
             </Tabs>
           )}
@@ -305,16 +326,24 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                         <TableRow>
                           <TableHead className="min-w-[120px]">Cuenta</TableHead>
                           <TableHead className="min-w-[150px]">Concepto</TableHead>
-                          <TableHead className="text-right min-w-[120px]">Valor</TableHead>
+                          <TableHead className="text-right min-w-[120px]">Valor Solicitado</TableHead>
+                          <TableHead className="text-right min-w-[120px]">Valor a aprobar</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedSolicitud.articulos.map((art: SolicitudArticuloPresupuesto, idx) => (
+                        {(articulosConAprobacion || []).map((art: SolicitudArticuloPresupuesto, idx) => (
                           <TableRow key={idx}>
                             <TableCell className="text-sm">{art.cuentaContable.nombre}</TableCell>
                             <TableCell className="text-sm">{art.conceptoContable.nombre}</TableCell>
                             <TableCell className="text-right">
                               {art.valorEstimado.toLocaleString("es-CO", {
+                                style: "currency",
+                                currency: "COP",
+                                minimumFractionDigits: 0,
+                              })}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {(art.valorAprobado ?? 0).toLocaleString("es-CO", {
                                 style: "currency",
                                 currency: "COP",
                                 minimumFractionDigits: 0,
@@ -330,6 +359,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
 
               <input type="hidden" {...register("id", { valueAsNumber: true })} />
               <input type="hidden" {...register("aprobadoPorId")} />
+              <input type="hidden" {...register("articulos")} />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -348,6 +378,21 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                           if (value >= 0 && value <= 100) {
                             const montoAprobado = (selectedSolicitud.montoSolicitado || 0) * (value / 100)
                             setValue("montoAprobado", montoAprobado)
+                            if (selectedSolicitud.articulos) {
+                              const nuevosArticulos = selectedSolicitud.articulos.map((art) => ({
+                                ...art,
+                                valorAprobado: Math.round(Number(art.valorEstimado) * (value / 100)),
+                              }));
+                              setArticulosConAprobacion(nuevosArticulos);
+
+                              const articulosFormato = nuevosArticulos
+                                .filter((art) => art.cuentaContable?.id)
+                                .map((art) => ({
+                                  cuentaContableId: Number(art.cuentaContable!.id),
+                                  valorAprobado: Number(art.valorAprobado ?? 0),
+                                }));
+                              setValue("articulos", articulosFormato);
+                            }
                           }
                         }
                       })}
@@ -360,6 +405,22 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                         setValue("porcentajeAprobacion", 100)
                         const montoAprobado = selectedSolicitud?.montoSolicitado || 0
                         setValue("montoAprobado", montoAprobado)
+                        if (selectedSolicitud?.articulos) {
+                          const nuevosArticulos = selectedSolicitud.articulos.map((art) => ({
+                            ...art,
+                            valorAprobado: Number(art.valorEstimado)
+                          }));
+                          setArticulosConAprobacion(nuevosArticulos);
+
+
+                          const articulosFormato = nuevosArticulos
+                            .filter((art) => art.cuentaContable?.id)
+                            .map((art) => ({
+                              cuentaContableId: Number(art.cuentaContable!.id),
+                              valorAprobado: Number(art.valorAprobado ?? art.valorEstimado),
+                            }));
+                          setValue("articulos", articulosFormato);
+                        }
                       }}
                       className="gap-1"
                     >
@@ -449,19 +510,6 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="observacionesRechazo">Motivo del Rechazo *</Label>
-                <Textarea
-                  id="observacionesRechazo"
-                  value={observacionesRechazo}
-                  onChange={(e) => setObservacionesRechazo(e.target.value)}
-                  placeholder="Debe especificar el motivo del rechazo..."
-                  rows={4}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">Este mensaje será enviado al solicitante</p>
               </div>
             </div>
           )}

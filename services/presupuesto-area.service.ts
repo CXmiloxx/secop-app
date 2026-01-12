@@ -7,8 +7,8 @@ export const PresupuestoAreaService = {
     return response;
   },
 
-  async findByArea(idArea: number) {
-    return await api.get(`/presupuesto/area/${idArea}`)
+  async findByArea(idArea: number, periodo: number) {
+    return await api.get(`/presupuesto/area/${idArea}?periodo=${periodo}`)
   },
 
   async findAll(periodo: number) {

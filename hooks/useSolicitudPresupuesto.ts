@@ -1,5 +1,6 @@
 import { EditSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 import { SolicitudPresupuestoService } from "@/services/solicitud-presupuesto.service";
+import { usePeriodoStore } from "@/store/periodo.store";
 import { AprobarSolicitudPresupuesto } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
@@ -9,6 +10,7 @@ export default function useSolicitudPresupuesto() {
   const [presupuestos, setPresupuestos] = useState<AprobarSolicitudPresupuesto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { periodo: periodoActual } = usePeriodoStore()
 
   const createSolicitud = useCallback(async (registerData: RegisterSolicitudPresupuestoSchema) => {
     setLoading(true);
@@ -46,7 +48,7 @@ export default function useSolicitudPresupuesto() {
     setLoading(true);
     setError(null);
     try {
-      const { data, status } = await SolicitudPresupuestoService.findAll();
+      const { data, status } = await SolicitudPresupuestoService.findAll(periodoActual);
       if (status === 200) {
         setPresupuestos(data as AprobarSolicitudPresupuesto[]);
         return true;
@@ -64,7 +66,7 @@ export default function useSolicitudPresupuesto() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [periodoActual]);
 
   const aprobarSolicitud = useCallback(async (aprobarData: EditSolicitudPresupuestoSchema) => {
     setLoading(true);
@@ -72,8 +74,8 @@ export default function useSolicitudPresupuesto() {
     try {
       const response = await SolicitudPresupuestoService.aprobarSolicitud(aprobarData);
       if (response.status === 200) {
-        toast.success("Solicitud de presupuesto aprobada exitosamente");
         await fetchSolicitudes();
+        toast.success("Solicitud de presupuesto aprobada exitosamente");
         return true;
       } else {
         const errorMsg = response.message || "No se pudo aprobar la solicitud del presupuesto correctamente.";
@@ -94,7 +96,7 @@ export default function useSolicitudPresupuesto() {
     } finally {
       setLoading(false);
     }
-  }, [fetchSolicitudes]);
+  }, [fetchSolicitudes, periodoActual]);
 
 
   return {

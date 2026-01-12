@@ -34,7 +34,6 @@ export default function SolicitarPresupuestoPage() {
   const { conceptos, fetchCoceptos, errorConceptos, loadingConceptos } = useConceptos();
   const { error: erroSPresupuesto, loading: loadingSPresupuesto, createSolicitud } = useSolicitudPresupuesto();
 
-
   // Formulario principal
   const {
     register,
@@ -50,7 +49,6 @@ export default function SolicitarPresupuestoPage() {
       articulos: [],
     }
   });
-
 
   // Setea el areaId y usuarioSolicitanteId al usuario cuando esté disponible
   useEffect(() => {
@@ -100,6 +98,15 @@ export default function SolicitarPresupuestoPage() {
       return;
     }
 
+    // Validar que no se agregue un artículo duplicado (por cuenta y concepto)
+    const yaExiste = articulos.some(
+      (a) => a.cuentaContableId === cuentaId && a.conceptoContableId === conceptoId
+    );
+    if (yaExiste) {
+      setErrorArticulo("Ya existe un artículo con este concepto para la cuenta seleccionada");
+      setTimeout(() => setErrorArticulo(""), 3000);
+      return;
+    }
 
     const numValor = Number(valorEstimado.replace(/\D/g, ""));
     if (numValor <= 0 || isNaN(numValor)) {
@@ -126,9 +133,14 @@ export default function SolicitarPresupuestoPage() {
     setValorEstimado("");
   };
 
-  // Eliminar un artículo por conceptoContableId
-  const handleEliminarArticulo = (idConcepto: number) => {
-    setArticulos(articulos.filter((a) => a.conceptoContableId !== idConcepto));
+  // Eliminar un artículo por indices correctos (cuenta y concepto combinados)
+  const handleEliminarArticulo = (cuentaIdToRemove: number, conceptoIdToRemove: number) => {
+    setArticulos((prev) =>
+      prev.filter(
+        (a) =>
+          !(a.cuentaContableId === cuentaIdToRemove && a.conceptoContableId === conceptoIdToRemove)
+      )
+    );
   };
 
   // calcula el total sumando el valor estmado de cada articulo
@@ -139,11 +151,6 @@ export default function SolicitarPresupuestoPage() {
 
   // Envío del formulario principal
   const onSubmit = async (data: RegisterSolicitudPresupuestoSchema) => {
-    console.log("Iniciando envío de solicitud...");
-    console.log("Datos del formulario:", data);
-    console.log("Artículos:", articulos);
-    console.log("Usuario:", user);
-
     if (articulos.length === 0) {
       setErrorArticulo("Debe agregar al menos un artículo");
       return;
@@ -170,7 +177,6 @@ export default function SolicitarPresupuestoPage() {
         montoSolicitado: calcularTotal(),
       };
 
-      console.log("Datos a enviar:", solicitudData);
 
       await createSolicitud(solicitudData);
 
@@ -188,8 +194,6 @@ export default function SolicitarPresupuestoPage() {
     "min-w-[230px] max-w-full w-full";
   const inputFieldClass =
     "min-w-[120px] max-w-full w-full";
-
-
 
   return (
     <div>
@@ -375,7 +379,10 @@ export default function SolicitarPresupuestoPage() {
                     </thead>
                     <tbody>
                       {articulos.map((art) => (
-                        <tr key={art.cuentaContableId} className="border-t">
+                        <tr
+                          key={`${art.cuentaContableId}-${art.conceptoContableId}`}
+                          className="border-t"
+                        >
                           <td className="p-3 text-sm max-w-[240px] truncate">{art.cuentaNombre}</td>
                           <td className="p-3 text-sm max-w-[240px] truncate">{art.conceptoNombre}</td>
                           <td className="p-3 text-sm text-right">
@@ -397,7 +404,9 @@ export default function SolicitarPresupuestoPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEliminarArticulo(art.cuentaContableId)}
+                              onClick={() =>
+                                handleEliminarArticulo(art.cuentaContableId, art.conceptoContableId)
+                              }
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>

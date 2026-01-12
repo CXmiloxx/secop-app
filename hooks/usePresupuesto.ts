@@ -1,5 +1,6 @@
 
 import { PresupuestoAreaService } from "@/services/presupuesto-area.service";
+import { usePeriodoStore } from "@/store/periodo.store";
 import { Presupuesto } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
@@ -15,11 +16,12 @@ export default function usePresupuesto() {
   const [errorPresupuestos, setErrorPresupuestos] = useState<string | null>(null);
 
 
-  const fetchPresupuestoArea = useCallback(async (idArea: number) => {
+  const fetchPresupuestoArea = useCallback(async (idArea: number, periodo: number) => {
     setLoadingPresupuestoArea(true);
     setErrorPresupuestoArea(null);
+    setPresupuestoArea(null);
     try {
-      const { data, status } = await PresupuestoAreaService.findByArea(idArea);
+      const { data, status } = await PresupuestoAreaService.findByArea(idArea, periodo);
       if (status === 200) {
         setPresupuestoArea(data as Presupuesto | null);
         return true;
@@ -37,11 +39,12 @@ export default function usePresupuesto() {
     } finally {
       setLoadingPresupuestoArea(false);
     }
-  }, []);
+  }, [setPresupuestoArea]);
 
   const fetchPresupuestos = useCallback(async (periodo: number) => {
     setLoadingPresupuestos(true);
     setErrorPresupuestos(null);
+    setPresupuestos([]);
     try {
       const { data, status } = await PresupuestoAreaService.findAll(periodo);
       if (status === 200) {
@@ -61,7 +64,7 @@ export default function usePresupuesto() {
     } finally {
       setLoadingPresupuestos(false);
     }
-  }, []);
+  }, [setPresupuestos]);
 
 
   return {

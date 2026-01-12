@@ -7,8 +7,8 @@ export const SolicitudPresupuestoService = {
     return response;
   },
 
-  async findAll() {
-    return await api.get(`/solicitud-presupuesto`)
+  async findAll(periodo: number) {
+    return await api.get(`/solicitud-presupuesto?periodo=${periodo}`)
   },
 
   async aprobarSolicitud(aprobarData: EditSolicitudPresupuestoSchema) {

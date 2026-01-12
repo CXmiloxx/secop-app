@@ -15,6 +15,7 @@ export default function usePresupuestoGeneral() {
   const fetchPresupuestoGeneral = useCallback(async (periodo: number) => {
     setLoadingPresupuestoGeneral(true);
     setErrorPresupuestoGeneral(null);
+    setPresupuestoGeneral(null);
     try {
       const { data, status } = await PresupuestoGeneralService.findAllPresupuestoGeneral(periodo);
       if (status === 200) {
