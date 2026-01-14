@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,26 +12,43 @@ import { UserType } from "@/types/user.types"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { registerRequisicionSchema, RegisterRequisicionSchema } from "@/schema/requisicion.schema"
-import useProviders from "@/hooks/useProviders"
-import useProductos from "@/hooks/useProductos"
-import useRequisicion from "@/hooks/useRequisicion"
-import useCuentasContables from "@/hooks/useCuentasContables"
-import useConceptos from "@/hooks/useConceptos"
-import { usePeriodoStore } from "@/store/periodo.store"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { ProvidersType } from "@/types/provider.types"
+import { CuentasContablesType } from "@/types/cuentas-contables.types"
+import { ConceptosType } from "@/types/conceptos.types"
+import { ProductosType } from "@/types/productos.types"
 
 interface CrearRequisicionProps {
   user: UserType
+  providers: ProvidersType[]
+  cuentasContablesPermitidos: CuentasContablesType[]
+  conceptosPermitidos: ConceptosType[]
+  productos: ProductosType[]
+  fetchProviders: () => void
+  fetchCuentasContablesPermitidos: (areaId: number, periodo: number) => void
+  fetchConceptosPermitidos: (areaId: number, periodo: number, cuentaContableId: number) => void
+  fetchProductos: (conceptoId: number) => void
+  createSolicitudRequisicion: (data: RegisterRequisicionSchema) => Promise<boolean>
+  fetchHistorialRequisicionesArea: (periodo: number, areaId: number) => Promise<boolean | undefined>
+  periodo: number
 }
 
-export default function CrearRequisicion({ user }: CrearRequisicionProps) {
-  const { createSolicitudRequisicion, fetchHistorialRequisicionesArea } = useRequisicion();
-  const { providers, fetchProviders } = useProviders();
-  const { cuentasContablesPermitidos, fetchCuentasContablesPermitidos } = useCuentasContables();
-  const { fetchConceptosPermitidos, conceptosPermitidos } = useConceptos();
-  const { productos, fetchProductos } = useProductos();
-  const { periodo } = usePeriodoStore();
+export default function CrearRequisicion(
+  { user,
+    providers,
+    cuentasContablesPermitidos,
+    conceptosPermitidos,
+    productos,
+    fetchProviders,
+    fetchCuentasContablesPermitidos,
+    fetchConceptosPermitidos,
+    fetchProductos,
+    periodo,
+    createSolicitudRequisicion,
+    fetchHistorialRequisicionesArea
+  }: CrearRequisicionProps) {
+
 
   const [cuentaContableId, setCuentaContableId] = useState<number | null>(null);
   const [conceptoId, setConceptoId] = useState<number | null>(null);
@@ -47,9 +63,6 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
     setConceptoId(Number(value));
     setValue("productoId", undefined as any);
   };
-
-
-
 
   const {
     register,
@@ -73,8 +86,40 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
     },
   });
 
+  // Variables de watch para unidad y cantidad y iva unitario
+  const valorUnitario = watch("valorUnitario") || 0;
+  const ivaUnitario = watch("ivaPresupuestado") || 0; // El input almacena el iva unitario
+  const cantidad = watch("cantidad") || 1;
+
+  // Calcular y actualizar el valor presupuestado e iva presupuestado automáticamente
+  useEffect(() => {
+    // Valor presupuestado: (valorUnitario + iva unitario) * cantidad
+    const total = (valorUnitario + ivaUnitario) * cantidad;
+    // IVA presupuestado: iva unitario * cantidad
+    const totalIVA = ivaUnitario * cantidad;
+    setValue("valorPresupuestado", total);
+    setValue("ivaPresupuestado", ivaUnitario); // El campo en el formulario siempre representa el iva unitario
+  }, [valorUnitario, ivaUnitario, cantidad, setValue]);
+
+  const valorPresupuestado = watch("valorPresupuestado");
+
+  // onSubmit: Asegurar que enviamos el ivaPresupuestado como total iva
   const onSubmit = async (data: RegisterRequisicionSchema) => {
-    const res = await createSolicitudRequisicion(data);
+    // Forzar el valor correcto de ivaPresupuestado antes de enviar
+    const ivaUnitarioLocal = data.ivaPresupuestado || 0;
+    const cantidadLocal = data.cantidad || 1;
+    const valorUnitarioLocal = data.valorUnitario || 0;
+
+    const totalIVA = ivaUnitarioLocal * cantidadLocal;
+    const total = (valorUnitarioLocal + ivaUnitarioLocal) * cantidadLocal;
+
+    const dataFinal = {
+      ...data,
+      valorPresupuestado: total,
+      ivaPresupuestado: totalIVA, // Aquí sí es el ivaTotal que espera el backend
+    };
+
+    const res = await createSolicitudRequisicion(dataFinal);
     if (res) {
       // Recargar historial de requisiciones
       await fetchHistorialRequisicionesArea(periodo, user.area.id);
@@ -112,18 +157,6 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
 
   const cuentaSeleccionada = cuentasContablesPermitidos?.find(c => c.id === cuentaContableId);
   const conceptoSeleccionado = conceptosPermitidos?.find(c => c.id === conceptoId);
-  const valorUnitario = watch("valorUnitario") || 0;
-  const ivaValue = watch("ivaPresupuestado");
-  const iva = (ivaValue === null || ivaValue === undefined || Number.isNaN(Number(ivaValue))) ? 0 : Number(ivaValue);
-  const cantidad = watch("cantidad") || 1;
-
-  // Calcular y actualizar el valor presupuestado automáticamente
-  useEffect(() => {
-    const total = (valorUnitario + iva) * cantidad;
-    setValue("valorPresupuestado", total);
-  }, [valorUnitario, iva, cantidad, setValue]);
-
-  const valorPresupuestado = watch("valorPresupuestado");
 
   return (
     <Card>
@@ -167,7 +200,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
                     ) : (
                       cuentasContablesPermitidos?.map((cuenta) => (
                         <SelectItem key={cuenta.id} value={cuenta.id.toString()}>
-                          {cuenta.codigo} - {cuenta.nombre}
+                          {cuenta.nombre}
                         </SelectItem>
                       ))
                     )}
@@ -208,41 +241,6 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
               </div>
             </div>
           </div>
-
-          {cuentaSeleccionada && conceptoSeleccionado && (
-            <Alert className="bg-primary/5 border-primary/20">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <AlertDescription>
-                <div className="space-y-1">
-                  <p className="font-semibold text-foreground">Clasificación presupuestal:</p>
-                  <p className="text-sm">
-                    <span className="font-medium">Cuenta:</span> {cuentaSeleccionada.codigo} - {cuentaSeleccionada.nombre}
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-medium">Concepto:</span> {conceptoSeleccionado.nombre}
-                  </p>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {cuentaContableId && !conceptoId && (
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                Por favor, seleccione un concepto para continuar
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {conceptoId && !watch("productoId") && (
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                Por favor, seleccione un producto para continuar
-              </AlertDescription>
-            </Alert>
-          )}
 
           <Separator className="my-4" />
 
@@ -350,14 +348,20 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="ivaPresupuestado">
-                  IVA (COP) <span className="text-muted-foreground">(Opcional)</span>
+                  IVA Unitario (COP) <span className="text-muted-foreground">(Opcional)</span>
                 </Label>
                 <Input
                   id="ivaPresupuestado"
                   type="number"
                   {...register("ivaPresupuestado", {
                     valueAsNumber: true,
-                    setValueAs: (v) => v === "" || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v)
+                    setValueAs: (v) =>
+                      v === "" ||
+                        v === null ||
+                        v === undefined ||
+                        Number.isNaN(Number(v))
+                        ? 0
+                        : Number(v)
                   })}
                   placeholder="0"
                   min="0"
@@ -388,7 +392,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
                       style: "currency",
                       currency: "COP",
                       minimumFractionDigits: 0,
-                    }).format(iva)}
+                    }).format(ivaUnitario)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -398,7 +402,17 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
                       style: "currency",
                       currency: "COP",
                       minimumFractionDigits: 0,
-                    }).format(valorUnitario + iva)}
+                    }).format(valorUnitario + ivaUnitario)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>IVA total:</span>
+                  <span className="font-medium">
+                    {new Intl.NumberFormat("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                      minimumFractionDigits: 0,
+                    }).format(ivaUnitario * cantidad)}
                   </span>
                 </div>
                 <div className="pt-2 border-t border-primary/20">
@@ -409,7 +423,7 @@ export default function CrearRequisicion({ user }: CrearRequisicionProps) {
                         style: "currency",
                         currency: "COP",
                         minimumFractionDigits: 0,
-                      }).format(valorPresupuestado)}
+                      }).format((valorUnitario + ivaUnitario) * cantidad)}
                     </span>
                   </div>
                 </div>

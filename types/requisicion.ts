@@ -16,7 +16,10 @@ export interface RequisicionHistorialType {
   concepto: string;
   producto: string;
   cantidad: number;
-  valor: number;
+  valorPresupuestado: number;
+  valorDefinido: number;
+  ivaPresupuestado: number;
+  ivaDefinido: number;
   justificacion: string;
   aprobadoPor: string | null;
   motivoRechazo: string | null;
@@ -30,9 +33,11 @@ export interface RequisicionType {
   cuenta: string;
   nombreCuenta: string;
   concepto: string;
+  valorUnitario: number;
   cantidad: number;
   valor: number;
   valorPresupuestado: number;
+  valorDefinido?: number;
   ivaPresupuestado: number;
   valorTotal: number;
   justificacion: string;
