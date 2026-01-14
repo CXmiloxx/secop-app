@@ -14,7 +14,6 @@ import { Button } from "../ui/button"
 import { Loader2 } from "lucide-react"
 import { formatCurrency } from "@/utils/formatCurrency"
 
-
 interface AprobarRequisicionProps {
   requisicion: RequisicionType
   formAprobar: UseFormReturn<AprobarRequisicionSchema>
@@ -22,9 +21,29 @@ interface AprobarRequisicionProps {
   providers: ProvidersType[] | null
   setShowAprobarDialog: (show: boolean) => void
 }
-export default function AprobarRequisicion({ requisicion, formAprobar, handleAprobar, providers, setShowAprobarDialog }: AprobarRequisicionProps) {
+
+export default function AprobarRequisicion({
+  requisicion,
+  formAprobar,
+  handleAprobar,
+  providers,
+  setShowAprobarDialog,
+}: AprobarRequisicionProps) {
+  // Nuevo: valor unit, iva y total; el valorDefinido es siempre valorTotal (valor + iva)
+  const valor = Number(formAprobar.watch("valorDefinido")) || 0;
+  const iva = Number(formAprobar.watch("ivaDefinido")) || 0;
+  const valorTotal = valor + iva;
+
+  // Sobrescribo para el submit: aseguro setValue para que valorDefinido lleve el valorTotal
+  const customSubmit = (data: AprobarRequisicionSchema) => {
+    // Set el valorDefinido como el total (valor + iva)
+    formAprobar.setValue("valorDefinido", valorTotal);
+    // Llamar al original
+    handleAprobar({ ...data, valorDefinido: valorTotal });
+  };
+
   return (
-    <form onSubmit={formAprobar.handleSubmit(handleAprobar)} className="space-y-4 py-4">
+    <form onSubmit={formAprobar.handleSubmit(customSubmit)} className="space-y-4 py-4">
       <div className="space-y-2">
         <h3 className="font-semibold">{requisicion.concepto}</h3>
         <p className="text-sm text-muted-foreground">
@@ -99,11 +118,12 @@ export default function AprobarRequisicion({ requisicion, formAprobar, handleApr
             <SelectValue placeholder="Seleccione un proveedor" />
           </SelectTrigger>
           <SelectContent>
-            {providers && providers.map((prov) => (
-              <SelectItem key={prov.id} value={prov.id.toString()}>
-                {prov.nombre} - {prov.tipoInsumo}
-              </SelectItem>
-            ))}
+            {providers &&
+              providers.map((prov) => (
+                <SelectItem key={prov.id} value={prov.id.toString()}>
+                  {prov.nombre} - {prov.tipoInsumo}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {formAprobar.formState.errors.proveedorId && (
@@ -166,7 +186,11 @@ export default function AprobarRequisicion({ requisicion, formAprobar, handleApr
           <Input
             id="valor"
             type="number"
-            {...formAprobar.register("valorDefinido", { valueAsNumber: true })}
+            value={valor}
+            onChange={e => {
+              const v = Number(e.target.value);
+              formAprobar.setValue("valorDefinido", isNaN(v) ? 0 : v);
+            }}
             placeholder="0"
             min="0"
             step="0.01"
@@ -181,24 +205,44 @@ export default function AprobarRequisicion({ requisicion, formAprobar, handleApr
           <Input
             id="iva"
             type="number"
-            {...formAprobar.register("ivaDefinido", {
-              valueAsNumber: true,
-              setValueAs: (v) => v === "" || v === null || v === undefined || Number.isNaN(Number(v)) ? 0 : Number(v)
-            })}
+            value={iva}
+            onChange={e => {
+              const v = Number(e.target.value);
+              formAprobar.setValue("ivaDefinido", isNaN(v) ? 0 : v);
+            }}
             placeholder="0"
             min="0"
             step="0.01"
           />
           {formAprobar.formState.errors.ivaDefinido && (
-            <p className="text-sm text-destructive">{formAprobar.formState.errors.ivaDefinido.message}</p>
+            <p className="text-sm text-destructive">
+              {formAprobar.formState.errors.ivaDefinido.message}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="bg-muted p-3 rounded-lg">
-        <p className="text-sm font-semibold">
-          Valor Total: {formatCurrency((formAprobar.watch("valorDefinido") || 0) + (formAprobar.watch("ivaDefinido") || 0))}
-        </p>
+      {/* Mejora visual de la sección de valores */}
+      <div className="bg-muted p-4 rounded-lg mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
+          <div className="flex flex-col items-start justify-center p-2 border-b md:border-b-0 md:border-r border-muted-foreground/10">
+            <span className="text-xs uppercase text-muted-foreground tracking-wide font-semibold">
+              Valor Presupuestado con IVA
+            </span>
+            <span className="text-lg font-bold text-foreground">
+              {formatCurrency(requisicion.valorPresupuestado)}
+            </span>
+          </div>
+          <div className="flex flex-col items-start justify-center p-2">
+            <span className="text-xs uppercase text-muted-foreground tracking-wide font-semibold">
+              Valor Total (Aprobar)
+            </span>
+            <span className="text-lg font-bold text-primary" id="valorDefinido"
+            >
+              {formatCurrency(valorTotal)}
+            </span>
+          </div>
+        </div>
       </div>
 
       <DialogFooter>
@@ -225,5 +269,5 @@ export default function AprobarRequisicion({ requisicion, formAprobar, handleApr
         </Button>
       </DialogFooter>
     </form>
-  )
+  );
 }

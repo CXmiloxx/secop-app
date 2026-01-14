@@ -11,7 +11,7 @@ export const RequisicionService = {
   },
 
   async findAll(periodo: number) {
-    return await api.get(`/requisicion/periodo?=${periodo}`)
+    return await api.get(`/requisicion/all?periodo=${periodo}`)
   },
 
   async createRequisicion(requisicion: RegisterRequisicionSchema) {
@@ -23,15 +23,23 @@ export const RequisicionService = {
   },
 
   async aprobarRequisicion(id: number, aprobarData: AprobarRequisicionSchema) {
-    return await api.patch(`/requisicion/${id}/aprobar`, aprobarData)
+    return await api.patch(`/requisicion/aprobar/${id}`, aprobarData)
   },
 
   async rechazarRequisicion(id: number, rechazarData: RechazarRequisicionSchema) {
-    return await api.patch(`/requisicion/${id}/rechazar`, rechazarData)
+    return await api.patch(`/requisicion/rechazar/${id}`, rechazarData)
   },
 
   async adjuntarSoportesCotizaciones(requisicionId: number, formData: FormData) {
-    return await api.post(`/requisicion/${requisicionId}/soportes-cotizacion`, formData, {
+    return await api.post(`/requisicion/soportes-cotizacion/${requisicionId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  async actualizarSoportesCotizaciones(requisicionId: number, formData: FormData) {
+    return await api.patch(`/requisicion/soportes-cotizacion/${requisicionId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

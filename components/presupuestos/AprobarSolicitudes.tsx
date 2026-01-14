@@ -22,16 +22,16 @@ interface AprobarSolicitudesProps {
   solicitudes: AprobarSolicitudPresupuesto[]
   loading: boolean
   error: string | null
+  aprobarSolicitud: (aprobarData: EditSolicitudPresupuestoSchema) => Promise<boolean>
 }
 
-export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolicitudesProps) {
+export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicitud }: AprobarSolicitudesProps) {
   const [selectedSolicitud, setSelectedSolicitud] = useState<AprobarSolicitudPresupuesto | null>(null)
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [articulosConAprobacion, setArticulosConAprobacion] = useState<SolicitudArticuloPresupuesto[]>([]);
-
-  const { aprobarSolicitud, loading: processingLoading } = useSolicitudPresupuesto()
   const { user } = useAuthStore()
+
 
   const {
     handleSubmit,
@@ -46,6 +46,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
   });
 
   const porcentajeAprobacion = watch("porcentajeAprobacion") || 100
+
 
   // se sincronizan los artículos aprobados con el porcentaje de aprobacion actual
   useEffect(() => {
@@ -135,7 +136,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
             <TableHead className="min-w-[140px]">Solicitante</TableHead>
             <TableHead className="min-w-[80px]">Período</TableHead>
             <TableHead className="text-right min-w-[130px]">Monto Solicitado</TableHead>
-            {data.some((s) => s.porcentajeAprobado !== undefined) && (
+            {data.some((s) => s.porcentajeAprobacion !== null) && (
               <>
                 <TableHead className="text-right min-w-[100px]">% Aprobado</TableHead>
                 <TableHead className="text-right min-w-[130px]">Monto Aprobado</TableHead>
@@ -166,14 +167,14 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                     minimumFractionDigits: 0,
                   })}
                 </TableCell>
-                {data.some((s) => s.porcentajeAprobado !== undefined) && (
+                {data.some((s) => s.porcentajeAprobacion !== null) && (
                   <>
                     <TableCell className="text-right">
-                      {solicitud.porcentajeAprobado !== undefined && `${solicitud.porcentajeAprobado}%`}
+                      {solicitud.porcentajeAprobacion !== null && `${solicitud.porcentajeAprobacion}%`}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {solicitud.montoAprobado !== undefined &&
-                        solicitud.montoAprobado.toLocaleString("es-CO", {
+                      {solicitud?.montoAprobado !== null &&
+                        solicitud?.montoAprobado?.toLocaleString("es-CO", {
                           style: "currency",
                           currency: "COP",
                           minimumFractionDigits: 0,
@@ -464,17 +465,17 @@ export function AprobarSolicitudes({ solicitudes, loading, error }: AprobarSolic
                   type="button"
                   variant="outline"
                   onClick={() => setShowApprovalDialog(false)}
-                  disabled={isSubmitting || processingLoading}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   className="gap-2"
-                  disabled={isSubmitting || processingLoading}
+                  disabled={isSubmitting}
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  {isSubmitting || processingLoading ? "Aprobando..." : "Confirmar Aprobación"}
+                  {isSubmitting ? "Aprobando..." : "Confirmar Aprobación"}
                 </Button>
               </div>
             </form>

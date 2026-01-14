@@ -40,7 +40,7 @@ export interface AprobarSolicitudPresupuesto {
   justificacion: string;
   createdAt: string;
   estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
-  porcentajeAprobado?: number;
+  porcentajeAprobacion?: number;
   montoAprobado?: number;
   observaciones?: string;
   fechaAprobacion?: string;

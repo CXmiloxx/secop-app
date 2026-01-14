@@ -75,9 +75,9 @@ const fileSchema = z
     message: "Debe seleccionar un archivo",
   })
   .refine(
-    (file) => ["image/jpeg", "image/png", "application/pdf"].includes(file.type),
+    (file) => ["image/jpeg", "image/png", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(file.type),
     {
-      message: "Solo se permiten archivos JPG, PNG o PDF",
+      message: "Solo se permiten archivos JPG, PNG o PDF, DOC, DOCX, XLS, XLSX",
     }
   )
   .refine((file) => file.size <= 5 * 1024 * 1024, {
@@ -112,6 +112,33 @@ export const soportesCotizacionSchema = z
     }
   });
 
+export const actualizarSoportesCotizacionSchema = z
+  .object({
+    cotizacion1: fileSchema,
+    cotizacion2: z.union([fileSchema, z.undefined()]).optional(),
+    cotizacion3: z.union([fileSchema, z.undefined()]).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const files = [data.cotizacion1, data.cotizacion2, data.cotizacion3].filter(
+      (file): file is File => file instanceof File
+    );
+    if (files.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Debe subir al menos 1 cotización",
+        path: ["cotizacion1"],
+      });
+    }
+
+    if (files.length > 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "No puede subir más de 3 cotizaciones",
+        path: ["cotizacion3"],
+      });
+    }
+  });
+
 export const createCommentSchema = z.object({
   comentario: z.string().min(5, 'El comentario debe de tener al menos 5 caracteres ')
 })
@@ -121,4 +148,5 @@ export type RechazarRequisicionSchema = z.infer<typeof rechazarRequisicionSchema
 export type SoportesCotizacionSchema = z.infer<typeof soportesCotizacionSchema>;
 export type RegisterRequisicionSchema = z.infer<typeof registerRequisicionSchema>;
 export type CreateCommentSchema = z.infer<typeof createCommentSchema>;
+export type ActualizarSoportesCotizacionSchema = z.infer<typeof actualizarSoportesCotizacionSchema>;
 

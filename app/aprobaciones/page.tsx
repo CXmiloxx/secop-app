@@ -1,15 +1,14 @@
 "use client"
 
 import { DialogTrigger } from "@/components/ui/dialog"
-import { XCircle, Loader2 } from "lucide-react"
+import { XCircle, Loader2, CheckSquare } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Hash, CheckCircle, X } from "lucide-react"
-import Link from "next/link"
+import { Eye, Hash, CheckCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,7 +20,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { UploadIcon, FileTextIcon, ChevronLeft } from "lucide-react"
+import { UploadIcon, FileTextIcon } from "lucide-react"
 import TimelineTrazabilidad from "@/components/tesoreria/timeline-trazabilidad"
 import { useAuthStore } from "@/store/auth.store"
 import useRequisicion from "@/hooks/useRequisicion"
@@ -31,12 +30,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { aprobarRequisicionSchema, rechazarRequisicionSchema, type AprobarRequisicionSchema, type RechazarRequisicionSchema } from "@/schema/requisicion.schema"
 import useProviders from "@/hooks/useProviders"
 import type { RequisicionType } from "@/types"
-import { SubirCotizaciones } from "@/components/aprobacion/SubirCotizacion"
+import { Cotizaciones } from "@/components/aprobacion/Cotizaciones"
 import { envs } from "@/config/envs"
 import AprobarRequisicion from "@/components/aprobacion/AprobarRequisicion"
 import { formatCurrency } from "@/utils/formatCurrency"
 import { formatDate } from "@/lib"
 import Comentario from "@/components/aprobacion/Comentario"
+import Navbar from "@/components/Navbar"
 
 export default function AprobacionesPage() {
   const { user } = useAuthStore()
@@ -45,22 +45,27 @@ export default function AprobacionesPage() {
   const [showAprobarDialog, setShowAprobarDialog] = useState(false)
   const [showRechazarDialog, setShowRechazarDialog] = useState(false)
   const [showCotizacionesDialog, setShowCotizacionesDialog] = useState(false)
+  const [showActualizarCotizacionesDialog, setShowActualizarCotizacionesDialog] = useState(false)
   const [showComentarioDialog, setShowComentarioDialog] = useState(false)
 
-  const { requisiciones,
+  const {
+    requisiciones,
     loadingRequisicion,
     fetchRequisiciones,
     aprobarRequisicion,
     rechazarRequisicion,
     createCommentRequiscion,
     adjuntarSoportesCotizaciones,
+    actualizarSoportesCotizaciones,
   } = useRequisicion()
   const { providers, fetchProviders } = useProviders()
   const { periodo } = usePeriodoStore()
 
   const getRequisiciones = useCallback(async () => {
-    await fetchRequisiciones(periodo);
-    await fetchProviders();
+    await Promise.all([
+      fetchRequisiciones(periodo),
+      fetchProviders(),
+    ]);
   }, [fetchRequisiciones, fetchProviders, periodo]);
 
   useEffect(() => {
@@ -120,8 +125,8 @@ export default function AprobacionesPage() {
 
     formAprobar.reset({
       proveedorId: undefined,
-      ivaDefinido: req.ivaPresupuestado || 0,
-      valorDefinido: req.valorPresupuestado || 0,
+      ivaDefinido: (req.ivaPresupuestado),
+      valorDefinido: (req?.valorUnitario * req.cantidad),
       numeroComite: comite,
       rector: false,
       vicerrector: false,
@@ -185,6 +190,12 @@ export default function AprobacionesPage() {
   }
 
 
+  const openActualizarCotizacionesDialog = (requisicion: RequisicionType) => {
+    setSelectedRequisicion(requisicion)
+    setShowActualizarCotizacionesDialog(true)
+  }
+
+
   const openComentarioDialog = (req: RequisicionType) => {
     setSelectedRequisicion(req)
     setShowComentarioDialog(true)
@@ -194,7 +205,7 @@ export default function AprobacionesPage() {
   const createNumeroComite = (idRequisicion: number) => {
     const month = new Date().getMonth() + 1
     const day = new Date().getDate()
-    return `COM-${periodo}-${month}-${day}-NUM-${idRequisicion}`
+    return `COM-${periodo}-${month}-${day}-REQ-${idRequisicion}`
   }
 
 
@@ -218,22 +229,15 @@ export default function AprobacionesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Aprobación de Requisiciones</h1>
-          <p className="text-muted-foreground">Aprueba requisiciones a nombre del Rector, Vicerrector o Síndico</p>
-        </div>
-        <Link href="/presupuestos">
-          <Button variant="outline">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Volver
-          </Button>
-        </Link>
-      </div>
+    <section>
+      <Navbar
+        title="Aprobación de Requisiciones"
+        subTitle="Aprueba requisiciones a nombre del Rector,Vicerrector o Síndico"
+        Icon={CheckSquare}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-3">
           <TabsTrigger value="pendientes">Requisiciones Pendientes ({requisicionesPendientes.length})</TabsTrigger>
           <TabsTrigger value="aprobadas">Requisiciones Aprobadas ({requisicionesAprobadas.length})</TabsTrigger>
           <TabsTrigger value="rechazadas">Requisiciones Rechazadas ({requisicionesRechazadas.length})</TabsTrigger>
@@ -296,6 +300,10 @@ export default function AprobacionesPage() {
                           <p className="font-medium">{formatCurrency(requisicion.ivaPresupuestado)}</p>
                         </div>
                         <div>
+                          <p className="text-sm text-muted-foreground">Valor Unitario</p>
+                          <p className="font-medium">{formatCurrency(requisicion?.valorUnitario || 0)}</p>
+                        </div>
+                        <div>
                           <p className="text-sm text-muted-foreground">Fecha de Solicitud</p>
                           <p className="font-medium">{formatDate(requisicion.fecha)}</p>
                         </div>
@@ -317,48 +325,71 @@ export default function AprobacionesPage() {
                             <p className="text-sm font-medium mb-2">Soportes de Cotizaciones:</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                               {requisicion.soportesCotizaciones.map((soporte) => {
-                                const isPdf = soporte.path.toLowerCase().endsWith(".pdf");
+                                const path = soporte.path.toLowerCase();
+                                const fileName = soporte.path.split("/").pop() ?? "";
+                                // Type detection
+                                const isPdf = path.endsWith(".pdf");
+                                const isDoc = path.endsWith(".doc") || path.endsWith(".docx");
+                                const isXls = path.endsWith(".xls") || path.endsWith(".xlsx");
+                                const isImage = path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+
+                                // Select icon and color
+                                let icon = null;
+                                let color = "";
+                                let label = "";
+                                let preview = null;
+
+                                if (isPdf) {
+                                  // PDF
+                                  icon = <FileTextIcon className="h-10 w-10 text-red-500 mb-1" />;
+                                  color = "text-red-600";
+                                  label = "PDF";
+                                } else if (isDoc) {
+                                  icon = <FileTextIcon className="h-10 w-10 text-blue-500 mb-1" />;
+                                  color = "text-blue-600";
+                                  label = "Word";
+                                } else if (isXls) {
+                                  icon = <FileTextIcon className="h-10 w-10 text-green-500 mb-1" />;
+                                  color = "text-green-700";
+                                  label = "Excel";
+                                } else if (isImage) {
+                                  icon = <></>;
+                                  // Use image preview
+                                  preview = (
+                                    <img
+                                      className="rounded-md border object-cover w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
+                                      src={`${envs.api}/${soporte.path}`}
+                                      alt={`Soporte de Cotización ${fileName}`}
+                                    />
+                                  );
+                                  color = "";
+                                  label = "Imagen";
+                                } else {
+                                  icon = <FileTextIcon className="h-10 w-10 text-gray-500 mb-1" />;
+                                  label = "Archivo";
+                                }
                                 return (
                                   <div
                                     key={soporte.path}
                                     className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg"
                                   >
-                                    {isPdf ? (
-                                      <a
-                                        href={`${envs.api}/${soporte.path}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex flex-col items-center"
-                                      >
-                                        <div className="bg-white rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm">
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-12 w-12 text-red-600"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                          >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-                                            <text x="6" y="22" fontSize="6" fill="red" fontFamily="Verdana">PDF</text>
-                                          </svg>
-                                        </div>
-                                        <span className="text-xs text-blue-700 underline">Ver PDF</span>
-                                      </a>
-                                    ) : (
-                                      <a
-                                        href={`${envs.api}/${soporte.path}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex flex-col items-center"
-                                      >
-                                        <img
-                                          className="rounded-md border border-gray-200 object-contain w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
-                                          src={`${envs.api}/${soporte.path}`}
-                                          alt={`Soporte de Cotización ${soporte.path.split("/").pop()}`}
-                                        />
-                                        <Label className="text-xs underline">Ver imagen</Label>
-                                      </a>
-                                    )}
+                                    <a
+                                      href={`${envs.api}/${soporte.path}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex flex-col items-center w-full"
+                                    >
+                                      {/* Icon or image preview */}
+                                      <div className="rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm overflow-hidden">
+                                        {preview || icon}
+                                      </div>
+                                      <span className={`text-xs font-medium truncate max-w-[88px] text-center mb-1 ${color}`}>
+                                        {fileName}
+                                      </span>
+                                      <span className="text-xs  underline dark:text-foreground">
+                                        Ver {label}
+                                      </span>
+                                    </a>
                                   </div>
                                 );
                               })}
@@ -366,24 +397,6 @@ export default function AprobacionesPage() {
                           </div>
                         )
                       }
-
-                      {requisicion.comentarios && requisicion.comentarios.length > 0 && (
-                        <div className="mb-4 border-t pt-4">
-                          <p className="text-sm font-medium mb-2">Comentarios:</p>
-                          <div className="space-y-2">
-                            {requisicion.comentarios.map((comentario, idx) => (
-                              <div key={idx} className="bg-muted rounded-lg p-3">
-                                <div className="flex justify-between items-start mb-1">
-                                  <p className="text-xs font-medium">{comentario.usuario}</p>
-                                  <p className="text-xs text-muted-foreground">{formatDate(comentario.fecha)}</p>
-                                </div>
-                                <p className="text-sm">{comentario.comentario}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* acciones del consultor */}
                       <div className="flex gap-2 mt-4">
                         {user?.rol.nombre === "consultor" && (
@@ -403,10 +416,19 @@ export default function AprobacionesPage() {
                                   Adjuntar Cotizaciones
                                 </Button>
                               )}
-                            <Button variant="outline" size="sm" onClick={() => openComentarioDialog(requisicion)}>
-                              <FileTextIcon className="mr-2 h-4 w-4" />
-                              Agregar Comentario
-                            </Button>
+                            {
+                              requisicion.estado === "PENDIENTE" && requisicion.soportesCotizaciones && requisicion.soportesCotizaciones.length > 0 && (
+                                <Button variant="outline" size="sm" onClick={() => openActualizarCotizacionesDialog(requisicion)}>
+                                  <UploadIcon className="mr-2 h-4 w-4" />
+                                  Actualizar Cotizaciones
+                                </Button>
+                              )}
+                            {requisicion.estado === "PENDIENTE" && requisicion.comentario === null && (
+                              <Button variant="outline" size="sm" onClick={() => openComentarioDialog(requisicion)}>
+                                <FileTextIcon className="mr-2 h-4 w-4" />
+                                Agregar Comentario
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -473,8 +495,8 @@ export default function AprobacionesPage() {
                           <p className="font-medium">{requisicion.cantidad}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Valor Total</p>
-                          <p className="font-medium">{formatCurrency(requisicion.valorTotal)}</p>
+                          <p className="text-sm text-muted-foreground">Valor Aprobado</p>
+                          <p className="font-medium">{formatCurrency(requisicion?.valorDefinido || 0)}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Solicitud</p>
@@ -516,6 +538,84 @@ export default function AprobacionesPage() {
                         </div>
                       )}
 
+                      {
+                        requisicion.soportesCotizaciones && requisicion.soportesCotizaciones.length > 0 && (
+                          <div className="mb-4 border-t pt-4">
+                            <p className="text-sm font-medium mb-2">Soportes de Cotizaciones:</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {requisicion.soportesCotizaciones.map((soporte) => {
+                                const path = soporte.path.toLowerCase();
+                                const fileName = soporte.path.split("/").pop() ?? "";
+                                // Type detection
+                                const isPdf = path.endsWith(".pdf");
+                                const isDoc = path.endsWith(".doc") || path.endsWith(".docx");
+                                const isXls = path.endsWith(".xls") || path.endsWith(".xlsx");
+                                const isImage = path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+
+                                // Select icon and color
+                                let icon = null;
+                                let color = "";
+                                let label = "";
+                                let preview = null;
+
+                                if (isPdf) {
+                                  // PDF
+                                  icon = <FileTextIcon className="h-10 w-10 text-red-500 mb-1" />;
+                                  color = "text-red-600";
+                                  label = "PDF";
+                                } else if (isDoc) {
+                                  icon = <FileTextIcon className="h-10 w-10 text-blue-500 mb-1" />;
+                                  color = "text-blue-600";
+                                  label = "Word";
+                                } else if (isXls) {
+                                  icon = <FileTextIcon className="h-10 w-10 text-green-500 mb-1" />;
+                                  color = "text-green-700";
+                                  label = "Excel";
+                                } else if (isImage) {
+                                  icon = <></>;
+                                  // Use image preview
+                                  preview = (
+                                    <img
+                                      className="rounded-md border object-cover w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
+                                      src={`${envs.api}/${soporte.path}`}
+                                      alt={`Soporte de Cotización ${fileName}`}
+                                    />
+                                  );
+                                  color = "";
+                                  label = "Imagen";
+                                } else {
+                                  icon = <FileTextIcon className="h-10 w-10 text-gray-500 mb-1" />;
+                                  label = "Archivo";
+                                }
+                                return (
+                                  <div
+                                    key={soporte.path}
+                                    className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg"
+                                  >
+                                    <a
+                                      href={`${envs.api}/${soporte.path}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex flex-col items-center w-full"
+                                    >
+                                      {/* Icon or image preview */}
+                                      <div className="rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm overflow-hidden">
+                                        {preview || icon}
+                                      </div>
+                                      <span className={`text-xs font-medium truncate max-w-[88px] text-center mb-1 ${color}`}>
+                                        {fileName}
+                                      </span>
+                                      <span className="text-xs  underline dark:text-foreground">
+                                        Ver {label}
+                                      </span>
+                                    </a>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )
+                      }
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm">
@@ -828,7 +928,7 @@ export default function AprobacionesPage() {
           </DialogHeader>
 
           {selectedRequisicion && (
-            <SubirCotizaciones
+            <Cotizaciones
               requisicion={selectedRequisicion}
               adjuntarSoportesCotizaciones={adjuntarSoportesCotizaciones}
               onClose={() => setShowCotizacionesDialog(false)}
@@ -837,6 +937,23 @@ export default function AprobacionesPage() {
         </DialogContent>
       </Dialog>
 
-    </div>
+      <Dialog open={showActualizarCotizacionesDialog} onOpenChange={setShowActualizarCotizacionesDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Actualizar Cotizaciones</DialogTitle>
+            <DialogDescription>Actualiza las cotizaciones para esta requisición</DialogDescription>
+          </DialogHeader>
+
+          {selectedRequisicion && (
+            <Cotizaciones
+              requisicion={selectedRequisicion}
+              onClose={() => setShowActualizarCotizacionesDialog(false)}
+              mode="actualizar"
+              actualizarSoportesCotizaciones={actualizarSoportesCotizaciones}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </section>
   )
 }
