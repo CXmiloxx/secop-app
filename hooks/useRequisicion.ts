@@ -16,6 +16,7 @@ export default function useRequisicion() {
   const fetchRequisiciones = useCallback(async (periodo: number) => {
     setLoadingRequisicion(true);
     setErrorRequisicion(null);
+    setRequisiciones([]);
     try {
       const { data, status } = await RequisicionService.findAll(periodo);
       if (status === 200) {
@@ -72,6 +73,7 @@ export default function useRequisicion() {
   const fetchHistorialRequisicionesArea = useCallback(async (periodo: number, areaId: number) => {
     setLoadingRequisicion(true);
     setErrorRequisicion(null);
+    setHistorialRequisicionesArea([]);
     try {
       const { data, status } = await RequisicionService.findAllArea(periodo, areaId);
       if (status === 200) {
@@ -275,8 +277,6 @@ export default function useRequisicion() {
       setLoadingRequisicion(false);
     }
   }, [setErrorRequisicion, setLoadingRequisicion, fetchRequisiciones, periodoActual]);
-
-
 
   return {
     historialRequisicionesArea,
