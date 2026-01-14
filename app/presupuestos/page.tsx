@@ -78,7 +78,7 @@ export default function PresupuestosPage() {
     : presupuestoArea?.totalGastado || 0
 
   const totalComprometidoActual = isAdmin
-    ? presupuestoGeneral?.totalEjecutado || 0
+    ? presupuestoGeneral?.montoComprometido || 0
     : presupuestoArea?.montoComprometido || 0
 
   const totalSaldoActual = isAdmin
