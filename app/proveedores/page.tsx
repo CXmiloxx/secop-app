@@ -6,6 +6,7 @@ import { Edit, Trash2, Building2 } from "lucide-react"
 import Navbar from "@/components/Navbar"
 import useProviders from "@/hooks/useProviders"
 import { EditProviderSchema, RegisterProviderSchema, registerProviderSchema } from "@/schema/providers.schema"
+import { ProvidersType } from "@/types/provider.types"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Input } from "@/components/ui/input"
@@ -13,7 +14,9 @@ import { Label } from "@/components/ui/label"
 
 export default function ProveedoresPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingProveedor, setEditingProveedor] = useState<EditProviderSchema | null>(null)
+  const [dialogOpenEdit, setDialogOpenEdit] = useState(false)
+
+  const [selectProvider, setSelectProvider] = useState<ProvidersType | null>(null)
 
   const { fetchProviders, fetchCreateProviders, providers, loading, error } = useProviders()
 
@@ -29,11 +32,14 @@ export default function ProveedoresPage() {
       nit: "",
       nombre: "",
       correo: "",
-      tipo_insumo: "",
+      tipoInsumo: "",
       responsable: "",
       telefono: "",
     }
   })
+
+
+
 
   // Traer todos los proveedores al cargar la pantalla
   const getData = useCallback(async () => {
@@ -46,31 +52,30 @@ export default function ProveedoresPage() {
 
   // Cuando se hace click en editar, coloca los datos en el formulario
   useEffect(() => {
-    if (editingProveedor) {
-      setValue("nit", editingProveedor.nit || "")
-      setValue("nombre", editingProveedor.nombre || "")
-      setValue("correo", editingProveedor.correo || "")
-      setValue("tipo_insumo", editingProveedor.tipo_insumo || "")
-      setValue("telefono", editingProveedor.telefono || "")
-      setValue("responsable", editingProveedor.responsable || "")
+    if (selectProvider) {
+      setValue("nit", selectProvider.nit || "")
+      setValue("nombre", selectProvider.nombre || "")
+      setValue("correo", selectProvider.correo || "")
+      setValue("tipoInsumo", selectProvider.tipoInsumo || "")
+      setValue("telefono", selectProvider.telefono || "")
+      setValue("responsable", selectProvider.responsable || "")
     } else {
       reset()
     }
-  }, [editingProveedor, setValue, reset])
+  }, [selectProvider, setValue, reset])
 
   const onSubmit = async (data: RegisterProviderSchema) => {
-    if (!editingProveedor) {
+    if (!selectProvider) {
       await fetchCreateProviders(data)
     }
     reset()
     setDialogOpen(false)
-    setEditingProveedor(null)
+    setSelectProvider(null)
     getData()
   }
 
   const handleEdit = (proveedor: EditProviderSchema) => {
-    setEditingProveedor(proveedor)
-    setDialogOpen(true)
+    setDialogOpenEdit(true)
   }
 
   const handleDelete = (id: number) => {
@@ -79,7 +84,7 @@ export default function ProveedoresPage() {
 
   const handleCloseDialog = () => {
     setDialogOpen(false)
-    setEditingProveedor(null)
+    setSelectProvider(null)
     reset()
   }
 
@@ -87,23 +92,26 @@ export default function ProveedoresPage() {
     <section>
       <div className="container mx-auto px-4 py-8">
         <Navbar
-          dialogOpen={dialogOpen}
-          setDialogOpen={setDialogOpen}
           Icon={Building2}
           title="Proveedores"
           subTitle="Gestión de proveedores"
-          status={true}
-          component={
-            <FormProveedor
-              isEdit={!!editingProveedor}
-              onSubmit={handleSubmit(onSubmit)}
-              register={register}
-              errors={errors}
-              isSubmitting={isSubmitting}
-              handleCloseDialog={handleCloseDialog}
-            />
-          }
-          isEdit={!!editingProveedor}
+          actionModal={{
+            isOpen: dialogOpen,
+            onOpenChange: setDialogOpen,
+            modalTitle: selectProvider ? "Editar Proveedor" : "Crear Proveedor",
+            modalDescription: selectProvider ? "Modifique los datos del proveedor" : "Complete los datos del nuevo proveedor",
+            modalContent: (
+              <FormProveedor
+                isEdit={!!selectProvider}
+                onSubmit={handleSubmit(onSubmit)}
+                register={register}
+                errors={errors}
+                isSubmitting={isSubmitting}
+                handleCloseDialog={handleCloseDialog}
+              />
+            ),
+          }}
+          actionButtonText={selectProvider ? "Editar" : "Crear Proveedor"}
         />
 
         <Card>
@@ -132,7 +140,7 @@ export default function ProveedoresPage() {
                           <strong>Correo:</strong> {proveedor.correo}
                         </p>
                         <p className="text-sm">
-                          <strong>Tipo de Insumo:</strong> {proveedor.tipo_insumo}
+                          <strong>Tipo de Insumo:</strong> {proveedor.tipoInsumo}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -223,7 +231,7 @@ function FormProveedor({ isEdit, onSubmit, register, errors, isSubmitting, handl
           <Label htmlFor="tipoInsumo">Tipo de Insumo *</Label>
           <Input
             id="tipoInsumo"
-            {...register("tipo_insumo")}
+            {...register("tipoInsumo")}
             required
             placeholder="Papelería, Tecnología, etc."
           />
