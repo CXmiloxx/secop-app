@@ -305,7 +305,7 @@ export default function AprobacionesPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Solicitud</p>
-                          <p className="font-medium">{formatDate(requisicion.fecha)}</p>
+                          <p className="font-medium">{formatDate(requisicion.fechaSolicitud)}</p>
                         </div>
                       </div>
 
@@ -500,7 +500,7 @@ export default function AprobacionesPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Solicitud</p>
-                          <p className="font-medium">{formatDate(requisicion.fecha)}</p>
+                          <p className="font-medium">{formatDate(requisicion?.fechaSolicitud)}</p>
                         </div>
                         {requisicion.fechaAprobacion && (
                           <div>
@@ -508,10 +508,10 @@ export default function AprobacionesPage() {
                             <p className="font-medium">{formatDate(requisicion.fechaAprobacion)}</p>
                           </div>
                         )}
-                        {requisicion.aprobador && (
+                        {requisicion.aprobadoPor && (
                           <div>
                             <p className="text-sm text-muted-foreground">Aprobado por</p>
-                            <p className="font-medium">{requisicion.aprobador}</p>
+                            <p className="font-medium">{requisicion.aprobadoPor}</p>
                           </div>
                         )}
                         {requisicion.daGarantia && requisicion.tiempoGarantia && (
@@ -546,13 +546,13 @@ export default function AprobacionesPage() {
                               {requisicion.soportesCotizaciones.map((soporte) => {
                                 const path = soporte.path.toLowerCase();
                                 const fileName = soporte.path.split("/").pop() ?? "";
-                                // Type detection
+                                // Se detecta el tipo de archivo
                                 const isPdf = path.endsWith(".pdf");
                                 const isDoc = path.endsWith(".doc") || path.endsWith(".docx");
                                 const isXls = path.endsWith(".xls") || path.endsWith(".xlsx");
                                 const isImage = path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
 
-                                // Select icon and color
+                                // Se selecciona el icono y el color
                                 let icon = null;
                                 let color = "";
                                 let label = "";
@@ -573,7 +573,7 @@ export default function AprobacionesPage() {
                                   label = "Excel";
                                 } else if (isImage) {
                                   icon = <></>;
-                                  // Use image preview
+                                  // Se coloca la imagen de preview
                                   preview = (
                                     <img
                                       className="rounded-md border object-cover w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
@@ -598,7 +598,7 @@ export default function AprobacionesPage() {
                                       rel="noopener noreferrer"
                                       className="flex flex-col items-center w-full"
                                     >
-                                      {/* Icon or image preview */}
+                                      {/* Se coloca el icono o la imagen de preview */}
                                       <div className="rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm overflow-hidden">
                                         {preview || icon}
                                       </div>
@@ -699,7 +699,7 @@ export default function AprobacionesPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Solicitud</p>
-                          <p className="font-medium">{formatDate(requisicion.fecha)}</p>
+                          <p className="font-medium">{formatDate(requisicion?.fechaSolicitud)}</p>
                         </div>
                       </div>
 
