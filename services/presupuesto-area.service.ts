@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { EditSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
+import { AprobarSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 
 export const PresupuestoAreaService = {
   async SolicitudPresupuesRequest(presupuesto: RegisterSolicitudPresupuestoSchema) {
@@ -15,7 +15,7 @@ export const PresupuestoAreaService = {
     return await api.get(`/presupuesto?periodo=${periodo}`)
   },
 
-  async aprobarSolicitud(aprobarData: EditSolicitudPresupuestoSchema) {
+  async aprobarSolicitud(aprobarData: AprobarSolicitudPresupuestoSchema) {
     const response = await api.patch(`/solicitud-presupuesto/${aprobarData.id}`, aprobarData);
     return response;
   },
@@ -23,6 +23,10 @@ export const PresupuestoAreaService = {
   async rechazarSolicitud(id: number, observaciones: string) {
     const response = await api.put(`/solicitud-presupuesto/${id}/rechazar`, { observaciones });
     return response;
+  },
+
+  async findDetalles(id: number, periodo: number) {
+    return await api.get(`/presupuesto/area/${id}/detalles?periodo=${periodo}`);
   },
 
 }

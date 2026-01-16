@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AprobarSolicitudPresupuesto } from "@/types"
 import { SolicitudArticuloPresupuesto } from "@/types/articulos-presupuesto.types"
 import { useForm } from "react-hook-form"
-import { EditSolicitudPresupuestoSchema, editSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema"
+import { AprobarSolicitudPresupuestoSchema, aprobarSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
 import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
 import { useAuthStore } from "@/store/auth.store"
@@ -22,7 +22,7 @@ interface AprobarSolicitudesProps {
   solicitudes: AprobarSolicitudPresupuesto[]
   loading: boolean
   error: string | null
-  aprobarSolicitud: (aprobarData: EditSolicitudPresupuestoSchema) => Promise<boolean>
+  aprobarSolicitud: (aprobarData: AprobarSolicitudPresupuestoSchema) => Promise<boolean>
 }
 
 export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicitud }: AprobarSolicitudesProps) {
@@ -40,8 +40,8 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
     register,
     watch,
     formState: { isSubmitting, errors },
-  } = useForm<EditSolicitudPresupuestoSchema>({
-    resolver: zodResolver(editSolicitudPresupuestoSchema),
+  } = useForm<AprobarSolicitudPresupuestoSchema>({
+    resolver: zodResolver(aprobarSolicitudPresupuestoSchema),
     mode: "onChange",
   });
 
@@ -69,6 +69,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
       .map((art) => ({
         cuentaContableId: Number(art.cuentaContable!.id),
         valorAprobado: Number(art.valorAprobado ?? 0),
+        conceptoContableId: Number(art.conceptoContable!.id),
       }));
 
     setValue("articulos", articulosFormato);
@@ -391,6 +392,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                                 .map((art) => ({
                                   cuentaContableId: Number(art.cuentaContable!.id),
                                   valorAprobado: Number(art.valorAprobado ?? 0),
+                                  conceptoContableId: Number(art.conceptoContable!.id),
                                 }));
                               setValue("articulos", articulosFormato);
                             }
@@ -419,6 +421,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                             .map((art) => ({
                               cuentaContableId: Number(art.cuentaContable!.id),
                               valorAprobado: Number(art.valorAprobado ?? art.valorEstimado),
+                              conceptoContableId: Number(art.conceptoContable!.id),
                             }));
                           setValue("articulos", articulosFormato);
                         }

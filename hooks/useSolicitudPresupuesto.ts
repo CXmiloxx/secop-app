@@ -1,4 +1,4 @@
-import { EditSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
+import { AprobarSolicitudPresupuestoSchema, RegisterSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema";
 import { SolicitudPresupuestoService } from "@/services/solicitud-presupuesto.service";
 import { usePeriodoStore } from "@/store/periodo.store";
 import { AprobarSolicitudPresupuesto } from "@/types";
@@ -68,7 +68,7 @@ export default function useSolicitudPresupuesto() {
     }
   }, [periodoActual]);
 
-  const aprobarSolicitud = useCallback(async (aprobarData: EditSolicitudPresupuestoSchema) => {
+  const aprobarSolicitud = useCallback(async (aprobarData: AprobarSolicitudPresupuestoSchema) => {
     setLoading(true);
     setError(null);
     try {

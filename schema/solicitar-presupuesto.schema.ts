@@ -17,10 +17,11 @@ export const registerSolicitudPresupuestoSchema = z.object({
 
 export const articuloAprobacionSchema = z.object({
   cuentaContableId: z.number(),
+  conceptoContableId: z.number(),
   valorAprobado: z.number().min(0, 'El valor aprobado debe ser mayor o igual a 0'),
 });
 
-export const editSolicitudPresupuestoSchema = z.object({
+export const aprobarSolicitudPresupuestoSchema = z.object({
   id: z.number(),
   porcentajeAprobacion: z.number().min(0).max(100, 'El porcentaje debe estar entre 0 y 100'),
   montoAprobado: z.number().min(0),
@@ -30,5 +31,5 @@ export const editSolicitudPresupuestoSchema = z.object({
 });
 
 export type ArticuloPresupuestoSchema = z.infer<typeof articuloPresupuestoSchema>;
-export type EditSolicitudPresupuestoSchema = z.infer<typeof editSolicitudPresupuestoSchema>;
+export type AprobarSolicitudPresupuestoSchema = z.infer<typeof aprobarSolicitudPresupuestoSchema>;
 export type RegisterSolicitudPresupuestoSchema = z.infer<typeof registerSolicitudPresupuestoSchema>;

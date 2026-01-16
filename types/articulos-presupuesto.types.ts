@@ -16,6 +16,7 @@ export interface ArticuloPresupuestoLocal {
 export interface SolicitudArticuloPresupuesto {
   conceptoContable: {
     nombre: string
+    id?: number
   }
   cuentaContable: {
     nombre: string
