@@ -197,6 +197,7 @@ export default function PresupuestosPage() {
                         <TableHead className="text-right">Comprometido</TableHead>
                         <TableHead className="text-right">Saldo Disponible</TableHead>
                         <TableHead className="text-right">% Ejecutado</TableHead>
+                        <TableHead className="text-right">Ver Detalles</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -226,6 +227,11 @@ export default function PresupuestosPage() {
                               <span className={percentage > 90 ? "text-destructive font-semibold" : ""}>
                                 {percentage}%
                               </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => handleViewDetails(presupuesto)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         )
