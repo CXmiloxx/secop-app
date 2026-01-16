@@ -2,6 +2,9 @@ export type EstadoRequisicion =
   | 'PENDIENTE'
   | 'APROBADA'
   | 'RECHAZADA'
+  | 'PAGADO'
+  | 'PASADA_A_CAJA_MENOR'
+  | 'PENDIENTE_ENTREGA'
   | 'ENTREGADA'
   | 'PENDIENTE INVENTARIO';
 
@@ -25,7 +28,7 @@ export interface RequisicionHistorialType {
   motivoRechazo: string | null;
 }
 export interface RequisicionType {
-  id: string;
+  id: number;
   numero?: string;
   numeroRequisicion?: string;
   area: string;
@@ -39,12 +42,13 @@ export interface RequisicionType {
   valorPresupuestado: number;
   valorDefinido?: number;
   ivaPresupuestado: number;
+  ivaDefinido?: number;
   valorTotal: number;
   justificacion: string;
-  fecha: string;
+  fechaSolicitud: string;
   solicitante: string;
   estado: EstadoRequisicion;
-  aprobador: string | null;
+  aprobadoPor: string | null;
   fechaAprobacion: string | null;
   comentario?: string;
   numeroComite?: string;
@@ -54,11 +58,6 @@ export interface RequisicionType {
   tipoAprobacion?: string;
   calificacionProveedor?: CalificacionProveedorRequisicion;
   motivoRechazo?: string;
-  comentarios?: Array<{
-    usuario: string;
-    fecha: string;
-    comentario: string;
-  }>;
   daGarantia?: boolean;
   tiempoGarantia?: string;
   soportesCotizaciones: Array<{
