@@ -66,3 +66,22 @@ export interface CuentaContable {
   conceptos: string[];
 }
 
+export interface DetallePresupuestoCuenta {
+  id: number;
+  cuentaContable: string;
+  codigo: string;
+  valorAprobado: number;
+  valorEjecutado: number;
+  valorPorEjecutar: number
+}
+export interface DetallePresupuesto {
+  id: number;
+  area: string;
+  periodo: number;
+  presupuestoAnual: number;
+  totalGastado: number;
+  montoComprometido: number;
+  saldoDisponible: number;
+  detalles: DetallePresupuestoCuenta[];
+}
+

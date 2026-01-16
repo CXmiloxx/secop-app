@@ -1,7 +1,7 @@
 
 import { PresupuestoAreaService } from "@/services/presupuesto-area.service";
 import { usePeriodoStore } from "@/store/periodo.store";
-import { Presupuesto } from "@/types";
+import { DetallePresupuesto, Presupuesto } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ export default function usePresupuesto() {
   const [errorPresupuestoArea, setErrorPresupuestoArea] = useState<string | null>(null);
 
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [detallesPresupuesto, setDetallesPresupuesto] = useState<DetallePresupuesto | null>(null);
   const [loadingPresupuestos, setLoadingPresupuestos] = useState(false);
   const [errorPresupuestos, setErrorPresupuestos] = useState<string | null>(null);
 
@@ -66,6 +67,30 @@ export default function usePresupuesto() {
     }
   }, [setPresupuestos]);
 
+  const fetchDetallesPresupuesto = useCallback(async (id: number, periodo: number) => {
+    setLoadingPresupuestos(true);
+    setErrorPresupuestos(null);
+    setDetallesPresupuesto(null);
+    try {
+      const { data, status } = await PresupuestoAreaService.findDetalles(id, periodo);
+      if (status === 200) {
+        setDetallesPresupuesto(data as DetallePresupuesto);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener los detalles del presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPresupuestos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPresupuestos(false);
+    }
+  }, [setDetallesPresupuesto]);
 
   return {
     presupuestoArea,
@@ -76,5 +101,7 @@ export default function usePresupuesto() {
     loadingPresupuestos,
     errorPresupuestos,
     fetchPresupuestos,
+    detallesPresupuesto,
+    fetchDetallesPresupuesto
   };
 }

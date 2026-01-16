@@ -1,14 +1,17 @@
 "use client"
 
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DollarSign, TrendingDown, TrendingUp, AlertTriangle, Wallet } from "lucide-react"
+import { DollarSign, TrendingDown, TrendingUp, AlertTriangle, Wallet, Eye } from "lucide-react"
 import { useAuthStore } from "@/store/auth.store"
 import usePresupuesto from "@/hooks/usePresupuesto"
 import usePresupuestoGeneral from "@/hooks/usePresupuestoGeneral"
 import Navbar from "@/components/Navbar"
 import { usePeriodoStore } from "@/store/periodo.store"
+import { Button } from "@/components/ui/button"
+import { Presupuesto } from "@/types"
+import PresupuestoDetailsDialog from "@/components/presupuestos/PresupuestoDetailsDialog"
 
 export default function PresupuestosPage() {
   const { user } = useAuthStore()
@@ -21,7 +24,9 @@ export default function PresupuestosPage() {
     presupuestos,
     loadingPresupuestos,
     errorPresupuestos,
-    fetchPresupuestos
+    fetchPresupuestos,
+    fetchDetallesPresupuesto,
+    detallesPresupuesto,
   } = usePresupuesto()
 
   const {
@@ -32,6 +37,8 @@ export default function PresupuestosPage() {
 
   const isAdmin = user?.rol?.nombre === "admin"
 
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+
 
   const getPresupuesto = useCallback(async () => {
     if (isAdmin) {
@@ -41,6 +48,16 @@ export default function PresupuestosPage() {
       await fetchPresupuestoArea(user.area.id, periodo)
     }
   }, [isAdmin, user?.area?.id, fetchPresupuestoArea, fetchPresupuestos, fetchPresupuestoGeneral, periodo])
+
+
+  const handleViewDetails = useCallback(async (presupuesto: Presupuesto) => {
+    setIsViewDialogOpen(true)
+    await fetchDetallesPresupuesto(presupuesto.area.id, periodo)
+  }, [fetchDetallesPresupuesto, periodo])
+
+  const handleCloseViewDetails = useCallback(async () => {
+    setIsViewDialogOpen(false)
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -227,6 +244,8 @@ export default function PresupuestosPage() {
                         <TableHead className="text-right">Comprometido</TableHead>
                         <TableHead className="text-right">Saldo Disponible</TableHead>
                         <TableHead className="text-right">% Ejecutado</TableHead>
+                        <TableHead className="text-right">Ver Detalles</TableHead>
+
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -251,6 +270,11 @@ export default function PresupuestosPage() {
                             {calculatePercentage(presupuestoArea.totalGastado, presupuestoArea.presupuestoAnual)}%
                           </span>
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(presupuestoArea)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -273,6 +297,14 @@ export default function PresupuestosPage() {
               )}
             </CardContent>
           </Card>
+
+          {detallesPresupuesto && (
+            <PresupuestoDetailsDialog
+              isOpen={isViewDialogOpen}
+              onClose={handleCloseViewDetails}
+              presupuesto={detallesPresupuesto}
+            />
+          )}
         </>
 
       </main>
