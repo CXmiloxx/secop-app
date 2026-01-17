@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserType } from '@/types/user.types';
+import { UserType, RolNombre } from '@/types/user.types';
 
 interface PageHeaderProps {
   title: string;
@@ -46,7 +46,7 @@ export function PageContainer({ children, className = '' }: PageContainerProps) 
 
 interface ProtectedPageProps {
   children: React.ReactNode;
-  allowedRoles?: string[];
+  allowedRoles?: RolNombre[];
   user: UserType | null;
 }
 
@@ -59,7 +59,7 @@ export function ProtectedPage({ children, allowedRoles, user }: ProtectedPagePro
       return;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.rol.nombre)) {
+    if (allowedRoles && user.rol?.nombre && !allowedRoles.includes(user.rol.nombre)) {
       router.push('/presupuestos');
     }
   }, [user, allowedRoles, router]);
@@ -72,7 +72,7 @@ export function ProtectedPage({ children, allowedRoles, user }: ProtectedPagePro
     );
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.rol.nombre)) {
+  if (allowedRoles && user.rol?.nombre && !allowedRoles.includes(user.rol.nombre)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
