@@ -14,6 +14,15 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+export const calculatePercentage = (
+  part: number,
+  total: number,
+  decimals: number = 1
+): number => {
+  if (!total || isNaN(part) || isNaN(total) || total === 0) return 0
+  return Number(((part / total) * 100).toFixed(decimals))
+}
+
 export function formatDate(date: string | Date): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat('es-CO', {
@@ -47,10 +56,6 @@ export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`;
 }
 
-export function calculatePercentage(partial: number, total: number): number {
-  if (total === 0) return 0;
-  return (partial / total) * 100;
-}
 
 export function generateId(prefix: string = ''): string {
   const timestamp = Date.now();
