@@ -43,6 +43,7 @@ export interface RequisicionType {
   valorDefinido?: number;
   ivaPresupuestado: number;
   ivaDefinido?: number;
+  producto: string;
   valorTotal: number;
   justificacion: string;
   fechaSolicitud: string;

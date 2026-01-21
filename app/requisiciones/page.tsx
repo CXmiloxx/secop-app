@@ -36,7 +36,7 @@ export default function RequisicionesPage() {
   const canCreate =
     user?.rol.nombre === "admin" ||
     user?.rol.nombre === "responsableArea" ||
-    user?.rol.nombre === "Caja Menor" ||
+    user?.rol.nombre === "cajaMenor" ||
     user?.rol.nombre === "consultor" ||
     user?.rol.nombre === "Pagos"
 

@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { DetallePresupuesto } from '@/types'
 import { Label } from '../ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { formatCurrency } from '@/lib'
+import { calculatePercentage, formatCurrency } from '@/lib'
 
 interface PresupuestoDetailsDialogProps {
   isOpen: boolean
@@ -13,14 +13,7 @@ interface PresupuestoDetailsDialogProps {
 export default function PresupuestoDetailsDialog({ isOpen, onClose, presupuesto }: PresupuestoDetailsDialogProps) {
 
 
-  const calculatePercentage = (
-    part: number,
-    total: number,
-    decimals: number = 1
-  ): number => {
-    if (!total || isNaN(part) || isNaN(total) || total === 0) return 0
-    return Number(((part / total) * 100).toFixed(decimals))
-  }
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
