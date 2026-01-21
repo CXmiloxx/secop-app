@@ -12,7 +12,7 @@ import { FileText, Upload, X, CheckCircle2, AlertCircle } from "lucide-react"
 import { agregarSoporte, type SoporteDocumento } from "@/lib/auditoria"
 
 interface GestorSoportesProps {
-  requisicionId: string
+  requisicionId: number
   usuario: string
   onSoporteAgregado?: (soporte: SoporteDocumento) => void
   descripcionRequerida?: boolean

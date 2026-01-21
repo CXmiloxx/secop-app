@@ -19,8 +19,6 @@ interface AprobarPagoProps {
   user: UserType
   createPagoTesoreria?: (data: RegisterPagoSchema) => Promise<boolean>
   createPagoCajaMenor?: (data: RegisterPagoSchema) => Promise<boolean>
-  loadingPagos?: boolean
-  errorPagos?: string | null
   onClose?: () => void
   tipo: 'tesoreria' | 'caja menor'
 }
@@ -31,8 +29,6 @@ export default function AprobarPago(
     user,
     createPagoTesoreria,
     createPagoCajaMenor,
-    loadingPagos,
-    errorPagos,
     onClose,
     tipo,
     open,
@@ -134,16 +130,11 @@ export default function AprobarPago(
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
-                        min="0"
+                        disabled={true}
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        value={field.value || ""}
+                        value={requisicion.valorDefinido ? Number(requisicion.valorDefinido) : 0}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Total a pagar. Valor sugerido: {formatCurrency(Number(requisicion.valorDefinido) || 0)}
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -215,29 +206,22 @@ export default function AprobarPago(
               />
             </div>
 
-            {errorPagos && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                {errorPagos}
-              </div>
-            )}
-
             <div className="flex gap-3 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClose}
                 className="flex-1"
-                disabled={loadingPagos}
+                disabled={form.formState.isSubmitting}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={loadingPagos || form.formState.isSubmitting}
+                disabled={form.formState.isSubmitting}
               >
-                {loadingPagos || form.formState.isSubmitting ? (
+                {form.formState.isSubmitting ? (
                   <>Procesando...</>
                 ) : (
                   <>

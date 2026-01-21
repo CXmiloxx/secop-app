@@ -8,7 +8,7 @@ import { FileText, Download, Clock, User } from "lucide-react"
 import { obtenerSoportes, formatearFecha, formatearTamano, type SoporteDocumento } from "@/lib/auditoria"
 
 interface HistorialSoportesProps {
-  requisicionId: string
+  requisicionId: number
   mostrarDescarga?: boolean
 }
 

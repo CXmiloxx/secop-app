@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Badge, CheckCircle2, CreditCard, Hash } from 'lucide-react';
+import { Badge, CheckCircle2, Clock, CreditCard, Hash } from 'lucide-react';
 import { formatCurrency } from '@/lib';
 import { Button } from '../ui/button';
 import { RequisicionType } from '@/types';
@@ -15,29 +15,21 @@ interface CajaMenorProps {
   loadingPagos: boolean;
   errorPagos: string | null;
   createPagoCajaMenor: (data: RegisterPagoSchema, periodo?: number) => Promise<boolean>;
-  onPagoCreado?: () => void;
   periodo?: number;
 }
 
-
-
-export default function CajaMenor(
-  {
-    pendientesPagarCajaMenor,
-    user,
-    loadingPagos,
-    errorPagos,
-    createPagoCajaMenor,
-    onPagoCreado,
-    periodo
-  }: CajaMenorProps) {
+export default function CajaMenor({
+  pendientesPagarCajaMenor,
+  user,
+  createPagoCajaMenor,
+  periodo
+}: CajaMenorProps) {
   const [requisicionSeleccionada, setRequisicionSeleccionada] = useState<RequisicionType | null>(null);
 
   const handleCreatePago = async (data: RegisterPagoSchema) => {
     const success = await createPagoCajaMenor(data, periodo);
     if (success) {
       setRequisicionSeleccionada(null);
-      onPagoCreado?.();
     }
     return success;
   };
@@ -83,24 +75,45 @@ export default function CajaMenor(
                         </>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">Enviado por {req.pagadoPor}</p>
                   </div>
-                  <Badge className="bg-orange-600 hover:bg-orange-700">Pendiente</Badge>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Pendiente
+                  </div>
                 </div>
 
-                <div className="text-sm space-y-1 bg-muted p-4 rounded-md">
-                  <p>
-                    <strong>Proveedor:</strong> {req.proveedor}
-                  </p>
-                  <p>
-                    <strong>Concepto:</strong> {req.concepto}
-                  </p>
-                  <p>
-                    <strong>Cantidad:</strong> {req.cantidad}
-                  </p>
-                  <p className="font-semibold text-primary pt-2 mt-2 border-t text-lg">
-                    Valor Total: {formatCurrency(req.valorTotal)}
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/70 p-4 md:p-5 rounded-xl shadow">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">Proveedor</span>
+                    <span className="font-medium text-primary">{req.proveedor}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">Concepto</span>
+                    <span className="font-medium text-primary">{req.concepto}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">Cantidad</span>
+                    <span className="font-medium text-primary">{req.cantidad}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">Valor Unitario</span>
+                    <span className="font-semibold text-primary">{formatCurrency(req.valorUnitario)}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">IVA</span>
+                    <span className="font-semibold text-primary">{formatCurrency(req.ivaDefinido || 0)}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-gray-500">Producto</span>
+                    <span className="font-semibold text-primary">{req.producto}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 md:col-span-3 pt-4 border-t border-dashed border-gray-200">
+                    <span className="text-xs font-semibold text-gray-500">Valor Total</span>
+                    <span className="font-bold text-2xl text-primary tracking-tight">
+                      {formatCurrency(req.valorDefinido || 0)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
@@ -108,8 +121,6 @@ export default function CajaMenor(
                     requisicion={requisicionSeleccionada}
                     user={user}
                     createPagoCajaMenor={handleCreatePago}
-                    loadingPagos={loadingPagos}
-                    errorPagos={errorPagos}
                     onClose={() => setRequisicionSeleccionada(null)}
                     tipo="caja menor"
                     open={requisicionSeleccionada?.id === req.id}

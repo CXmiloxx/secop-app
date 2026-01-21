@@ -1,6 +1,8 @@
+import { AprobarSolicitudCajaMenorSchema, CrearPresupuestoCajaMenorSchema } from "@/schema/caja-menor.schema";
 import { RegisterPagoSchema } from "@/schema/pagos.schema";
 import { PagosService } from "@/services/pagos.service";
-import { RequisicionType } from "@/types";
+import { usePeriodoStore } from "@/store/periodo.store";
+import { RequisicionType, SolicitudPresupuestoCajaMenorType } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +12,8 @@ export default function usePagos() {
   const [errorPagos, setErrorPagos] = useState<string | null>(null);
   const [pendientesPagar, setPendientesPagar] = useState<RequisicionType[]>([]);
   const [pendientesPagarCajaMenor, setPendientesPagarCajaMenor] = useState<RequisicionType[]>([]);
+  const [solicitudesCajaMenor, setSolicitudesCajaMenor] = useState<SolicitudPresupuestoCajaMenorType[]>([]);
+  const { periodo: periodoActual } = usePeriodoStore()
 
 
 
@@ -29,7 +33,8 @@ export default function usePagos() {
 
       const response = await PagosService.registerPago(formData);
       if (response.status === 201) {
-        toast.success("Pago creado exitosamente");
+        await fetchRequisicionesCajaMenor(periodoActual);
+        toast.success(`Pago procesado como ${registerData.metodoPago} con exito`);
         return true;
       } else {
         const errorMsg = response.message || "No se pudo crear el pago correctamente.";
@@ -61,8 +66,11 @@ export default function usePagos() {
     try {
       const response = await PagosService.pasarCajaMenor(requisicionId);
       if (response.status === 200) {
-
-        toast.success("Pago procesado como caja menor exitosamente");
+        await Promise.all([
+          fetchRequisicionesTesoreria(periodoActual),
+          fetchRequisicionesCajaMenor(periodoActual),
+        ]);
+        toast.success("Requisicion pasada a caja menor con exito");
         return true;
       } else {
         const errorMsg = response.message || "No se pudo procesar el pago como caja menor.";
@@ -85,7 +93,7 @@ export default function usePagos() {
     }
   }, [])
 
-  const fetchRequisicionesAprobadas = useCallback(async (periodo: number) => {
+  const fetchRequisicionesTesoreria = useCallback(async (periodo: number) => {
     setLoadingPagos(true);
     setErrorPagos(null);
     setPendientesPagar([]);
@@ -110,7 +118,7 @@ export default function usePagos() {
     }
   }, [setPendientesPagar]);
 
-  const fetchRequisicionesAprobadasCajaMenor = useCallback(async (periodo: number) => {
+  const fetchRequisicionesCajaMenor = useCallback(async (periodo: number) => {
     setLoadingPagos(true);
     setErrorPagos(null);
     setPendientesPagarCajaMenor([]);
@@ -135,6 +143,109 @@ export default function usePagos() {
     }
   }, [setPendientesPagarCajaMenor]);
 
+  const crearPresupuestoCajaMenor = useCallback(async (presupuesto: CrearPresupuestoCajaMenorSchema) => {
+    setLoadingPagos(true);
+    setErrorPagos(null);
+    try {
+      const response = await PagosService.crearPresupuestoCajaMenor(presupuesto);
+      if (response.status === 201) {
+        toast.success("Presupuesto creado exitosamente");
+        return true;
+      } else {
+        const errorMsg = response.message || "No se pudo crear el presupuesto.";
+        setErrorPagos(errorMsg);
+        toast.error(errorMsg);
+        return false;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al crear el presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPagos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPagos(false);
+    }
+  }, []);
+
+  const fetchSolicitudesCajaMenor = useCallback(async (idCajaMenor: number) => {
+    setLoadingPagos(true);
+    setErrorPagos(null);
+    setSolicitudesCajaMenor([]);
+    try {
+      const { data, status } = await PagosService.fetchSolicitudesCajaMenor(idCajaMenor);
+      if (status === 200) {
+        setSolicitudesCajaMenor(data as SolicitudPresupuestoCajaMenorType[]);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener las solicitudes de caja menor.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPagos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPagos(false);
+    }
+  }, [setSolicitudesCajaMenor]);
+
+  const aprobarSolicitudCajaMenor = useCallback(async (aprobarSolicitud: AprobarSolicitudCajaMenorSchema, idCajaMenor: number) => {
+    setLoadingPagos(true);
+    setErrorPagos(null);
+    try {
+      const { status } = await PagosService.aprobarSolicitudCajaMenor(aprobarSolicitud);
+      if (status === 200) {
+        await fetchSolicitudesCajaMenor(idCajaMenor);
+        toast.success("Solicitud de presupuesto aprobada exitosamente");
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al aprobar la solicitud del presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPagos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPagos(false);
+    }
+  }, []);
+
+  const rechazarSolicitudCajaMenor = useCallback(async (solicitudId: number) => {
+    setLoadingPagos(true);
+    setErrorPagos(null);
+    try {
+      const { data, status } = await PagosService.rechazarSolicitudCajaMenor(solicitudId);
+      if (status === 200) {
+        toast.success("Solicitud de presupuesto rechazada exitosamente");
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al rechazar la solicitud del presupuesto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPagos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPagos(false);
+    }
+  }, []);
+
 
   return {
     loadingPagos,
@@ -142,8 +253,13 @@ export default function usePagos() {
     createPago,
     pasarCajaMenor,
     pendientesPagar,
-    fetchRequisicionesAprobadas,
-    fetchRequisicionesAprobadasCajaMenor,
-    pendientesPagarCajaMenor
+    fetchRequisicionesTesoreria,
+    fetchRequisicionesCajaMenor,
+    pendientesPagarCajaMenor,
+    crearPresupuestoCajaMenor,
+    fetchSolicitudesCajaMenor,
+    solicitudesCajaMenor,
+    aprobarSolicitudCajaMenor,
+    rechazarSolicitudCajaMenor,
   };
 }

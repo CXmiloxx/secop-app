@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,82 +8,111 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CheckCircle2, XCircle, FileText } from "lucide-react"
-import {
-  getSolicitudesCajaMenor,
-  aprobarSolicitudCajaMenor,
-  rechazarSolicitudCajaMenor,
-  type SolicitudCajaMenor,
-} from "@/lib/caja-menor"
+
+import { SolicitudPresupuestoCajaMenorType } from "@/types"
+import { UserType } from "@/types/user.types"
+import { formatCurrency } from "@/lib"
+import { aprobarSolicitudCajaMenorSchema, AprobarSolicitudCajaMenorSchema } from "@/schema/caja-menor.schema"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 interface SolicitudesCajaMenorProps {
-  userRole: string
-  username: string
-  onUpdate?: () => void
+  user: UserType
+  solicitudesCajaMenor: SolicitudPresupuestoCajaMenorType[]
+  aprobarSolicitudCajaMenor: (aprobarSolicitud: AprobarSolicitudCajaMenorSchema, idCajaMenor: number) => Promise<boolean | undefined>
+  rechazarSolicitudCajaMenor:  (solicitudId: number) => Promise<boolean | undefined>
+  idCajaMenor: number
 }
 
-export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: SolicitudesCajaMenorProps) {
-  const [solicitudes, setSolicitudes] = useState<SolicitudCajaMenor[]>([])
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudCajaMenor | null>(null)
-  const [montoAprobado, setMontoAprobado] = useState("")
+export default function SolicitudesCajaMenor({
+  solicitudesCajaMenor,
+  user,
+  aprobarSolicitudCajaMenor,
+  rechazarSolicitudCajaMenor,
+  idCajaMenor,
+}: SolicitudesCajaMenorProps) {
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudPresupuestoCajaMenorType | null>(null)
   const [accion, setAccion] = useState<"aprobar" | "rechazar" | null>(null)
 
-  useEffect(() => {
-    cargarSolicitudes()
-  }, [])
-
-  const cargarSolicitudes = () => {
-    const sols = getSolicitudesCajaMenor()
-    // Ordenar: pendientes primero, luego por fecha
-    const ordenadas = sols.sort((a, b) => {
-      if (a.estado === "pendiente" && b.estado !== "pendiente") return -1
-      if (a.estado !== "pendiente" && b.estado === "pendiente") return 1
-      return new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime()
-    })
-    setSolicitudes(ordenadas)
-  }
-
-  const handleAprobar = () => {
-    if (!solicitudSeleccionada) return
-
-    const monto = Number.parseFloat(montoAprobado.replace(/[^0-9]/g, ""))
-    if (isNaN(monto) || monto <= 0) {
-      alert("Ingrese un monto válido")
-      return
+  // Mantener el form solo para aprobar, reset con los datos adecuados
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<AprobarSolicitudCajaMenorSchema>({
+    resolver: zodResolver(aprobarSolicitudCajaMenorSchema),
+    defaultValues: {
+      montoAprobado: 0,
+      justificacion: "",
     }
+  })
 
-    aprobarSolicitudCajaMenor(solicitudSeleccionada.id, monto, username)
+  console.log(errors)
+
+  const isTesoreria = user.rol.nombre === "tesorería"
+
+  // Cuando se selecciona una nueva solicitud y la acción es aprobar, inicializa el form correctamente
+  useEffect(() => {
+    if (accion === "aprobar" && solicitudSeleccionada) {
+      reset({
+        montoAprobado: solicitudSeleccionada.montoSolicitado,
+        justificacion: "",
+      })
+    }
+    if (accion !== "aprobar") {
+      reset({
+        montoAprobado: 0,
+        justificacion: "",
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [solicitudSeleccionada, accion])
+
+  const handleCloseDialog = () => {
     setSolicitudSeleccionada(null)
-    setMontoAprobado("")
     setAccion(null)
-    cargarSolicitudes()
-    if (onUpdate) onUpdate()
+    reset({
+      montoAprobado: 0,
+      justificacion: "",
+    })
   }
 
-  const handleRechazar = () => {
+  useEffect(() => {
+    if (solicitudSeleccionada) {
+      setValue("solicitudId", Number(solicitudSeleccionada.id))
+    }
+  }, [solicitudSeleccionada, setValue])
+
+  // Aprobar handler usando formulario y validación con zod
+  const onSubmitAprobar = async (data: AprobarSolicitudCajaMenorSchema) => {
     if (!solicitudSeleccionada) return
 
-    rechazarSolicitudCajaMenor(solicitudSeleccionada.id, username)
-    setSolicitudSeleccionada(null)
-    setAccion(null)
-    cargarSolicitudes()
-    if (onUpdate) onUpdate()
+    try {
+      await aprobarSolicitudCajaMenor(
+        {
+          ...data,
+          solicitudId: solicitudSeleccionada.id,
+        },
+        idCajaMenor
+      )
+      handleCloseDialog()
+    } catch (e) {
+      // Maneje el error si es necesario
+    }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-    }).format(value)
+  // Rechazar handler
+  const handleRechazar = async () => {
+    if (!solicitudSeleccionada) return
+    try {
+      await rechazarSolicitudCajaMenor(solicitudSeleccionada.id)
+      handleCloseDialog()
+    } catch (e) {
+      // Maneje el error si es necesario
+    }
   }
-
-  const formatCurrencyInput = (value: string) => {
-    const num = Number.parseFloat(value.replace(/[^0-9]/g, ""))
-    if (isNaN(num)) return ""
-    return new Intl.NumberFormat("es-CO").format(num)
-  }
-
-  const isTesoreria = userRole === "Tesorería"
 
   return (
     <>
@@ -100,41 +129,41 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {solicitudes.length === 0 ? (
+          {solicitudesCajaMenor.length === 0 ? (
             <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No hay solicitudes registradas</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {solicitudes.map((sol) => (
+              {solicitudesCajaMenor.map((sol) => (
                 <div key={sol.id} className="p-5 border-2 rounded-lg space-y-3">
                   <div className="flex justify-between items-start">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2">
                         <Badge
                           className={
-                            sol.tipo === "automatica"
+                            sol.estado === "PENDIENTE"
                               ? "bg-blue-600"
-                              : sol.tipo === "manual"
+                              : sol.estado === "APROBADA"
                                 ? "bg-purple-600"
                                 : "bg-gray-600"
                           }
                         >
-                          {sol.tipo === "automatica" ? "Automática" : "Manual"}
+                          {sol.estado === "PENDIENTE" ? "Pendiente" : "Aprobada"}
                         </Badge>
                         <Badge
                           className={
-                            sol.estado === "pendiente"
+                            sol.estado === "PENDIENTE"
                               ? "bg-yellow-600"
-                              : sol.estado === "aprobada"
+                              : sol.estado === "APROBADA"
                                 ? "bg-green-600"
                                 : "bg-red-600"
                           }
                         >
-                          {sol.estado === "pendiente"
+                          {sol.estado === "PENDIENTE"
                             ? "Pendiente"
-                            : sol.estado === "aprobada"
+                            : sol.estado === "APROBADA"
                               ? "Aprobada"
                               : "Rechazada"}
                         </Badge>
@@ -143,17 +172,6 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
                       <div>
                         <p className="text-2xl font-bold text-primary">{formatCurrency(sol.montoSolicitado)}</p>
                         <p className="text-sm text-muted-foreground">Monto solicitado</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Monto gastado anterior</p>
-                          <p className="font-semibold">{formatCurrency(sol.montoGastadoAnterior)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">% Ejecución anterior</p>
-                          <p className="font-semibold">{sol.porcentajeEjecucionAnterior.toFixed(1)}%</p>
-                        </div>
                       </div>
 
                       <div className="bg-muted p-3 rounded-lg">
@@ -165,15 +183,14 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
                         Solicitado el: {new Date(sol.fechaSolicitud).toLocaleString("es-CO")}
                       </div>
 
-                      {sol.estado !== "pendiente" && (
+                      {sol.estado !== "PENDIENTE" && (
                         <div className="border-t pt-3 space-y-1">
                           <p className="text-sm">
                             <span className="text-muted-foreground">
-                              {sol.estado === "aprobada" ? "Aprobado" : "Rechazado"} por:
+                              {sol.estado === "APROBADA" ? "Aprobado" : "Rechazado"} por:
                             </span>{" "}
-                            <span className="font-semibold">{sol.aprobadoPor}</span>
                           </p>
-                          {sol.estado === "aprobada" && sol.montoAprobado && (
+                          {sol.estado === "APROBADA" && sol.montoAprobado && (
                             <p className="text-sm">
                               <span className="text-muted-foreground">Monto aprobado:</span>{" "}
                               <span className="font-bold text-green-600">{formatCurrency(sol.montoAprobado)}</span>
@@ -189,12 +206,11 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
                     </div>
                   </div>
 
-                  {sol.estado === "pendiente" && isTesoreria && (
+                  {sol.estado === "PENDIENTE" && isTesoreria && (
                     <div className="flex gap-2 pt-3 border-t">
                       <Button
                         onClick={() => {
                           setSolicitudSeleccionada(sol)
-                          setMontoAprobado(sol.montoSolicitado.toString())
                           setAccion("aprobar")
                         }}
                         className="flex-1 bg-green-600 hover:bg-green-700"
@@ -225,12 +241,8 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
       {/* Dialog para aprobar */}
       <Dialog
         open={accion === "aprobar" && solicitudSeleccionada !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSolicitudSeleccionada(null)
-            setMontoAprobado("")
-            setAccion(null)
-          }
+        onOpenChange={open => {
+          if (!open) handleCloseDialog()
         }}
       >
         <DialogContent>
@@ -240,58 +252,74 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
               Configure el monto a aprobar para la caja menor. Puede modificar el monto solicitado.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {solicitudSeleccionada && (
-              <>
-                <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <p className="text-sm text-muted-foreground">Monto solicitado</p>
-                  <p className="text-2xl font-bold">{formatCurrency(solicitudSeleccionada.montoSolicitado)}</p>
-                </div>
+          <form onSubmit={handleSubmit(onSubmitAprobar)}>
+            <div className="space-y-4 py-4">
+              {solicitudSeleccionada && (
+                <>
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <p className="text-sm text-muted-foreground">Monto solicitado</p>
+                    <p className="text-2xl font-bold">{formatCurrency(solicitudSeleccionada.montoSolicitado)}</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="montoAprobado">Monto a Aprobar *</Label>
-                  <Input
-                    id="montoAprobado"
-                    value={montoAprobado}
-                    onChange={(e) => setMontoAprobado(formatCurrencyInput(e.target.value))}
-                    placeholder="0"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Puede aprobar un monto diferente al solicitado si lo considera necesario
-                  </p>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="montoAprobado">Monto a Aprobar *</Label>
+                    <Input
+                      id="montoAprobado"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="0"
+                      {...register("montoAprobado", {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {errors.montoAprobado && (
+                      <p className="text-xs text-red-500">{errors.montoAprobado.message}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Puede aprobar un monto diferente al solicitado si lo considera necesario
+                    </p>
+                  </div>
 
-                <div className="flex gap-2">
-                  <Button onClick={handleAprobar} className="flex-1 bg-green-600 hover:bg-green-700">
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Confirmar Aprobación
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setSolicitudSeleccionada(null)
-                      setMontoAprobado("")
-                      setAccion(null)
-                    }}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="justificacion">Justificación *</Label>
+                    <Input
+                      id="justificacion"
+                      type="text"
+                      placeholder="Justificación de la aprobación"
+                      {...register("justificacion")}
+                    />
+                    {errors.justificacion && (
+                      <p className="text-xs text-red-500">{errors.justificacion.message}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Confirmar Aprobación
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCloseDialog}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Dialog para rechazar */}
       <Dialog
         open={accion === "rechazar" && solicitudSeleccionada !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSolicitudSeleccionada(null)
-            setAccion(null)
-          }
+        onOpenChange={open => {
+          if (!open) handleCloseDialog()
         }}
       >
         <DialogContent>
@@ -315,10 +343,8 @@ export default function SolicitudesCajaMenor({ userRole, username, onUpdate }: S
                     Confirmar Rechazo
                   </Button>
                   <Button
-                    onClick={() => {
-                      setSolicitudSeleccionada(null)
-                      setAccion(null)
-                    }}
+                    type="button"
+                    onClick={handleCloseDialog}
                     variant="outline"
                     className="flex-1"
                   >

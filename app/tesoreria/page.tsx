@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, DollarSign, CreditCard, CheckCircle2, History, Eye, Hash, Clock } from "lucide-react"
-import Link from "next/link"
+import { DollarSign, CreditCard, CheckCircle2, History, Clock } from "lucide-react"
 
 import MonitorCajaMenor from "@/components/tesoreria/monitor-caja-menor"
 import SolicitudesCajaMenor from "@/components/tesoreria/solicitudes-caja-menor"
@@ -18,25 +17,45 @@ import { RegisterPagoSchema } from "@/schema/pagos.schema"
 import CajaMenor from "@/components/tesoreria/CajaMenor"
 import TarjetaRequisicion from "@/components/tesoreria/tarjeta-requisicion"
 import Navbar from "@/components/Navbar"
+import useCajaMenor from "@/hooks/useCajaMenor"
+import { UserType } from "@/types/user.types"
 
 export default function TesoreriaPage() {
   const { user } = useAuthStore()
   const { periodo } = usePeriodoStore()
   const [requisicionSeleccionada, setRequisicionSeleccionada] = useState<RequisicionType | null>(null)
+
   const {
     createPago,
     loadingPagos,
     errorPagos,
     pasarCajaMenor,
-    fetchRequisicionesAprobadas,
+    fetchRequisicionesTesoreria,
     pendientesPagar,
-    fetchRequisicionesAprobadasCajaMenor,
+    fetchRequisicionesCajaMenor,
     pendientesPagarCajaMenor,
+    crearPresupuestoCajaMenor,
+    fetchSolicitudesCajaMenor,
+    solicitudesCajaMenor,
+    aprobarSolicitudCajaMenor,
+    rechazarSolicitudCajaMenor,
   } = usePagos()
 
+  const {
+    fetchCajaMenor,
+    presupuestoCajaMenor,
+    asignarPresupuesto,
+  } = useCajaMenor()
+
   const getPendientesPagar = useCallback(async () => {
-    await fetchRequisicionesAprobadas(periodo)
-  }, [fetchRequisicionesAprobadas, periodo])
+    await fetchRequisicionesTesoreria(periodo)
+  }, [fetchRequisicionesTesoreria, periodo])
+
+  const getPresupuestoCajaMenor = useCallback(async () => {
+    await fetchCajaMenor()
+  }, [fetchCajaMenor, periodo])
+
+
 
 
   const handleCreatePago = useCallback(async (data: RegisterPagoSchema) => {
@@ -52,47 +71,57 @@ export default function TesoreriaPage() {
     const success = await pasarCajaMenor(requisicion.id);
     if (success) {
       setRequisicionSeleccionada(null);
-      await getPendientesPagar();
     }
     return success;
-  }, [pasarCajaMenor, getPendientesPagar])
+  }, [pasarCajaMenor])
+
+  const isCajaMenor = user?.rol?.nombre === "cajaMenor"
+  const isTesoreria = user?.rol?.nombre === "tesorería"
 
 
-  if (!user) return null
 
-  const isCajaMenor = user.rol?.nombre === "cajaMenor"
-  const isTesoreria = user.rol?.nombre === "tesorería"
+  const getSolicitudesCajaMenor = useCallback(async () => {
+    if (presupuestoCajaMenor) {
+      await fetchSolicitudesCajaMenor(Number(presupuestoCajaMenor.id))
+    }
+  }, [fetchSolicitudesCajaMenor, presupuestoCajaMenor])
 
-  const getPendientesPagarCajaMenor = useCallback(async () => {
-    await fetchRequisicionesAprobadasCajaMenor(periodo)
-  }, [fetchRequisicionesAprobadasCajaMenor, periodo])
+  const getPendientesCajaMenor = useCallback(async () => {
+    await fetchRequisicionesCajaMenor(periodo)
+  }, [fetchRequisicionesCajaMenor, periodo])
 
 
   useEffect(() => {
     if (isTesoreria) {
       getPendientesPagar()
+      getPresupuestoCajaMenor()
+      getPendientesCajaMenor()
     }
-  }, [getPendientesPagar, isTesoreria])
+  }, [getPendientesPagar, isTesoreria, getPresupuestoCajaMenor, getPendientesCajaMenor])
 
 
   useEffect(() => {
     if (isCajaMenor) {
-      getPendientesPagarCajaMenor()
+      getPendientesCajaMenor()
+      getPendientesPagar()
+    } else if (isTesoreria) {
+      getSolicitudesCajaMenor()
     }
-  }, [getPendientesPagarCajaMenor, isCajaMenor])
+  }, [getPendientesPagar, isCajaMenor, getSolicitudesCajaMenor, isTesoreria, getPendientesCajaMenor])
+
 
   return (
     <section>
       <Navbar Icon={DollarSign} title="Gestión de Tesorería" subTitle="Gestión de pagos y requisiciones" />
 
-      <main className="container mx-auto px-4 py-8">
+      <div className="px-4 py-8">
         {isTesoreria ? (
-          <Tabs defaultValue="pendientes" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-5">
-              <TabsTrigger value="pendientes">Pendientes</TabsTrigger>
-              <TabsTrigger value="cajamenor">Caja Menor</TabsTrigger>
+          <Tabs defaultValue="pendientes" className="w-full space-y-6">
+            <TabsList className="grid w-full grid-cols-5 gap-5">
+              <TabsTrigger value="pendientes"><span className="flex items-center gap-2">Pendientes <span className="bg-green-500/20 text-green-700 rounded-full px-2 mt-1 text-xs font-bold">{pendientesPagar.length}</span></span> </TabsTrigger>
+              <TabsTrigger value="cajamenor"><span className="flex items-center gap-2">Caja Menor <span className="bg-blue-500/20 text-blue-700 rounded-full px-2 mt-1 text-xs font-bold">{pendientesPagarCajaMenor.length}</span></span> </TabsTrigger>
               <TabsTrigger value="monitor">Monitor CM</TabsTrigger>
-              <TabsTrigger value="solicitudes">Solicitudes CM</TabsTrigger>
+              <TabsTrigger value="solicitudes"><span className="flex items-center gap-2">Solicitudes CM <span className="bg-yellow-500/20 text-yellow-700 rounded-full px-2 mt-1 text-xs font-bold">{solicitudesCajaMenor.length}</span></span> </TabsTrigger>
               <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
 
@@ -129,8 +158,6 @@ export default function TesoreriaPage() {
                                 requisicion={requisicionSeleccionada}
                                 user={user}
                                 createPagoTesoreria={handleCreatePago}
-                                loadingPagos={loadingPagos}
-                                errorPagos={errorPagos}
                                 onClose={() => setRequisicionSeleccionada(null)}
                                 tipo="tesoreria"
                                 open={requisicionSeleccionada?.id === req.id}
@@ -196,11 +223,23 @@ export default function TesoreriaPage() {
             </TabsContent>
 
             <TabsContent value="monitor" className="space-y-6">
-              <MonitorCajaMenor />
+              <MonitorCajaMenor
+                presupuestoCajaMenor={presupuestoCajaMenor}
+                asignarPresupuesto={asignarPresupuesto}
+                crearPresupuesto={crearPresupuestoCajaMenor}
+                periodo={periodo}
+
+              />
             </TabsContent>
 
             <TabsContent value="solicitudes" className="space-y-6">
-              <SolicitudesCajaMenor userRole={user?.rol?.nombre || ""} username={user?.nombre || ""} />
+              <SolicitudesCajaMenor
+                user={user}
+                solicitudesCajaMenor={solicitudesCajaMenor}
+                aprobarSolicitudCajaMenor={aprobarSolicitudCajaMenor}
+                rechazarSolicitudCajaMenor={rechazarSolicitudCajaMenor}
+                idCajaMenor={Number(presupuestoCajaMenor?.id)}
+              />
             </TabsContent>
 
             <TabsContent value="historial">
@@ -228,14 +267,13 @@ export default function TesoreriaPage() {
           <CajaMenor
             pendientesPagarCajaMenor={pendientesPagarCajaMenor}
             createPagoCajaMenor={createPago}
-            user={user}
+            user={user as UserType}
             loadingPagos={loadingPagos}
             errorPagos={errorPagos}
-            onPagoCreado={getPendientesPagarCajaMenor}
             periodo={periodo}
           />
         )}
-      </main>
+      </div>
     </section>
   )
 }
