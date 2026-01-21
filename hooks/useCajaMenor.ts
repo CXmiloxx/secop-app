@@ -1,7 +1,7 @@
 import { AsignarPresupuestoCajaMenorSchema, RegistrarGastoCajaMenorSchema, SolicitudPresupuestoCajaMenorSchema } from "@/schema/caja-menor.schema";
 import { CajaMenorService } from "@/services/caja-menor.service";
 import { usePeriodoStore } from "@/store/periodo.store";
-import { PresupuestoCajaMenorType } from "@/types";
+import { HistorialMovimientoCajaMenor, PresupuestoCajaMenorType } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ export default function useCajaMenor() {
   const [loadingCajaMenor, setLoadingCajaMenor] = useState(false);
   const [errorCajaMenor, setErrorCajaMenor] = useState<string | null>(null);
   const [presupuestoCajaMenor, setPresupuestoCajaMenor] = useState<PresupuestoCajaMenorType | null>(null);
+  const [historialCajaMenor, setHistorialCajaMenor] = useState<HistorialMovimientoCajaMenor[]>([]);
   const { periodo: periodoActual } = usePeriodoStore()
 
   const solicitarPresupuesto = useCallback(async (solicitud: SolicitudPresupuestoCajaMenorSchema) => {
@@ -114,6 +115,32 @@ export default function useCajaMenor() {
     }
   }, [setPresupuestoCajaMenor, periodoActual]);
 
+  const fetchHistorialCajaMenor = useCallback(async (cajaMenorId: number) => {
+    setLoadingCajaMenor(true);
+    setErrorCajaMenor(null);
+    setHistorialCajaMenor([]);
+    try {
+      const { data, status } = await CajaMenorService.findAllHistorial(cajaMenorId);
+      if (status === 200) {
+        setHistorialCajaMenor(data as HistorialMovimientoCajaMenor[]);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener el historial de caja menor.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setHistorialCajaMenor([]);
+      setErrorCajaMenor(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingCajaMenor(false);
+    }
+  }, [setHistorialCajaMenor]);
+
   const registrarGasto = useCallback(async (gasto: RegistrarGastoCajaMenorSchema) => {
     setLoadingCajaMenor(true);
     setErrorCajaMenor(null);
@@ -182,5 +209,7 @@ export default function useCajaMenor() {
     aprobarSolicitud,
     asignarPresupuesto,
     registrarGasto,
+    fetchHistorialCajaMenor,
+    historialCajaMenor,
   };
 }

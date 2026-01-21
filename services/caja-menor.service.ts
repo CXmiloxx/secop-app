@@ -18,6 +18,10 @@ export const CajaMenorService = {
     return await api.get(`/caja-menor/${periodo}`)
   },
 
+  async findAllHistorial(cajaMenorId: number) {
+    return await api.get(`/caja-menor/historial/${cajaMenorId}`)
+  },
+
   async registrarGasto(gasto: RegistrarGastoCajaMenorSchema | FormData) {
     if (gasto instanceof FormData) {
       return await api.post(`/caja-menor/registrar-gasto`, gasto, {

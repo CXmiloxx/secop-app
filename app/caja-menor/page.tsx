@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RegistrarCajaMenor } from "@/components/caja-menor/registrar-caja-menor"
 import { HistorialCajaMenor } from "@/components/caja-menor/historial-caja-menor"
-import { solicitarPresupuestoCajaMenor } from "@/lib/caja-menor"
-import { Wallet, AlertCircle, TrendingUp, Activity, Send, Loader2 } from "lucide-react"
+import { Wallet, AlertCircle, TrendingUp, Activity, Loader } from "lucide-react"
 import { useAuthStore } from "@/store/auth.store"
 import useCajaMenor from "@/hooks/useCajaMenor"
 import { usePeriodoStore } from "@/store/periodo.store"
@@ -15,48 +14,39 @@ import useProviders from "@/hooks/useProviders"
 import useAreas from "@/hooks/useAreas"
 import Navbar from "@/components/Navbar"
 import SolicitarPresupuestoCajaMenor from "@/components/caja-menor/SolicitarPresupuestoCajaMenor"
+import { formatCurrency } from "@/lib"
 
 export default function CajaMenorPage() {
   const {
     user,
   } = useAuthStore()
-  const { fetchCajaMenor, presupuestoCajaMenor, registrarGasto, solicitarPresupuesto } = useCajaMenor()
+  const {
+    fetchCajaMenor,
+    presupuestoCajaMenor,
+    registrarGasto,
+    solicitarPresupuesto,
+    fetchHistorialCajaMenor,
+    historialCajaMenor,
+    loadingCajaMenor,
+  } = useCajaMenor()
   const [showSolicitudDialog, setShowSolicitudDialog] = useState(false)
-  const [montoSolicitud, setMontoSolicitud] = useState("")
-  const [justificacionSolicitud, setJustificacionSolicitud] = useState("")
-  const [successMessage, setSuccessMessage] = useState("")
   const { periodo } = usePeriodoStore()
-  const { providers, fetchProviders, loading: loadingProviders, error: errorProviders } = useProviders();
+  const { providers, fetchProviders } = useProviders();
   const { fetchCuentasContables, cuentasContables } = useCuentasContables();
-  const { conceptos, fetchCoceptos, errorConceptos, loadingConceptos } = useConceptos();
+  const { conceptos, fetchCoceptos } = useConceptos();
   const { areas, fetchAreas } = useAreas()
-
-
-  const handleEnviarSolicitud = () => {
-    if (!montoSolicitud || Number(montoSolicitud) <= 0) {
-      alert("Ingrese un monto válido")
-      return
-    }
-
-    if (!justificacionSolicitud.trim()) {
-      alert("Ingrese una justificación")
-      return
-    }
-
-    solicitarPresupuestoCajaMenor(Number(montoSolicitud), justificacionSolicitud)
-    setSuccessMessage("Solicitud enviada a Tesorería exitosamente")
-    setShowSolicitudDialog(false)
-    setMontoSolicitud("")
-    setJustificacionSolicitud("")
-
-    setTimeout(() => setSuccessMessage(""), 3000)
-  }
 
   const getDataMovimientos = useCallback(async () => {
     await fetchProviders()
     await fetchAreas()
     await fetchCuentasContables()
   }, [fetchProviders, fetchCuentasContables, fetchAreas])
+
+  const getHistorialCajaMenor = useCallback(async () => {
+    if (presupuestoCajaMenor?.id) {
+      await fetchHistorialCajaMenor(Number(presupuestoCajaMenor?.id))
+    }
+  }, [fetchHistorialCajaMenor, presupuestoCajaMenor])
 
   const getPresupuestoCajaMenor = useCallback(async () => {
     await fetchCajaMenor()
@@ -70,6 +60,10 @@ export default function CajaMenorPage() {
   useEffect(() => {
     getPresupuestoCajaMenor()
   }, [getPresupuestoCajaMenor])
+
+  useEffect(() => {
+    getHistorialCajaMenor()
+  }, [getHistorialCajaMenor])
 
   // Traer cuentas contables al cargar la página
   useEffect(() => {
@@ -94,6 +88,17 @@ export default function CajaMenorPage() {
     return "text-green-600"
   }
 
+  if (loadingCajaMenor) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="flex flex-col items-center justify-center gap-4 px-6 py-10 bg-card rounded-xl ">
+          <Loader className="h-10 w-10 text-primary mb-2" />
+          <p className="text-lg font-medium text-primary">Cargando información de la caja menor, por favor espere...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <section>
       <Navbar
@@ -107,20 +112,13 @@ export default function CajaMenorPage() {
           modalTitle: "Solicitar Presupuesto",
           modalDescription: "Solicite un presupuesto para la caja menor",
           modalContent: (
-            <SolicitarPresupuestoCajaMenor  
-            solicitarPresupuesto={solicitarPresupuesto}
-            cajaMenorId={presupuestoCajaMenor?.id}
+            <SolicitarPresupuestoCajaMenor
+              solicitarPresupuesto={solicitarPresupuesto}
+              cajaMenorId={presupuestoCajaMenor?.id}
             />
           )
         }}
       />
-
-
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-          {successMessage}
-        </div>
-      )}
 
       {presupuestoCajaMenor && (
         <div className="grid gap-4 md:grid-cols-4 m-5">
@@ -131,11 +129,7 @@ export default function CajaMenorPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  minimumFractionDigits: 0,
-                }).format(presupuestoCajaMenor.presupuestoAsignado)}
+                {formatCurrency(presupuestoCajaMenor.presupuestoAsignado)}
               </div>
               <p className="text-xs text-muted-foreground">Asignado por Tesorería</p>
             </CardContent>
@@ -148,11 +142,7 @@ export default function CajaMenorPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  minimumFractionDigits: 0,
-                }).format(presupuestoCajaMenor.presupuestoGastado)}
+                {formatCurrency(presupuestoCajaMenor.presupuestoGastado)}
               </div>
               <p className="text-xs text-muted-foreground">Requisiciones procesadas</p>
             </CardContent>
@@ -165,11 +155,7 @@ export default function CajaMenorPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  minimumFractionDigits: 0,
-                }).format(disponible)}
+                {formatCurrency(disponible)}
               </div>
               <p className="text-xs text-muted-foreground">Saldo restante</p>
             </CardContent>
@@ -205,7 +191,7 @@ export default function CajaMenorPage() {
       {isAdmin ? (
         // Admin solo puede ver el historial
         <div className="w-full">
-          <HistorialCajaMenor user={user} />
+            <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
         </div>
       ) : (
         // Caja Menor puede registrar y ver historial
@@ -219,7 +205,9 @@ export default function CajaMenorPage() {
             fetchCoceptos={fetchCoceptos}
             registrarGasto={registrarGasto}
           />
-          <HistorialCajaMenor user={user} />
+
+            <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
+        
         </div>
       )}
 

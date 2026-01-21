@@ -41,15 +41,19 @@ export interface SoporteCajaMenor {
   fecha: string;
 }
 
-export interface MovimientoCajaMenor {
-  id: string;
+export interface HistorialMovimientoCajaMenor {
+  id: number;
+  areaSolicitante: string;
+  proveedor: string;
+  cuentaContable: string;
+  conceptoContable: string;
+  cantidad: number;
+  valorTotal: number;
+  iva: number;
+  soporte: string;
+  justificacion: string;
+  descripcionProducto: string;
   fecha: string;
-  tipo: 'Ingreso' | 'Egreso' | 'Reembolso';
-  concepto: string;
-  valor: number;
-  saldo: number;
-  responsable: string;
-  solicitudId?: string;
 }
 
 

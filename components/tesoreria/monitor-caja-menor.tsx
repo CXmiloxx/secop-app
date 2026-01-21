@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -27,8 +27,6 @@ import {
   AsignarPresupuestoCajaMenorSchema,
   crearPresupuestoCajaMenorSchema,
   CrearPresupuestoCajaMenorSchema,
-  solicitudPresupuestoCajaMenorSchema,
-  SolicitudPresupuestoCajaMenorSchema,
 } from "@/schema/caja-menor.schema"
 
 interface MonitorCajaMenorProps {
@@ -53,26 +51,10 @@ export default function MonitorCajaMenor({
   )
 
   const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitted },
-  } = useForm<SolicitudPresupuestoCajaMenorSchema>({
-    resolver: zodResolver(solicitudPresupuestoCajaMenorSchema),
-    defaultValues: {
-      periodo: presupuestoCajaMenor?.periodo,
-      cajaMenorId: presupuestoCajaMenor?.id,
-      justificacion: "",
-      montoSolicitado: 0,
-    },
-  })
-
-  const {
     register: registerCrearPresupuesto,
     handleSubmit: handleSubmitCrearPresupuesto,
-    watch: watchCrearPresupuesto,
     reset: resetCrearPresupuesto,
-    formState: { errors: errorsCrearPresupuesto, isSubmitted: isSubmittedCrearPresupuesto },
+    formState: { errors: errorsCrearPresupuesto, isSubmitting: isSubmittedCrearPresupuesto },
   } = useForm<CrearPresupuestoCajaMenorSchema>({
     resolver: zodResolver(crearPresupuestoCajaMenorSchema),
     defaultValues: {
@@ -86,8 +68,7 @@ export default function MonitorCajaMenor({
     register: registerAsignarPresupuesto,
     handleSubmit: handleSubmitAsignarPresupuesto,
     watch: watchAsignarPresupuesto,
-    reset: resetAsignarPresupuesto,
-    formState: { errors: errorsAsignarPresupuesto, isSubmitted: isSubmittedAsignarPresupuesto },
+    formState: { errors: errorsAsignarPresupuesto, isSubmitting: isSubmittedAsignarPresupuesto },
   } = useForm<AsignarPresupuestoCajaMenorSchema>({
     resolver: zodResolver(asignarPresupuestoCajaMenorSchema),
     defaultValues: {
@@ -117,13 +98,13 @@ export default function MonitorCajaMenor({
     if (percentage >= 90) return "text-red-600"
     if (percentage >= 75) return "text-orange-600"
     if (percentage >= 50) return "text-yellow-600"
-    if (percentage >= 0) return "text-gray-600"
-    return "text-green-600"
+    if (percentage >= 0) return "text-primary"
+    return "text-primary"
   }
 
   return (
     <div className="space-y-4">
-      {presupuestoCajaMenor ? (
+      {presupuestoCajaMenor  ? (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -233,10 +214,14 @@ export default function MonitorCajaMenor({
                           variant="outline"
                           onClick={() => setShowAsignarDialog(false)}
                           type="button"
+                          disabled={isSubmittedAsignarPresupuesto}
                         >
                           Cancelar
                         </Button>
-                        <Button type="submit">Asignar Presupuesto</Button>
+                        <Button type="submit" disabled={isSubmittedAsignarPresupuesto}>
+                          <Plus className="h-4 w-4" />
+                          {isSubmittedAsignarPresupuesto ? "Asignando..." : "Asignar Presupuesto"}
+                        </Button>
                       </div>
                     </form>
                   </div>
@@ -258,7 +243,7 @@ export default function MonitorCajaMenor({
                   {porcentajeEjecucion.toFixed(1)}%
                 </span>
               </div>
-              <Progress value={porcentajeEjecucion} className="h-5" />
+              <Progress value={porcentajeEjecucion} className="h-5 " />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0%</span>
                 <span className="font-medium text-orange-600">
@@ -389,6 +374,7 @@ export default function MonitorCajaMenor({
                   <Button
                     type="button"
                     variant="outline"
+                    disabled={isSubmittedCrearPresupuesto}
                     onClick={() => {
                       resetCrearPresupuesto()
                       setShowCrearPresupuestoDialog(false)
@@ -396,7 +382,10 @@ export default function MonitorCajaMenor({
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit">Crear Presupuesto</Button>
+                  <Button type="submit" disabled={isSubmittedCrearPresupuesto}>
+                    <Plus className="h-4 w-4" />
+                    {isSubmittedCrearPresupuesto ? "Creando..." : "Crear Presupuesto"}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
