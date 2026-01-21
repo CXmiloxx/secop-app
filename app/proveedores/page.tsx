@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Edit, Trash2, Building2 } from "lucide-react"
+import { Edit, Trash2, Building2, Loader } from "lucide-react"
 import Navbar from "@/components/Navbar"
 import useProviders from "@/hooks/useProviders"
 import { EditProviderSchema, RegisterProviderSchema, registerProviderSchema } from "@/schema/providers.schema"
@@ -11,14 +11,26 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 export default function ProveedoresPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogOpenEdit, setDialogOpenEdit] = useState(false)
-
   const [selectProvider, setSelectProvider] = useState<ProvidersType | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteProviderId, setDeleteProviderId] = useState<number | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const { fetchProviders, fetchCreateProviders, providers, loading, error } = useProviders()
+  // Modifica el hook para incluir update y delete
+  const {
+    fetchProviders,
+    fetchCreateProviders,
+    fetchUpdateProvider,
+    fetchDeleteProvider,
+    providers,
+    loading,
+    error
+  } = useProviders()
 
   const {
     register,
@@ -38,10 +50,7 @@ export default function ProveedoresPage() {
     }
   })
 
-
-
-
-  // Traer todos los proveedores al cargar la pantalla
+  // Obtener proveedores cuando cargue o se actualice
   const getData = useCallback(async () => {
     await fetchProviders()
   }, [fetchProviders])
@@ -50,7 +59,7 @@ export default function ProveedoresPage() {
     getData()
   }, [getData])
 
-  // Cuando se hace click en editar, coloca los datos en el formulario
+  // Para llenar el formulario cuando se edita
   useEffect(() => {
     if (selectProvider) {
       setValue("nit", selectProvider.nit || "")
@@ -59,31 +68,63 @@ export default function ProveedoresPage() {
       setValue("tipoInsumo", selectProvider.tipoInsumo || "")
       setValue("telefono", selectProvider.telefono || "")
       setValue("responsable", selectProvider.responsable || "")
+      setDialogOpen(true)
+      setDialogOpenEdit(true)
     } else {
       reset()
     }
   }, [selectProvider, setValue, reset])
 
-  const onSubmit = async (data: RegisterProviderSchema) => {
-    if (!selectProvider) {
-      await fetchCreateProviders(data)
+  const onSubmit = async (data: RegisterProviderSchema | EditProviderSchema) => {
+    if (selectProvider) {
+      const response = await fetchUpdateProvider(selectProvider.id, data as EditProviderSchema)
+      if (response) {
+        reset()
+        setDialogOpen(false)
+        setDialogOpenEdit(false)
+        setSelectProvider(null)
+        getData()
+      }
+    } else {
+      const response = await fetchCreateProviders(data as RegisterProviderSchema)
+      if (response) {
+        reset()
+        setDialogOpen(false)
+        setDialogOpenEdit(false)
+        setSelectProvider(null)
+        getData()
+      }
     }
-    reset()
-    setDialogOpen(false)
-    setSelectProvider(null)
-    getData()
   }
 
-  const handleEdit = (proveedor: EditProviderSchema) => {
+  const handleEdit = (proveedor: ProvidersType) => {
+    setSelectProvider(proveedor)
+    setDialogOpen(true)
     setDialogOpenEdit(true)
   }
 
-  const handleDelete = (id: number) => {
-    // Aquí debes colocar la lógica para eliminar proveedores si tienes un método
+  const handleShowDeleteDialog = (id: number) => {
+    setDeleteProviderId(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (deleteProviderId == null) {
+      setDeleteDialogOpen(false)
+      return
+    }
+    setDeleteLoading(true)
+    const response = await fetchDeleteProvider(deleteProviderId)
+    if (response) {
+      setDeleteDialogOpen(false)
+      setDeleteProviderId(null)
+      setDeleteLoading(false)
+    }
   }
 
   const handleCloseDialog = () => {
     setDialogOpen(false)
+    setDialogOpenEdit(false)
     setSelectProvider(null)
     reset()
   }
@@ -97,7 +138,10 @@ export default function ProveedoresPage() {
           subTitle="Gestión de proveedores"
           actionModal={{
             isOpen: dialogOpen,
-            onOpenChange: setDialogOpen,
+            onOpenChange: (open: boolean) => {
+              if (!open) handleCloseDialog()
+              else setDialogOpen(true)
+            },
             modalTitle: selectProvider ? "Editar Proveedor" : "Crear Proveedor",
             modalDescription: selectProvider ? "Modifique los datos del proveedor" : "Complete los datos del nuevo proveedor",
             modalContent: (
@@ -111,13 +155,38 @@ export default function ProveedoresPage() {
               />
             ),
           }}
-          actionButtonText={selectProvider ? "Editar" : "Crear Proveedor"}
+          actionButtonText="Crear Proveedor"
         />
+
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Eliminar proveedor?</DialogTitle>
+              <DialogDescription>
+                Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar este proveedor?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row gap-2 justify-end">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? <Loader className="h-4 w-4 animate-spin" /> : "Eliminar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
             <CardTitle>Lista de Proveedores</CardTitle>
-            <CardDescription>{providers?.length} proveedor(es) registrado(s)</CardDescription>
+            <CardDescription>
+              {providers?.length ?? 0} proveedor(es) registrado(s)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -130,24 +199,16 @@ export default function ProveedoresPage() {
                       <div className="space-y-1">
                         <h3 className="font-semibold text-lg">{proveedor.nombre}</h3>
                         <p className="text-sm text-muted-foreground">NIT: {proveedor.nit}</p>
-                        <p className="text-sm">
-                          <strong>Responsable:</strong> {proveedor.responsable}
-                        </p>
-                        <p className="text-sm">
-                          <strong>Teléfono:</strong> {proveedor.telefono}
-                        </p>
-                        <p className="text-sm">
-                          <strong>Correo:</strong> {proveedor.correo}
-                        </p>
-                        <p className="text-sm">
-                          <strong>Tipo de Insumo:</strong> {proveedor.tipoInsumo}
-                        </p>
+                        <p className="text-sm"><strong>Responsable:</strong> {proveedor.responsable}</p>
+                        <p className="text-sm"><strong>Teléfono:</strong> {proveedor.telefono}</p>
+                        <p className="text-sm"><strong>Correo:</strong> {proveedor.correo}</p>
+                        <p className="text-sm"><strong>Tipo de Insumo:</strong> {proveedor.tipoInsumo}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(proveedor)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(proveedor?.id)}>
+                        <Button size="sm" variant="destructive" onClick={() => handleShowDeleteDialog(proveedor.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -235,7 +296,7 @@ function FormProveedor({ isEdit, onSubmit, register, errors, isSubmitting, handl
             required
             placeholder="Papelería, Tecnología, etc."
           />
-          {errors.tipo_insumo && <span className="text-xs text-red-500">{errors.tipo_insumo.message}</span>}
+          {errors.tipoInsumo && <span className="text-xs text-red-500">{errors.tipoInsumo.message}</span>}
         </div>
       </div>
       <div className="flex justify-end gap-2">
