@@ -1,97 +1,136 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Plus, Trash2 } from "lucide-react"
-import { cuentasContables as defaultCuentasContables } from "@/lib/data"
+import { ConceptosPorCuentaType } from "@/types/cuentas-contables.types"
+import { registerConceptosSchema, RegisterConceptosSchema } from "@/schema/conceptos.schema"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from "@/components/ui/alert-dialog"
 
-export function GestionarConceptos() {
-  const [cuentasContables, setCuentasContables] = useState(defaultCuentasContables)
-  const [selectedCuenta, setSelectedCuenta] = useState<string>("")
-  const [nuevoConcepto, setNuevoConcepto] = useState("")
-  const [mensaje, setMensaje] = useState("")
+interface GestionarConceptosProps {
+  cuentasContablesTotales: ConceptosPorCuentaType[]
+  createCuentaContable: (data: RegisterConceptosSchema) => Promise<boolean | undefined>
+  deleteCuentaContable: (id: number) => Promise<boolean>
+}
+
+export function GestionarConceptos({
+  cuentasContablesTotales,
+  createCuentaContable,
+  deleteCuentaContable
+}: GestionarConceptosProps) {
+
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [selectedCuentaContableId, setSelectedCuentaContableId] = useState<number | null>(null)
+  const [conceptoAEliminar, setConceptoAEliminar] = useState<number | null>(null)
+
+  const selectedCuentaContable = useMemo(() => {
+    if (!selectedCuentaContableId) return null;
+    return cuentasContablesTotales?.find((cuenta) => cuenta.id === selectedCuentaContableId) || null;
+  }, [cuentasContablesTotales, selectedCuentaContableId]);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterConceptosSchema>({
+    resolver: zodResolver(registerConceptosSchema),
+    defaultValues: {
+      cuentaContableId: selectedCuentaContable?.id || undefined,
+      nombre: '',
+      codigo: '',
+    },
+  });
 
   useEffect(() => {
-    const storedCuentas = localStorage.getItem("cuentasContables")
-    if (storedCuentas) {
-      setCuentasContables(JSON.parse(storedCuentas))
+    if (selectedCuentaContable) {
+      setValue("cuentaContableId", selectedCuentaContable.id);
     }
-  }, [])
+  }, [selectedCuentaContable, setValue]);
 
-  const handleAgregarConcepto = () => {
-    if (!selectedCuenta || !nuevoConcepto.trim()) {
-      setMensaje("Por favor seleccione una cuenta e ingrese un concepto")
-      return
+  useEffect(() => {
+    if (!selectedCuentaContableId) return;
+    const exists = cuentasContablesTotales?.some((c) => c.id === selectedCuentaContableId);
+    if (!exists) setSelectedCuentaContableId(null);
+  }, [cuentasContablesTotales, selectedCuentaContableId]);
+
+
+  const onSubmit = async (data: RegisterConceptosSchema) => {
+    if (!selectedCuentaContable) return;
+    // forzar siempre el id de la cuenta aunque el usuario manipule inputs
+    data.cuentaContableId = selectedCuentaContable.id;
+    const concepto = await createCuentaContable(data);
+    if (concepto) {
+      reset();
     }
-
-    const updatedCuentas = cuentasContables.map((cuenta) => {
-      if (cuenta.codigo === selectedCuenta) {
-        if (cuenta.conceptos.includes(nuevoConcepto.trim())) {
-          setMensaje("Este concepto ya existe en la cuenta seleccionada")
-          return cuenta
-        }
-        return {
-          ...cuenta,
-          conceptos: [...cuenta.conceptos, nuevoConcepto.trim()],
-        }
-      }
-      return cuenta
-    })
-
-    setCuentasContables(updatedCuentas)
-    localStorage.setItem("cuentasContables", JSON.stringify(updatedCuentas))
-    setNuevoConcepto("")
-    setMensaje("Concepto agregado exitosamente")
-
-    setTimeout(() => setMensaje(""), 3000)
   }
 
-  const handleEliminarConcepto = (codigoCuenta: string, concepto: string) => {
-    const updatedCuentas = cuentasContables.map((cuenta) => {
-      if (cuenta.codigo === codigoCuenta) {
-        return {
-          ...cuenta,
-          conceptos: cuenta.conceptos.filter((c) => c !== concepto),
-        }
-      }
-      return cuenta
-    })
-
-    setCuentasContables(updatedCuentas)
-    localStorage.setItem("cuentasContables", JSON.stringify(updatedCuentas))
-    setMensaje("Concepto eliminado exitosamente")
-
-    setTimeout(() => setMensaje(""), 3000)
+  const handleEliminarConcepto = async () => {
+    if (conceptoAEliminar == null) return;
+    await deleteCuentaContable(conceptoAEliminar);
+    setOpenDeleteDialog(false);
+    setConceptoAEliminar(null);
   }
 
-  const cuentaActual = cuentasContables.find((c) => c.codigo === selectedCuenta)
+  const handleOpenDelete = (conceptoId: number) => {
+    setConceptoAEliminar(conceptoId);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleCancelDelete = () => {
+    setOpenDeleteDialog(false);
+    setConceptoAEliminar(null);
+  };
 
   return (
-    <div className="space-y-6 flex flex-col gap-4">
+    <div className="space-y-6 flex flex-col gap-4 ">
       <Card>
         <CardHeader>
           <CardTitle>Gestionar Conceptos de Cuentas Contables</CardTitle>
           <CardDescription>Agregue o elimine conceptos personalizados para cada cuenta contable</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {mensaje && (
-            <div className="bg-green-50 border border-green-200 text-green-800 p-3 rounded-md text-sm">{mensaje}</div>
-          )}
-
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="cuenta">Seleccione Cuenta Contable</Label>
-              <Select value={selectedCuenta} onValueChange={setSelectedCuenta}>
+              <Select
+                value={selectedCuentaContableId ? String(selectedCuentaContableId) : ""}
+                onValueChange={(value) => setSelectedCuentaContableId(value ? Number(value) : null)}
+              >
                 <SelectTrigger id="cuenta">
                   <SelectValue placeholder="Seleccione una cuenta" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cuentasContables.map((cuenta) => (
-                    <SelectItem key={cuenta.codigo} value={cuenta.codigo}>
+                  {cuentasContablesTotales?.map((cuenta) => (
+                    <SelectItem key={cuenta.id} value={String(cuenta.id)}>
                       {cuenta.codigo} - {cuenta.nombre}
                     </SelectItem>
                   ))}
@@ -99,42 +138,50 @@ export function GestionarConceptos() {
               </Select>
             </div>
 
-            {selectedCuenta && (
-              <>
+            {selectedCuentaContable && (
+              <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-2">
                   <Label htmlFor="concepto">Nuevo Concepto</Label>
                   <div className="flex gap-2">
                     <Input
                       id="concepto"
-                      value={nuevoConcepto}
-                      onChange={(e) => setNuevoConcepto(e.target.value)}
+                      {...register("nombre")}
                       placeholder="Ej: Hojas de colores, Tinta negra, etc."
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault()
-                          handleAgregarConcepto()
-                        }
-                      }}
+                      disabled={isSubmitting}
                     />
-                    <Button onClick={handleAgregarConcepto} size="icon">
+                    <Input
+                      id="codigo"
+                      type="text"
+                      {...register("codigo")}
+                      placeholder="Ej: 4555"
+                      disabled={isSubmitting}
+                    />
+                    <Button type="submit" size="icon" disabled={isSubmitting}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {/* Mostrar errores */}
+                  {(errors.nombre || errors.codigo) && (
+                    <div className="text-sm text-destructive mt-1">
+                      {errors.nombre && <div>{errors.nombre.message}</div>}
+                      {errors.codigo && <div>{errors.codigo.message}</div>}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 mt-6">
                   <div className="flex items-center justify-between">
-                    <Label className="text-base">Conceptos Actuales ({cuentaActual?.conceptos.length || 0})</Label>
+                    <Label className="text-base">Conceptos Actuales ({selectedCuentaContable?.conceptos.length || 0})</Label>
                   </div>
 
                   <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
-                    {cuentaActual?.conceptos.map((concepto, index) => (
+                    {selectedCuentaContable?.conceptos.map((concepto, index) => (
                       <div key={index} className="flex items-center justify-between p-3 hover:bg-muted/50">
-                        <span className="text-sm">{concepto}</span>
+                        <span className="text-sm">{concepto.nombre}</span>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEliminarConcepto(selectedCuenta, concepto)}
+                          onClick={() => handleOpenDelete(concepto.id)}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -143,11 +190,31 @@ export function GestionarConceptos() {
                     ))}
                   </div>
                 </div>
-              </>
+              </form>
             )}
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={openDeleteDialog}
+        onOpenChange={(open) => {
+          if (!open) handleCancelDelete();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar Concepto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Está seguro que desea eliminar el concepto ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEliminarConcepto}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardHeader>
@@ -156,19 +223,19 @@ export function GestionarConceptos() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {cuentasContables.map((cuenta) => (
+            {cuentasContablesTotales?.map((cuenta) => (
               <div key={cuenta.codigo} className="border rounded-lg p-4">
                 <h4 className="font-semibold mb-2">
                   {cuenta.codigo} - {cuenta.nombre}
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {cuenta.conceptos.map((concepto, index) => (
+                  {cuenta?.conceptos?.map((concepto, index) => (
                     <span key={index} className="text-xs bg-muted px-2 py-1 rounded-md">
-                      {concepto}
+                      {concepto.nombre}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Total: {cuenta.conceptos.length} conceptos</p>
+                <p className="text-xs text-muted-foreground mt-2">Total: {cuenta.conceptos?.length || 0} conceptos</p>
               </div>
             ))}
           </div>

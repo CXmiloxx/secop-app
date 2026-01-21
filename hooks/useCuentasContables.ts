@@ -1,7 +1,7 @@
 import { RegisterProviderSchema } from "@/schema/providers.schema";
 import { cuentasContablesService } from "@/services/cuentas-contables.service";
 import { useCuentasContabesStore } from "@/store/cuentas-contables.store";
-import { CuentasContablesType } from "@/types/cuentas-contables.types";
+import { ConceptosPorCuentaType, CuentasContablesType } from "@/types/cuentas-contables.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ export default function useCuentasContables() {
   const [cuentasContablesPermitidos, setCuentasContablesPermitidos] = useState<CuentasContablesType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cuentasContablesTotales, setCuentasContablesTotales] = useState<ConceptosPorCuentaType[]>([]);
 
 
   const fetchCuentasContables = useCallback(async (): Promise<CuentasContablesType[] | undefined> => {
@@ -21,6 +22,32 @@ export default function useCuentasContables() {
       if (status === 200 && Array.isArray(data)) {
         setCuentasContables(data as CuentasContablesType[]);
         return data as CuentasContablesType[];
+      } else {
+        console.log("No se pudo obtener la lista de proveedores correctamente")
+        setError("No se pudo obtener la lista de proveedores correctamente.");
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Error desconocido al obtener proveedores.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [setCuentasContables]);
+
+  const fetchCuentasContablesTotales = useCallback(async (): Promise<ConceptosPorCuentaType[] | undefined> => {
+    setLoading(true);
+    setError(null);
+    setCuentasContablesTotales([]);
+    try {
+      const { data, status } = await cuentasContablesService.RequestConceptosPorCuenta();
+      if (status === 200 && Array.isArray(data)) {
+        setCuentasContablesTotales(data as ConceptosPorCuentaType[]);
+        return data as ConceptosPorCuentaType[];
       } else {
         console.log("No se pudo obtener la lista de proveedores correctamente")
         setError("No se pudo obtener la lista de proveedores correctamente.");
@@ -69,6 +96,8 @@ export default function useCuentasContables() {
     loading,
     error,
     fetchCuentasContables,
-    fetchCuentasContablesPermitidos
+    fetchCuentasContablesPermitidos,
+    fetchCuentasContablesTotales,
+    cuentasContablesTotales
   };
 }
