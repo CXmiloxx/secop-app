@@ -23,6 +23,17 @@ export interface SolicitudCajaMenor {
   motivoRechazo?: string;
 }
 
+export interface SolicitudPresupuestoCajaMenorType{
+  id: number;
+  montoSolicitado: number;
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  justificacion?: string;
+  fechaSolicitud: string;
+  fechaAprobacion?: string;
+  montoAprobado?: number;
+  idCajaMenor: number;
+}
+
 export interface SoporteCajaMenor {
   id: string;
   tipo: string;
@@ -41,3 +52,22 @@ export interface MovimientoCajaMenor {
   solicitudId?: string;
 }
 
+
+export interface CajaMenorType {
+  id: number;
+  periodo: number;
+  topeMaximo: number;
+  saldoDisponible: number;
+  presupuestoGastado: number;
+  presupuestoAsignado: number;
+  createdAt: string;
+}
+
+export interface PresupuestoCajaMenorType {
+  id: number;
+  periodo: number;
+  topeMaximo: number;
+  saldoDisponible: number;
+  presupuestoGastado: number;
+  presupuestoAsignado: number;
+}

@@ -1,80 +1,140 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getCuentasContables } from "@/lib/data"
-import type { User } from "@/lib/auth"
-import { Plus, Upload, X } from "lucide-react"
-import { generarNumeroRequisicion } from "@/lib/numeracion"
-import { obtenerPresupuestoCajaMenor, descontarDeCajaMenor, verificarAlerta75 } from "@/lib/caja-menor"
-
-interface Proveedor {
-  id: string
-  nombre: string
-  nit: string
-  contacto: string
-  telefono: string
-  correo: string
-  tipoInsumo: string
-}
+import { Plus, Upload, X, Loader2 } from "lucide-react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { registrarGastoCajaMenorSchema, RegistrarGastoCajaMenorSchema } from "@/schema/caja-menor.schema"
+import { AreaType } from "@/types/user.types"
+import { ProvidersType } from "@/types/provider.types"
+import { CuentasContablesType } from "@/types/cuentas-contables.types"
+import { ConceptosType } from "@/types/conceptos.types"
+import {  PresupuestoCajaMenorType } from "@/types/caja-menor"
+import { formatCurrency } from "@/lib/utils"
 
 interface RegistrarCajaMenorProps {
-  user: User
-  onRegistroExitoso?: () => void
+  providers: ProvidersType[]
+  cuentasContables: CuentasContablesType[]
+  conceptos: ConceptosType[]
+  presupuestoCajaMenor: PresupuestoCajaMenorType | null
+  areas: AreaType[]
+  fetchCoceptos: (cuentaContableId: number) => void
+  registrarGasto:  (gasto: RegistrarGastoCajaMenorSchema) => Promise<boolean>
 }
 
-export function RegistrarCajaMenor({ user, onRegistroExitoso }: RegistrarCajaMenorProps) {
-  const [proveedor, setProveedor] = useState("")
-  const [cuentaSeleccionada, setCuentaSeleccionada] = useState("")
-  const [conceptoSeleccionado, setConceptoSeleccionado] = useState("")
-  const [descripcion, setDescripcion] = useState("")
-  const [valor, setValor] = useState("")
-  const [iva, setIva] = useState("")
-  const [cantidad, setCantidad] = useState("")
-  const [unidadMedida, setUnidadMedida] = useState("")
-  const [justificacion, setJustificacion] = useState("")
-  const [factura, setFactura] = useState<File | null>(null)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [cuentasContables, setCuentasContables] = useState<any[]>([])
-  const [presupuesto, setPresupuesto] = useState<any>(null)
+export function RegistrarCajaMenor({
+  providers,
+  cuentasContables,
+  conceptos,
+  presupuestoCajaMenor,
+  areas,
+  fetchCoceptos,
+  registrarGasto,
+}: RegistrarCajaMenorProps) {
 
-  const unidadesMedida = [
-    "Unidades",
-    "Cajas",
-    "Paquetes",
-    "Litros",
-    "Kilogramos",
-    "Metros",
-    "Galones",
-    "Docenas",
-    "Resmas",
-    "Otros",
-  ]
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<RegistrarGastoCajaMenorSchema>({
+    resolver: zodResolver(registrarGastoCajaMenorSchema),
+    defaultValues: {
+      cajaMenorId: Number(presupuestoCajaMenor?.id),
+      valorBase: 0,
+      iva: 0,
+      valorTotal: 0,
+      cantidad: 1,
+      descripcionProducto: "",
+      justificacion: "",
+      proveedorId: undefined,
+      cuentaContableId: undefined,
+      conceptoContableId: undefined,
+      areaId: undefined,
+      soporteFactura: undefined,
+    },
+  })
+  useEffect(() => {
+    if (presupuestoCajaMenor) {
+      setValue("cajaMenorId", Number(presupuestoCajaMenor.id))
+    }
+  }, [presupuestoCajaMenor, setValue])
+
+
+  const valorBase = watch("valorBase")
+  const iva = watch("iva")
+  const cuentaContableId = watch("cuentaContableId")
+  const soporteFactura = watch("soporteFactura")
+
+  const valorTotalCalculado = useMemo(() => {
+    const base = Number(valorBase) || 0
+    const ivaValue = Number(iva) || 0
+    return base + ivaValue
+  }, [valorBase, iva])
+
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("proveedores") || "[]")
-    setProveedores(stored)
+    setValue("valorTotal", valorTotalCalculado, { shouldValidate: true })
+  }, [valorTotalCalculado, setValue])
 
-    const cuentas = getCuentasContables().filter((cuenta) => {
-      const codigo = cuenta.codigo
-      return !codigo.startsWith("15") && !codigo.startsWith("16")
+  useEffect(() => {
+    if (!cuentaContableId) {
+      setValue("conceptoContableId", undefined)
+    }
+  }, [cuentaContableId, setValue])
+
+  useEffect(() => {
+    if (watch("cuentaContableId") && Number(watch("cuentaContableId")) > 0) {
+      fetchCoceptos(Number(watch("cuentaContableId")));
+    }
+  }, [watch("cuentaContableId"), fetchCoceptos]);
+
+  const disponible = presupuestoCajaMenor
+    ? presupuestoCajaMenor.saldoDisponible
+    : 0
+
+  const onSubmit = async (data: RegistrarGastoCajaMenorSchema) => {
+    if (!presupuestoCajaMenor) {
+      return
+    }
+
+    if (data.valorTotal > disponible) {
+      return
+    }
+
+    const success = await registrarGasto({
+      ...data,
+      cajaMenorId: presupuestoCajaMenor.id,
     })
-    setCuentasContables(cuentas)
 
-    const presupuestoCM = obtenerPresupuestoCajaMenor()
-    setPresupuesto(presupuestoCM)
-  }, [])
+    if (success) {
+      reset({
+        cajaMenorId: presupuestoCajaMenor.id,
+        valorBase: 0,
+        iva: 0,
+        valorTotal: 0,
+        cantidad: 1,
+        descripcionProducto: "",
+        justificacion: "",
+        proveedorId: undefined,
+        cuentaContableId: undefined,
+        conceptoContableId: undefined,
+        areaId: undefined,
+        soporteFactura: undefined,
+      })
+    }
+  }
 
-  const handleFacturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const validTypes = [
@@ -86,345 +146,234 @@ export function RegistrarCajaMenor({ user, onRegistroExitoso }: RegistrarCajaMen
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ]
       if (!validTypes.includes(file.type)) {
-        setError("El archivo debe ser PDF, JPG, PNG, DOC o DOCX")
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError("El archivo no debe superar 5MB")
         return
       }
-      setFactura(file)
-      setError("")
+      setValue("soporteFactura", file, { shouldValidate: true })
     }
   }
 
-  const handleRemoveFactura = () => {
-    setFactura(null)
+  const handleRemoveFile = () => {
+    setValue("soporteFactura", undefined, { shouldValidate: false })
   }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess("")
-
-    if (
-      !cuentaSeleccionada ||
-      !conceptoSeleccionado ||
-      !descripcion ||
-      !valor ||
-      !iva ||
-      !cantidad ||
-      !unidadMedida ||
-      !justificacion
-    ) {
-      setError("Todos los campos son obligatorios (excepto proveedor)")
-      return
-    }
-
-    if (!factura) {
-      setError("Debe adjuntar el soporte (factura)")
-      return
-    }
-
-    const valorNumerico = Number.parseFloat(valor)
-    if (isNaN(valorNumerico) || valorNumerico <= 0) {
-      setError("El valor debe ser un número positivo")
-      return
-    }
-
-    const ivaNumerico = Number.parseFloat(iva)
-    if (isNaN(ivaNumerico) || ivaNumerico < 0) {
-      setError("El IVA debe ser un número válido (0 o mayor)")
-      return
-    }
-
-    const cantidadNumerica = Number.parseInt(cantidad)
-    if (isNaN(cantidadNumerica) || cantidadNumerica <= 0) {
-      setError("La cantidad debe ser un número positivo")
-      return
-    }
-
-    const valorTotal = valorNumerico + ivaNumerico
-
-    if (!presupuesto) {
-      setError("No hay presupuesto de caja menor asignado")
-      return
-    }
-
-    const disponible = presupuesto.montoAsignado - presupuesto.totalGastado
-    if (valorTotal > disponible) {
-      setError(
-        `El valor total (${new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: "COP",
-          minimumFractionDigits: 0,
-        }).format(valorTotal)}) excede el presupuesto disponible (${new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: "COP",
-          minimumFractionDigits: 0,
-        }).format(disponible)})`,
-      )
-      return
-    }
-
-    const cuenta = cuentasContables.find((c) => c.codigo === cuentaSeleccionada)
-    const proveedorSeleccionado = proveedores.find((p) => p.id === proveedor)
-    const nombreProveedor = proveedorSeleccionado?.nombre || proveedor || "Sin proveedor"
-
-    const nuevaRequisicion = {
-      id: Date.now().toString(),
-      numeroRequisicion: generarNumeroRequisicion(),
-      area: "Caja Menor",
-      proveedor: nombreProveedor,
-      proveedorId: proveedor,
-      cuenta: cuentaSeleccionada,
-      nombreCuenta: cuenta?.nombre || "",
-      concepto: conceptoSeleccionado,
-      activo: descripcion,
-      cantidad: cantidadNumerica,
-      unidadMedida,
-      valor: valorNumerico,
-      iva: ivaNumerico,
-      valorTotal: valorTotal,
-      justificacion,
-      fecha: new Date().toISOString(),
-      solicitante: user.username,
-      estado: "Aprobada - Caja Menor",
-      aprobador: "Sistema - Caja Menor",
-      fechaAprobacion: new Date().toISOString(),
-      numeroComite: null,
-      tipoCaja: true,
-      partidaNoPresupuestada: false,
-      cotizaciones: [],
-      procesamientoCajaMenor: true,
-      factura: {
-        nombre: factura.name,
-        tipo: factura.type,
-        tamaño: factura.size,
-        fechaSubida: new Date().toISOString(),
-      },
-    }
-
-    const requisiciones = JSON.parse(localStorage.getItem("requisiciones") || "[]")
-    requisiciones.push(nuevaRequisicion)
-    localStorage.setItem("requisiciones", JSON.stringify(requisiciones))
-
-    descontarDeCajaMenor(valorTotal, user.username, nuevaRequisicion.numeroRequisicion)
-
-    verificarAlerta75()
-
-    setSuccess(
-      `Requisición ${nuevaRequisicion.numeroRequisicion} registrada exitosamente. Descontado del presupuesto de caja menor.`,
-    )
-
-    setProveedor("")
-    setCuentaSeleccionada("")
-    setConceptoSeleccionado("")
-    setDescripcion("")
-    setValor("")
-    setIva("")
-    setCantidad("")
-    setUnidadMedida("")
-    setJustificacion("")
-    setFactura(null)
-
-    if (onRegistroExitoso) {
-      onRegistroExitoso()
-    }
-
-    const presupuestoActualizado = obtenerPresupuestoCajaMenor()
-    setPresupuesto(presupuestoActualizado)
-  }
-
-  const conceptos = cuentasContables.find((c) => c.codigo === cuentaSeleccionada)?.conceptos || []
-  const disponible = presupuesto ? presupuesto.montoAsignado - presupuesto.totalGastado : 0
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Registrar Requisición de Caja Menor</CardTitle>
         <CardDescription>Las requisiciones se descuentan automáticamente sin necesidad de aprobación</CardDescription>
-        {presupuesto && (
+        {presupuestoCajaMenor && (
           <div className="mt-2 p-3 bg-primary/10 rounded-lg">
             <p className="text-sm font-semibold">
-              Disponible:{" "}
-              {new Intl.NumberFormat("es-CO", {
-                style: "currency",
-                currency: "COP",
-                minimumFractionDigits: 0,
-              }).format(disponible)}
+              Disponible: {formatCurrency(disponible)}
             </p>
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="proveedor">Proveedor (Opcional)</Label>
-            <Select value={proveedor} onValueChange={setProveedor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccione un proveedor (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {proveedores.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground">No hay proveedores disponibles</div>
-                ) : (
-                  proveedores.map((prov) => (
-                    <SelectItem key={prov.id} value={prov.id}>
-                      {prov.nombre} - {prov.tipoInsumo}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cuenta">Cuenta Contable</Label>
-              <Select value={cuentaSeleccionada} onValueChange={setCuentaSeleccionada}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione la cuenta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cuentasContables.map((cuenta) => (
-                    <SelectItem key={cuenta.codigo} value={cuenta.codigo}>
-                      {cuenta.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="concepto">Concepto</Label>
-              <Select
-                value={conceptoSeleccionado}
-                onValueChange={setConceptoSeleccionado}
-                disabled={!cuentaSeleccionada}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione el concepto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {conceptos.map((concepto) => (
-                    <SelectItem key={concepto} value={concepto}>
-                      {concepto}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="proveedorId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un proveedor (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {providers.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">No hay proveedores disponibles</div>
+                    ) : (
+                      providers.map((prov) => (
+                        <SelectItem key={prov.id} value={prov.id.toString()}>
+                          {prov.nombre} - {prov.tipoInsumo}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción del Item</Label>
-            <Input
-              id="descripcion"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej: Bolígrafos azules marca Bic"
+            <Label htmlFor="areaId">Área (Opcional)</Label>
+            <Controller
+              name="areaId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un área (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {areas.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">No hay áreas disponibles</div>
+                    ) : (
+                      areas.map((area) => (
+                        <SelectItem key={area.id} value={area.id.toString()}>
+                          {area.nombre}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cantidad">Cantidad *</Label>
-              <Input
-                id="cantidad"
-                type="number"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                placeholder="0"
-                min="1"
+              <Label htmlFor="cuentaContableId">Cuenta Contable (Opcional)</Label>
+              <Controller
+                name="cuentaContableId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                    disabled={!presupuestoCajaMenor}
+
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione la cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cuentasContables.map((cuenta) => (
+                        <SelectItem key={cuenta.id} value={cuenta.id.toString()}>
+                          {cuenta.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unidadMedida">Unidad de Medida *</Label>
-              <Select value={unidadMedida} onValueChange={setUnidadMedida}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione unidad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {unidadesMedida.map((unidad) => (
-                    <SelectItem key={unidad} value={unidad}>
-                      {unidad}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="conceptoContableId">Concepto (Opcional)</Label>
+              <Controller
+                name="conceptoContableId"
+                control={control}
+                disabled={!cuentaContableId}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                    disabled={!cuentaContableId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione el concepto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {conceptos.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground">
+                          {cuentaContableId ? "No hay conceptos disponibles" : "Seleccione primero una cuenta"}
+                        </div>
+                      ) : (
+                        conceptos.map((concepto) => (
+                          <SelectItem key={concepto.id} value={concepto.id.toString()}>
+                            {concepto.nombre}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="descripcionProducto">Descripción del Item *</Label>
+            <Input
+              id="descripcionProducto"
+              {...register("descripcionProducto")}
+              placeholder="Ej: Bolígrafos azules marca Bic"
+            />
+            {errors.descripcionProducto && (
+              <p className="text-xs text-red-500">{errors.descripcionProducto.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cantidad">Cantidad *</Label>
+            <Input
+              id="cantidad"
+              type="number"
+              {...register("cantidad", { valueAsNumber: true })}
+              placeholder="0"
+              min="1"
+            />
+            {errors.cantidad && (
+              <p className="text-xs text-red-500">{errors.cantidad.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="valor">Valor Base (COP)</Label>
+              <Label htmlFor="valorBase">Valor Base (COP) *</Label>
               <Input
-                id="valor"
+                id="valorBase"
                 type="number"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
+                {...register("valorBase", { valueAsNumber: true })}
                 placeholder="0"
                 min="0"
                 step="0.01"
               />
+              {errors.valorBase && (
+                <p className="text-xs text-red-500">{errors.valorBase.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="iva">IVA (COP)</Label>
+              <Label htmlFor="iva">IVA (COP) (Opcional)</Label>
               <Input
                 id="iva"
                 type="number"
-                value={iva}
-                onChange={(e) => setIva(e.target.value)}
+                {...register("iva", { valueAsNumber: true })}
                 placeholder="0"
                 min="0"
                 step="0.01"
               />
+              {errors.iva && (
+                <p className="text-xs text-red-500">{errors.iva.message}</p>
+              )}
             </div>
           </div>
-
-          {valor && iva && (
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <p className="text-sm font-semibold">
-                Valor Total:{" "}
-                {new Intl.NumberFormat("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  minimumFractionDigits: 0,
-                }).format(Number.parseFloat(valor) + Number.parseFloat(iva))}
-              </p>
-            </div>
-          )}
-
           <div className="space-y-2">
-            <Label htmlFor="justificacion">Justificación</Label>
+            <Label htmlFor="justificacion">Justificación *</Label>
             <Textarea
               id="justificacion"
-              value={justificacion}
-              onChange={(e) => setJustificacion(e.target.value)}
+              {...register("justificacion")}
               placeholder="Justifique la necesidad de esta compra"
               rows={3}
             />
+            {errors.justificacion && (
+              <p className="text-xs text-red-500">{errors.justificacion.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="factura">Soporte (Factura) *</Label>
+            <Label htmlFor="soporteFactura">Soporte (Factura) (Opcional)</Label>
             <div className="flex flex-col gap-2">
-              {!factura ? (
+              {!soporteFactura ? (
                 <div className="flex items-center gap-2">
                   <Input
-                    id="factura"
+                    id="soporteFactura"
                     type="file"
-                    onChange={handleFacturaChange}
+                    onChange={handleFileChange}
                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     className="hidden"
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById("factura")?.click()}
+                    onClick={() => document.getElementById("soporteFactura")?.click()}
                     className="w-full"
                   >
                     <Upload className="h-4 w-4 mr-2" />
@@ -436,11 +385,17 @@ export function RegistrarCajaMenor({ user, onRegistroExitoso }: RegistrarCajaMen
                   <div className="flex items-center gap-2">
                     <Upload className="h-4 w-4 text-primary" />
                     <div>
-                      <p className="text-sm font-medium">{factura.name}</p>
-                      <p className="text-xs text-muted-foreground">{(factura.size / 1024).toFixed(2)} KB</p>
+                      <p className="text-sm font-medium">
+                        {soporteFactura instanceof File ? soporteFactura.name : "Archivo adjunto"}
+                      </p>
+                      {soporteFactura instanceof File && (
+                        <p className="text-xs text-muted-foreground">
+                          {(soporteFactura.size / 1024).toFixed(2)} KB
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <Button type="button" variant="ghost" size="sm" onClick={handleRemoveFactura}>
+                  <Button type="button" variant="ghost" size="sm" onClick={handleRemoveFile}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -451,15 +406,34 @@ export function RegistrarCajaMenor({ user, onRegistroExitoso }: RegistrarCajaMen
             </div>
           </div>
 
-          {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{error}</div>}
-
-          {success && (
-            <div className="text-sm text-green-700 bg-green-50 p-3 rounded-md border border-green-200">{success}</div>
+          {valorBase > 0 && (
+            <div className="p-3 bg-primary/10 rounded-lg">
+              <p className="text-sm font-semibold">
+                Valor Total: {formatCurrency(valorTotalCalculado)}
+              </p>
+              {valorTotalCalculado > disponible && (
+                <p className="text-xs text-red-500 mt-1">
+                  El valor total excede el presupuesto disponible
+                </p>
+              )}
+              {errors.valorTotal && (
+                <p className="text-xs text-red-500">{errors.valorTotal.message}</p>
+              )}
+            </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={!presupuesto}>
-            <Plus className="h-4 w-4 mr-2" />
-            Registrar y Descontar de Caja Menor
+          <Button type="submit" className="w-full" disabled={!presupuestoCajaMenor || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Registrar y Descontar de Caja Menor
+              </>
+            )}
           </Button>
         </form>
       </CardContent>
