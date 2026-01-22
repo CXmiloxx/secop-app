@@ -159,7 +159,7 @@ export default function TesoreriaPage() {
                                 user={user}
                                 createPagoTesoreria={handleCreatePago}
                                 onClose={() => setRequisicionSeleccionada(null)}
-                                tipo="tesoreria"
+                                tipo="TESORERIA"
                                 open={requisicionSeleccionada?.id === req.id}
                                 onOpenChange={(open) => setRequisicionSeleccionada(open ? req : null)}
                               />
