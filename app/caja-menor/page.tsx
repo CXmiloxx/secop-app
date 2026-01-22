@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RegistrarCajaMenor } from "@/components/caja-menor/registrar-caja-menor"
 import { HistorialCajaMenor } from "@/components/caja-menor/historial-caja-menor"
 import { Wallet, AlertCircle, TrendingUp, Activity, Loader } from "lucide-react"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import useCajaMenor from "@/hooks/useCajaMenor"
 import { usePeriodoStore } from "@/store/periodo.store"
 import useCuentasContables from "@/hooks/useCuentasContables"
@@ -19,7 +19,7 @@ import { formatCurrency } from "@/lib"
 export default function CajaMenorPage() {
   const {
     user,
-  } = useAuthStore()
+  } = useAuth()
   const {
     fetchCajaMenor,
     presupuestoCajaMenor,
@@ -191,7 +191,7 @@ export default function CajaMenorPage() {
       {isAdmin ? (
         // Admin solo puede ver el historial
         <div className="w-full">
-            <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
+          <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
         </div>
       ) : (
         // Caja Menor puede registrar y ver historial
@@ -206,8 +206,8 @@ export default function CajaMenorPage() {
             registrarGasto={registrarGasto}
           />
 
-            <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
-        
+          <HistorialCajaMenor historialCajaMenor={historialCajaMenor} />
+
         </div>
       )}
 

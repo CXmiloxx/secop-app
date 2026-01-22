@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { FileText, Plus, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import useCuentasContables from "@/hooks/useCuentasContables"
 import useConceptos from "@/hooks/useConceptos"
 import { useForm } from "react-hook-form"
@@ -29,7 +29,7 @@ export default function SolicitarPresupuestoPage() {
   const [valorEstimado, setValorEstimado] = useState("");
   const [errorArticulo, setErrorArticulo] = useState("");
 
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { fetchCuentasContables, cuentasContables } = useCuentasContables();
   const { conceptos, fetchCoceptos, errorConceptos, loadingConceptos } = useConceptos();
   const { error: erroSPresupuesto, loading: loadingSPresupuesto, createSolicitud } = useSolicitudPresupuesto();

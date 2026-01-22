@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText } from "lucide-react"
 import CrearRequisicion from "@/components/requisiciones/crear-requisicion"
 import HistorialRequisiciones from "@/components/requisiciones/historial-requisiciones"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import Navbar from "@/components/Navbar"
 import useRequisicion from "@/hooks/useRequisicion"
 import { usePeriodoStore } from "@/store/periodo.store"
@@ -16,7 +16,7 @@ import useProductos from "@/hooks/useProductos"
 
 
 export default function RequisicionesPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const { fetchHistorialRequisicionesArea, createSolicitudRequisicion, historialRequisicionesArea, loadingRequisicion } = useRequisicion()
   const { periodo } = usePeriodoStore()
 

@@ -8,7 +8,7 @@ import { DollarSign, CreditCard, CheckCircle2, History, Clock } from "lucide-rea
 
 import MonitorCajaMenor from "@/components/tesoreria/monitor-caja-menor"
 import SolicitudesCajaMenor from "@/components/tesoreria/solicitudes-caja-menor"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import { usePeriodoStore } from "@/store/periodo.store"
 import { RequisicionType } from "@/types"
 import AprobarPago from "@/components/tesoreria/AprobarPago"
@@ -21,7 +21,7 @@ import useCajaMenor from "@/hooks/useCajaMenor"
 import { UserType } from "@/types/user.types"
 
 export default function TesoreriaPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const { periodo } = usePeriodoStore()
   const [requisicionSeleccionada, setRequisicionSeleccionada] = useState<RequisicionType | null>(null)
 

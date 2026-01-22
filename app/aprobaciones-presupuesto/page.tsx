@@ -4,13 +4,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, CheckSquare } from "lucide-react"
 import { AprobarSolicitudes } from "@/components/presupuestos/AprobarSolicitudes"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
 import { useCallback, useEffect } from "react"
 import Navbar from "@/components/Navbar"
 
 export default function AprobacionesPresupuestoPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const router = useRouter()
   const { presupuestos, loading, error, fetchSolicitudes, aprobarSolicitud } = useSolicitudPresupuesto()
 

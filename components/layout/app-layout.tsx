@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/sidebar'
 import { Loader2 } from 'lucide-react'
 import { hasAccessToRoute } from '@/utils/routesAccess'
-import useAuthUser from '@/hooks/useAuth'
+import useAuth from '@/hooks/useAuth'
 import { toast } from 'sonner'
 
 const PUBLIC_ROUTES = ['/']
@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = ['/']
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, logout, hasHydrated } = useAuthUser()
+  const { user, logout, hasHydrated } = useAuth()
 
   const isPublic = PUBLIC_ROUTES.includes(pathname)
   const hasAccess =
@@ -40,14 +40,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       toast.error('La sesión ha expirado, por favor inicie sesión nuevamente')
       router.replace('/')
     }
-  
+
     window.addEventListener('sessionExpired', handleSessionExpired)
-  
+
     return () => {
       window.removeEventListener('sessionExpired', handleSessionExpired)
     }
   }, [logout, router])
-  
+
 
 
   if (!hasHydrated) {

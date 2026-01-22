@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form"
 import { AprobarSolicitudPresupuestoSchema, aprobarSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
 import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 
 interface AprobarSolicitudesProps {
   solicitudes: AprobarSolicitudPresupuesto[]
@@ -30,7 +30,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [articulosConAprobacion, setArticulosConAprobacion] = useState<SolicitudArticuloPresupuesto[]>([]);
-  const { user } = useAuthStore()
+  const { user } = useAuth()
 
 
   const {

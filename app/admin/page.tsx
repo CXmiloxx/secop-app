@@ -1,10 +1,10 @@
 'use client'
 import ListUsers from '@/components/users/ListUsers'
-import useAuthUser from '@/hooks/useAuth'
+import useAuth from '@/hooks/useAuth'
 import { useCallback, useEffect } from 'react'
 
 export default function AdminPage() {
-  const { allUsers, loading, error, users, deleteUser } = useAuthUser()
+  const { allUsers, loading, error, users, deleteUser } = useAuth()
 
   const getUsers = useCallback(async () => {
     await allUsers()

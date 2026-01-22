@@ -26,7 +26,7 @@ import {
 import { useForm, Controller } from 'react-hook-form'
 import { registerSchema, RegisterSchema, editUserSchema, EditUserSchema } from '@/schema/auth.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
-import useAuthUser from '@/hooks/useAuth'
+import useAuth from '@/hooks/useAuth'
 import { useCallback, useEffect, useState } from 'react'
 import { AreaType, RolType, UserType } from '@/types/user.types'
 import Modal from '../Modal'
@@ -68,7 +68,7 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
     } : undefined
   })
 
-  const { registerUser, updateUser, error: authError, loading, parametersData } = useAuthUser()
+  const { registerUser, updateUser, error: authError, loading, parametersData } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [rol, setRol] = useState<RolType[]>([])
   const [area, setArea] = useState<AreaType[]>([])

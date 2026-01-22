@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { UploadIcon, FileTextIcon } from "lucide-react"
 import TimelineTrazabilidad from "@/components/tesoreria/timeline-trazabilidad"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import useRequisicion from "@/hooks/useRequisicion"
 import { usePeriodoStore } from "@/store/periodo.store"
 import { useForm } from "react-hook-form"
@@ -39,7 +39,7 @@ import Comentario from "@/components/aprobacion/Comentario"
 import Navbar from "@/components/Navbar"
 
 export default function AprobacionesPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("pendientes")
   const [selectedRequisicion, setSelectedRequisicion] = useState<RequisicionType | null>(null)
   const [showAprobarDialog, setShowAprobarDialog] = useState(false)

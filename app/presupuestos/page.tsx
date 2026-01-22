@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DollarSign, TrendingDown, TrendingUp, AlertTriangle, Wallet, Eye } from "lucide-react"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
 import usePresupuesto from "@/hooks/usePresupuesto"
 import usePresupuestoGeneral from "@/hooks/usePresupuestoGeneral"
 import Navbar from "@/components/Navbar"
@@ -14,7 +14,7 @@ import { Presupuesto } from "@/types"
 import PresupuestoDetailsDialog from "@/components/presupuestos/PresupuestoDetailsDialog"
 
 export default function PresupuestosPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const { periodo } = usePeriodoStore()
   const {
     presupuestoArea,
