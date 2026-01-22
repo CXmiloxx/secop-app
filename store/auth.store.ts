@@ -8,6 +8,7 @@ interface AuthState {
 
   setUser: (user: UserType | null) => void
   clearAuth: () => void
+  setHydrated: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -17,17 +18,15 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
 
       setUser: (user) => set({ user }),
-      clearAuth: () =>
-        set({
-          user: null,
-        }),
+      clearAuth: () => set({ user: null }),
+      setHydrated: () => set({ hasHydrated: true }),
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
-        if (state) state.hasHydrated = true
+        state?.setHydrated()
       },
     }
   )

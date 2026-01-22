@@ -1,17 +1,26 @@
+// hooks/useAuthUser.ts
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { loginRequest, parametersDataRequest, registerRequest, usuariosRequest, deleteUserRequest, updateUserRequest } from '@/services/auth.service';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
+
 import { LoginSchema, RegisterSchema, EditUserSchema } from '@/schema/auth.schema';
 import { useAuthStore } from '@/store/auth.store';
-import { toast } from 'sonner'
-import { UserType } from '@/types/user.types';
+import { AuthService } from '@/services/auth.service';
 import { ApiError } from '@/utils/api-error';
-import { useCallback, useState } from 'react';
+import { UserType } from '@/types/user.types';
 
 export default function useAuthUser() {
   const router = useRouter();
-  const { user, setUser, clearAuth } = useAuthStore();
+
+  const {
+    user,
+    hasHydrated,
+    setUser,
+    clearAuth,
+  } = useAuthStore();
+
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,43 +30,51 @@ export default function useAuthUser() {
     setError(null);
 
     try {
-      const { data, status, message } = await loginRequest(credentials);
+      const { data, status } = await AuthService.loginRequest(credentials);
       if (status === 200) {
-        toast.success('Inicio de sesión exitoso');
         setUser(data as UserType);
+        toast.success('Inicio de sesión exitoso');
         router.push('/presupuestos');
-      } else {
-        throw new Error(message);
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message)
-      }
+      let errorMessage = 'Error desconocido al iniciar sesión.';
+
+      if (err instanceof ApiError) errorMessage = err.message;
+      else if (err instanceof Error) errorMessage = err.message;
+
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [loginRequest, setUser, router]);
+  }, [router, setUser]);
+
+  const logout = useCallback(() => {
+    clearAuth();
+    router.push('/login');
+  }, [clearAuth, router]);
 
   const registerUser = useCallback(async (credentials: RegisterSchema) => {
     setLoading(true);
     setError(null);
 
     try {
-      const { status, message } = await registerRequest(credentials);
+      const { status } = await AuthService.registerRequest(credentials);
+
       if (status === 201) {
+        await allUsers();
         toast.success('Usuario creado exitosamente');
-        return true
-      } else {
-        throw new Error(message);
+        return true;
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Error al crear usuario');
-      }
+      let errorMessage = 'Error desconocido al crear usuario.';
+
+      if (err instanceof ApiError) errorMessage = err.message;
+      else if (err instanceof Error) errorMessage = err.message;
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -68,25 +85,21 @@ export default function useAuthUser() {
     setError(null);
 
     try {
-      const { status, message } = await updateUserRequest(userData);
+      const { status } = await AuthService.updateUserRequest(userData);
+
       if (status === 200) {
         toast.success('Usuario actualizado exitosamente');
         await allUsers();
         return true;
-      } else {
-        throw new Error(message || 'Error al actualizar usuario');
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        toast.error(err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-        toast.error(err.message);
-      } else {
-        setError('Error al actualizar usuario');
-        toast.error('Error al actualizar usuario');
-      }
+      let errorMessage = 'Error desconocido al actualizar usuario.';
+
+      if (err instanceof ApiError) errorMessage = err.message;
+      else if (err instanceof Error) errorMessage = err.message;
+
+      setError(errorMessage);
+      toast.error(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -97,7 +110,7 @@ export default function useAuthUser() {
     setLoading(true);
     setError(null);
     try {
-      const { data, status } = await parametersDataRequest(param)
+      const { data, status } = await AuthService.parametersDataRequest(param)
       if (status === 200) {
         return data
       }
@@ -108,14 +121,14 @@ export default function useAuthUser() {
     } finally {
       setLoading(false);
     }
-  }, [parametersDataRequest]);
+  }, []);
 
 
   const allUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const { data, status } = await usuariosRequest()
+      const { data, status } = await AuthService.usuariosRequest()
       if (status === 200) {
         setUsers(data as UserType[]);
       } else {
@@ -132,13 +145,13 @@ export default function useAuthUser() {
     } finally {
       setLoading(false);
     }
-  }, [usuariosRequest]);
+  }, [setUsers]);
 
   const deleteUser = useCallback(async (userId: string) => {
     try {
       setLoading(true);
       setError(null);
-      const { status, message } = await deleteUserRequest(userId);
+      const { status, message } = await AuthService.deleteUserRequest(userId);
       if (status === 200) {
         toast.success('Usuario eliminado exitosamente');
         setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
@@ -163,24 +176,20 @@ export default function useAuthUser() {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    clearAuth();
-    router.push('/login');
-  }, [clearAuth, router]);
 
   return {
     user,
+    hasHydrated,
     loading,
     error,
     login,
     logout,
     registerUser,
     updateUser,
-    allUsers,
-    users,
     parametersData,
+    allUsers,
     deleteUser,
-    setUsers
+    clearAuth,
+    users,
   };
 }

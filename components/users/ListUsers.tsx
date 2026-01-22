@@ -87,7 +87,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
     }
   }
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = users?.filter((user) => {
     const searchLower = searchTerm.toLowerCase()
     return (
       user.nombre.toLowerCase().includes(searchLower) ||
@@ -175,7 +175,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredUsers.length === 0 ? (
+            ) : filteredUsers?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
@@ -191,7 +191,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              filteredUsers?.map((user) => (
                 <TableRow key={user.id} className="group">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -264,10 +264,10 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
       </div>
 
       {/* Footer Stats */}
-      {!loading && filteredUsers.length > 0 && (
+      {!loading && filteredUsers?.length > 0 && (
         <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3 text-sm">
           <p className="text-muted-foreground">
-            Mostrando <span className="font-medium text-foreground">{filteredUsers.length}</span> de{" "}
+            Mostrando <span className="font-medium text-foreground">{filteredUsers?.length}</span> de{" "}
             <span className="font-medium text-foreground">{users.length}</span> usuarios
           </p>
         </div>

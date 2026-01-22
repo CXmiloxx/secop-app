@@ -43,11 +43,11 @@ class ApiClient {
     this.setupInterceptors();
   }
 
-  private getTokenFromCookies(): string | null {
-    if (typeof document === 'undefined') return null;
-    const match = document.cookie.match(new RegExp('(^| )authToken=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
-  }
+  /*   private getTokenFromCookies(): string | null {
+      if (typeof document === 'undefined') return null;
+      const match = document.cookie.match(new RegExp('(^| )authToken=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    } */
 
   private processQueue(error: unknown, token: string | null = null): void {
     this.failedQueue.forEach((prom) => {
@@ -61,10 +61,10 @@ class ApiClient {
     // Request interceptor
     this.axiosInstance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = this.getTokenFromCookies();
+        /* const token = this.getTokenFromCookies();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
-        }
+        } */
         return config;
       },
       (error) => Promise.reject(error),
@@ -72,41 +72,36 @@ class ApiClient {
 
     // Response interceptor
     this.axiosInstance.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response) => response,
       async (error: AxiosError) => {
-        const originalRequest: any = error.config;
-        const isAuthRoute = originalRequest?.url?.includes('/auth/login');
+        const originalRequest: any = error.config
+        const isAuthRoute =
+          originalRequest?.url?.includes('/auth/login') ||
+          originalRequest?.url?.includes('/auth/refresh')
 
-        // 🟡 ERROR DE RED
         if (!error.response) {
-          throw new ApiError('Error de conexión con el servidor', 0);
+          throw new ApiError('Error de conexión con el servidor', 0)
         }
 
-        const status = error.response.status;
-        const data: any = error.response.data;
+        const status = error.response.status
 
-        // 🔁 MANEJO DE REFRESH TOKEN
         if (status === 401 && !originalRequest?._retry && !isAuthRoute) {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
-              this.failedQueue.push({ resolve, reject, config: originalRequest });
-            }).then(() => this.axiosInstance(originalRequest));
+              this.failedQueue.push({ resolve, reject, config: originalRequest })
+            }).then(() => this.axiosInstance(originalRequest))
           }
 
-          originalRequest._retry = true;
-          this.isRefreshing = true;
+          originalRequest._retry = true
+          this.isRefreshing = true
 
           try {
-            await axios.post(
-              `${envs.api}/auth/refresh`,
-              {},
-              { withCredentials: true },
-            );
+            await axios.post(`${envs.api}/auth/refresh`, {}, { withCredentials: true })
 
-            this.processQueue(null, this.getTokenFromCookies());
-            this.isRefreshing = false;
+            this.processQueue(null, null)
+            this.isRefreshing = false
 
-            return this.axiosInstance(originalRequest);
+            return this.axiosInstance(originalRequest)
           } catch (refreshError) {
             this.processQueue(refreshError, null);
             this.isRefreshing = false;
@@ -115,20 +110,21 @@ class ApiClient {
               window.dispatchEvent(new Event('sessionExpired'));
             }
 
-            throw new ApiError('Sesión expirada', 401);
+            // ⛔ NO lanzar error al UI
+            return new Promise(() => {
+              /* Promise que nunca resuelve → request muere en silencio */
+            });
           }
+
         }
 
-        // 🔴 NORMALIZACIÓN DE ERRORES
-        const message =
-          data?.message ||
-          data?.error ||
-          error.message ||
-          'Error inesperado';
+        throw new ApiError(
+          (error.response.data as any)?.message || 'Error inesperado',
+          status
+        )
+      }
+    )
 
-        throw new ApiError(message, status, data);
-      },
-    );
   }
 
   private normalizeResponse<T>(res: AxiosResponse<ApiResponse<T>>): ApiResult<T> {
