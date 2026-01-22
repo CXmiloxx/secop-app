@@ -26,11 +26,9 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState<string[]>(["contabilidad"])
-  const {theme} = useThemeState()
+  const { theme } = useThemeState()
 
-  if (!user) {
-    return null
-  }
+
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => (prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]))
@@ -39,7 +37,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
 
 
   const availableMenuItems = menuItems.filter((item) => {
-    if (!item.roles.includes(user?.rol?.nombre)) return false
+    if (!user?.rol?.nombre || !item.roles.includes(user.rol.nombre)) return false
 
     // Exclude reports for Ciencias Naturales area
     if (item.href === "/reportes" && user?.area?.nombre === "ciencias") {
@@ -49,7 +47,9 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
     return true
   })
 
-  const availableModules = modules.filter((module) => module.roles.includes(user.rol.nombre))
+  const availableModules = modules.filter((module) =>
+    user?.rol?.nombre !== undefined && module.roles.includes(user.rol.nombre)
+  )
 
   return (
     <>
@@ -60,51 +60,52 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
         className="fixed top-4 left-4 z-50 md:hidden"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       >
-        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5 mr-5 mb-8" />}
       </Button>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          // Use responsive width: 64 for md+, 20 (5rem) for small screens
-          "fixed left-0 top-0 z-40 h-screen md:w-64 sm:w-20 w-20 border-r bg-card transition-transform duration-300 flex flex-col",
+          "fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card transition-transform duration-300 ease-in-out flex flex-col",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="border-b p-4 md:p-6 flex items-center justify-between gap-2 md:gap-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base md:text-lg font-bold whitespace-nowrap">Sistema de Gestión</h2>
-              <p className="text-xs text-muted-foreground mt-1 hidden md:block whitespace-nowrap">
-                Colegio Bilingüe Lacordaire
-              </p>
-            </div>
-            {/* Image */}
-            <div className="flex items-center justify-end w-12 h-12 md:w-20 md:h-20 shrink-0 ml-32">
-              <div className="relative w-10 h-10 md:w-16 md:h-16">
+          <div className="border-b p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="relative w-10 h-10 md:w-14 md:h-14 shrink-0">
                 <img
                   src={theme === 'dark' ? '/icon-secop-dark.webp' : '/icon-secop-removebg-preview.webp'}
                   alt="Logo"
                   className="object-contain w-full h-full rounded-md border bg-muted"
-                  style={{ aspectRatio: '1 / 1' }}
                   draggable={false}
                 />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm md:text-lg font-bold ">Sistema de Gestión</h2>
+                <p className="text-xs text-muted-foreground mt-0.5 ">
+                  Colegio Bilingüe Lacordaire
+                </p>
               </div>
             </div>
           </div>
 
           {/* User Info */}
-          <div className="border-b p-3 md:p-4 bg-muted/50 flex gap-2 items-center">
-            <div>
-              <p className="text-xs md:text-sm font-medium truncate">{user.nombre} {user.apellido}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground truncate">{user.area.nombre}</p>
+          <div className="border-b p-3 md:p-4 bg-muted/50">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-xs md:text-sm xl:text-base font-medium truncate">
+                {user?.nombre} {user?.apellido}
+              </p>
+              <p className="text-[10px] md:text-xs xl:text-sm text-muted-foreground truncate">
+                {user?.area?.nombre}
+              </p>
             </div>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-2 md:p-4">
-            <ul className="space-y-1 md:space-y-2">
+            <ul className="space-y-1">
               {availableMenuItems.map((item) => {
                 const isActive = pathname === item.href
                 return (
@@ -112,12 +113,12 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                         isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      <item.icon className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                      <item.icon className="h-5 w-5 shrink-0" />
                       <span className="truncate">{item.title}</span>
                     </Link>
                   </li>
@@ -126,38 +127,38 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
 
               {availableModules.map((module) => {
                 const isExpanded = expandedModules.includes(module.id)
-                const isModuleActive = module.items.some((item) => pathname === item.href)
+                const isModuleActive = module?.items?.some((item) => pathname === item.href)
 
                 return (
                   <li key={module.id}>
                     <button
                       onClick={() => toggleModule(module.id)}
                       className={cn(
-                        "flex w-full items-center justify-between gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
+                        "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                         isModuleActive ? "bg-primary/10 text-primary" : "hover:bg-muted",
                       )}
                     >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <module.icon className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                      <div className="flex items-center gap-3">
+                        <module.icon className="h-5 w-5 shrink-0" />
                         <span className="truncate">{module.title}</span>
                       </div>
                       {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+                        <ChevronDown className="h-4 w-4 shrink-0" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                        <ChevronRight className="h-4 w-4 shrink-0" />
                       )}
                     </button>
 
                     {isExpanded && (
-                      <ul className="mt-0.5 md:mt-1 ml-4 md:ml-7 space-y-0.5 md:space-y-1">
-                        {module.items.map((subItem) => {
+                      <ul className="mt-1 ml-8 space-y-1">
+                        {module?.items?.map((subItem) => {
                           const isActive = pathname === subItem.href
                           return (
                             <li key={subItem.href}>
                               <Link
                                 href={subItem.href}
                                 className={cn(
-                                  "block rounded-lg px-2 md:px-3 py-2 text-xs md:text-sm transition-colors",
+                                  "block rounded-lg px-3 py-2 text-sm transition-colors",
                                   isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                                 )}
                                 onClick={() => setIsMobileMenuOpen(false)}
@@ -175,13 +176,19 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
             </ul>
           </nav>
 
-          {/* Logout */}
-          <div className="flex flex-row items-center gap-2 justify-center border-t p-3 md:p-4 mt-auto">
-            <Button variant="outline" className="justify-start bg-transparent" onClick={onLogout}>
-              <LogOut className="h-4 w-4 md:h-5 md:w-5 mr-2 md:mr-3" />
-              <span className="text-xs md:text-sm">Cerrar Sesión</span>
+          {/* Footer */}
+          <div className="border-t p-3 md:p-4 space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={onLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="text-sm">Cerrar Sesión</span>
             </Button>
-            <ToggleTheme/>
+            <div className="flex justify-center">
+              <ToggleTheme />
+            </div>
           </div>
         </div>
       </aside>
@@ -194,6 +201,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
         />
       )}
 
+      {/* Spacer for desktop */}
       <div className="hidden md:block md:w-64" />
     </>
   )
