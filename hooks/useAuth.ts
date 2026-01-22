@@ -11,7 +11,7 @@ import { AuthService } from '@/services/auth.service';
 import { ApiError } from '@/utils/api-error';
 import { UserType } from '@/types/user.types';
 
-export default function useAuthUser() {
+export default function useAuth() {
   const router = useRouter();
 
   const {
