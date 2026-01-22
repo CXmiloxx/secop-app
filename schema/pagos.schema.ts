@@ -18,7 +18,7 @@ export const registerPagoSchema = z.object({
   requisicionId: z.number().min(1, "La requisición es requerida"),
   usuarioRegistradorId: z.string().min(1, "El usuario registrador es requerido"),
   total: z.number().positive("El monto debe ser mayor a cero"),
-  metodoPago: z.enum(["tesoreria", "caja menor"], {
+  tipoPago: z.enum(["TESORERIA", "CAJA_MENOR"], {
     errorMap: () => ({ message: "Debe seleccionar un método de pago válido" }),
   }),
   soporteFactura: fileSchema.optional(),

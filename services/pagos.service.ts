@@ -1,6 +1,5 @@
 import api from "@/lib/api";
 import { AprobarSolicitudCajaMenorSchema, CrearPresupuestoCajaMenorSchema } from "@/schema/caja-menor.schema";
-import { RegisterPagoSchema } from "@/schema/pagos.schema";
 import { EstadoRequisicion } from "@/types";
 export const PagosService = {
 
@@ -10,23 +9,6 @@ export const PagosService = {
         'Content-Type': 'multipart/form-data',
       },
     })
-  },
-
-  async registerPagoCajaMenor(registerData: RegisterPagoSchema) {
-    if (registerData.soporteFactura instanceof File) {
-      const formData = new FormData();
-      formData.append("requisicionId", registerData.requisicionId.toString());
-      formData.append("usuarioRegistradorId", registerData.usuarioRegistradorId);
-      formData.append("total", registerData.total.toString());
-      formData.append("metodoPago", registerData.metodoPago);
-      formData.append("soporteFactura", registerData.soporteFactura);
-      return await api.post(`/pagos/caja-menor`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    }
-    return await api.post(`/pagos/caja-menor`, registerData);
   },
 
   async findRequisicionesByEstado(periodo: number, estado: EstadoRequisicion) {

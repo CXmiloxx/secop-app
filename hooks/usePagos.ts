@@ -26,7 +26,7 @@ export default function usePagos() {
       formData.append("requisicionId", registerData.requisicionId.toString());
       formData.append("usuarioRegistradorId", registerData.usuarioRegistradorId);
       formData.append("total", registerData.total.toString());
-      formData.append("metodoPago", registerData.metodoPago);
+      formData.append("tipoPago", registerData.tipoPago);
       if (registerData.soporteFactura instanceof File) {
         formData.append("soporteFactura", registerData.soporteFactura);
       }
@@ -34,7 +34,7 @@ export default function usePagos() {
       const response = await PagosService.registerPago(formData);
       if (response.status === 201) {
         await fetchRequisicionesCajaMenor(periodoActual);
-        toast.success(`Pago procesado como ${registerData.metodoPago} con exito`);
+        toast.success(`Pago procesado como ${registerData.tipoPago} con exito`);
         return true;
       } else {
         const errorMsg = response.message || "No se pudo crear el pago correctamente.";

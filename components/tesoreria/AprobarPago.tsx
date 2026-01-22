@@ -20,7 +20,7 @@ interface AprobarPagoProps {
   createPagoTesoreria?: (data: RegisterPagoSchema) => Promise<boolean>
   createPagoCajaMenor?: (data: RegisterPagoSchema) => Promise<boolean>
   onClose?: () => void
-  tipo: 'tesoreria' | 'caja menor'
+  tipo: 'TESORERIA' | 'CAJA_MENOR'
 }
 
 export default function AprobarPago(
@@ -42,7 +42,7 @@ export default function AprobarPago(
       requisicionId: requisicion?.id ? Number(requisicion.id) : 0,
       usuarioRegistradorId: user.id || "",
       total: requisicion?.valorDefinido ? Number(requisicion.valorDefinido) : 0,
-      metodoPago: tipo,
+      tipoPago: tipo,
       soporteFactura: undefined as any,
     }
   });
@@ -53,7 +53,7 @@ export default function AprobarPago(
         requisicionId: Number(requisicion.id),
         usuarioRegistradorId: user.id || "",
         total: requisicion.valorDefinido ? Number(requisicion.valorDefinido) : 0,
-        metodoPago: tipo,
+        tipoPago: tipo,
         soporteFactura: undefined as any,
       });
       setArchivoSeleccionado(null);
@@ -74,7 +74,7 @@ export default function AprobarPago(
   };
 
   const onSubmit = async (data: RegisterPagoSchema) => {
-    const success = tipo === 'tesoreria' ? await createPagoTesoreria?.(data) : await createPagoCajaMenor?.(data);
+    const success = tipo === 'TESORERIA' ? await createPagoTesoreria?.(data) : await createPagoCajaMenor?.(data);
     if (success) {
       form.reset();
       setArchivoSeleccionado(null);

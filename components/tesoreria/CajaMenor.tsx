@@ -122,7 +122,7 @@ export default function CajaMenor({
                     user={user}
                     createPagoCajaMenor={handleCreatePago}
                     onClose={() => setRequisicionSeleccionada(null)}
-                    tipo="caja menor"
+                    tipo="CAJA_MENOR"
                     open={requisicionSeleccionada?.id === req.id}
                     onOpenChange={(open) => setRequisicionSeleccionada(open ? req : null)}
                   />
