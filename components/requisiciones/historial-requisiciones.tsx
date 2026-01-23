@@ -2,31 +2,39 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, CheckCircle2, XCircle, Package, DollarSign, FileText, User, Building2 } from "lucide-react"
-import { UserType } from "@/types/user.types"
-
 import { formatDate, formatCurrency } from "@/lib"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { RequisicionHistorialType } from "@/types"
+import { FilePreviewCard } from "../FilePreviewCard"
 
 interface HistorialRequisicionesProps {
-  user: UserType
   historialRequisicionesArea: RequisicionHistorialType[]
   loadingRequisicion: boolean
 }
 
-export default function HistorialRequisiciones({ user, historialRequisicionesArea, loadingRequisicion }: HistorialRequisicionesProps) {
-
-
+export default function HistorialRequisiciones({ historialRequisicionesArea, loadingRequisicion }: HistorialRequisicionesProps) {
   const getEstadoBadge = (req: RequisicionHistorialType) => {
     if (req.aprobadoPor) {
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100"><CheckCircle2 className="h-3 w-3 mr-1" />Aprobada</Badge>
+      return (
+        <Badge className="bg-green-200 text-green-800 hover:bg-green-200/80 font-semibold px-4 py-1">
+          <CheckCircle2 className="h-4 w-4 mr-1" />Aprobada
+        </Badge>
+      );
     }
     if (req.motivoRechazo) {
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100"><XCircle className="h-3 w-3 mr-1" />Rechazada</Badge>
+      return (
+        <Badge className="bg-red-200 text-red-800 hover:bg-red-200/80 font-semibold px-4 py-1">
+          <XCircle className="h-4 w-4 mr-1" />Rechazada
+        </Badge>
+      );
     }
-    return <Badge variant="secondary">Pendiente</Badge>
-  }
+    return (
+      <Badge variant="secondary" className="font-semibold px-4 py-1">
+        Pendiente
+      </Badge>
+    );
+  };
 
   if (loadingRequisicion) {
     return (
@@ -36,150 +44,167 @@ export default function HistorialRequisiciones({ user, historialRequisicionesAre
             <FileText className="h-5 w-5" />
             Historial de Requisiciones
           </CardTitle>
-          <CardDescription>Cargando datos...</CardDescription>
+          <CardDescription>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="animate-spin w-4 h-4 border-2 border-muted-foreground rounded-full border-t-transparent"></span>
+              Cargando datos...
+            </div>
+          </CardDescription>
         </CardHeader>
       </Card>
-    )
+    );
   }
 
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Historial de Requisiciones
+          <FileText className="h-5 w-5 text-primary" />
+          <span className="text-lg font-bold">Historial de Requisiciones</span>
         </CardTitle>
-        <CardDescription>
-          {historialRequisicionesArea.length} requisición(es) registradas
+        <CardDescription className="flex items-center gap-2">
+          <span className="font-semibold text-sm">
+            {historialRequisicionesArea.length} {historialRequisicionesArea.length === 1 ? "requisición registrada" : "requisiciones registradas"}
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         {historialRequisicionesArea.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">No hay requisiciones registradas</p>
+          <div className="text-center py-16 text-muted-foreground flex flex-col items-center space-y-2">
+            <FileText className="h-14 w-14 mx-auto mb-2 opacity-50" />
+            <p className="text-lg font-semibold">No hay requisiciones registradas</p>
             <p className="text-sm">No se encontraron requisiciones para el periodo seleccionado</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {historialRequisicionesArea.map((req, index) => (
+          <div className="grid gap-8">
+            {historialRequisicionesArea.map((req) => (
               <Card
-                key={`${req.fecha}-${index}`}
-                className="overflow-hidden hover:shadow-lg transition-shadow border border-muted/70"
+                key={req.id}
+                className="overflow-hidden hover:shadow-2xl transition-shadow border border-muted/70 rounded-xl"
               >
-                <CardHeader className="pb-4 bg-muted/50 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold text-xl tracking-wide">{req.area}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground pl-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span className="">{formatDate(req.fecha)}</span>
+                {/* CABECERA PERSONALIZADA */}
+                <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-t-xl border-b border-muted/50">
+                  <div className="flex flex-row items-center gap-5">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <span className="font-bold text-lg tracking-wide text-primary">{req.area}</span>
+                    <Separator className="mx-2 h-5 w-px bg-muted-foreground/30 hidden md:inline-block" orientation="vertical" />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-medium">{formatDate(req.fecha)}</span>
                     </div>
                   </div>
-                  <div className="shrink-0 flex items-center mt-2 md:mt-0">
+                  <div className="shrink-0 flex items-center justify-end">
                     {getEstadoBadge(req)}
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-6 flex flex-col gap-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-                    <div className="col-span-1 md:col-span-2 flex flex-col gap-4">
-                      {/* Información general y producto */}
-                      <div className="flex items-center gap-3">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-semibold tracking-wide">Proveedor</p>
-                          <p className="font-medium text-base">{req.proveedor}</p>
+                <CardContent className="pt-7 pb-6 flex flex-col gap-7">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    {/* Información general y producto */}
+                    <div className="col-span-2 flex flex-col gap-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="flex items-center gap-3">
+                          <User className="h-5 w-5 text-primary/80" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-semibold tracking-wide">Proveedor</p>
+                            <p className="font-semibold text-base text-foreground">{req.proveedor}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-semibold">Cuenta</p>
-                          <p className="font-medium">{req.cuenta}</p>
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary/80" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-semibold">Cuenta</p>
+                            <p className="font-semibold text-foreground">{req.cuenta}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-semibold">Producto</p>
-                          <p className="font-medium">{req.producto}</p>
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary/80" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-semibold">Concepto</p>
+                            <p className="font-semibold text-foreground">{req.concepto}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground font-semibold">Concepto</p>
-                          <p className="font-medium">{req.concepto}</p>
+                        <div className="flex items-center gap-3">
+                          <Package className="h-5 w-5 text-primary/80" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-semibold">Producto</p>
+                            <p className="font-semibold text-foreground">{req.producto}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    {/* Valores económicos, mejora la dispersión en dos columnas */}
-                    <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex items-center gap-3 rounded-md bg-muted px-3 py-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-[11px] text-muted-foreground font-semibold">Valor Solicitado</span>
-                          <span className="font-bold text-lg">{formatCurrency(req.valorPresupuestado)}</span>
-                        </div>
+                    {/* Valores económicos */}
+                    <div className="col-span-2 grid grid-cols-2 xl:grid-cols-4 gap-4">
+                      <div className="flex flex-col items-center justify-center rounded-lg bg-muted px-2.5 py-3.5 shadow border border-muted/30">
+                        <span className="mb-1 text-xs text-foreground/80 font-medium">Valor Solicitado</span>
+                        <DollarSign className="h-4 w-4 text-green-700 mb-1" />
+                        <span className="font-bold text-lg text-green-900">{formatCurrency(req.valorPresupuestado)}</span>
                       </div>
-                      <div className="flex items-center gap-3 rounded-md bg-muted px-3 py-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-[11px] text-muted-foreground font-semibold">Valor Definido</span>
-                          <span className="font-bold text-lg">{formatCurrency(req.valorDefinido)}</span>
-                        </div>
+                      <div className="flex flex-col items-center justify-center rounded-lg bg-muted px-2.5 py-3.5 shadow border border-muted/30">
+                        <span className="mb-1 text-xs text-foreground/80 font-medium">Valor Definido</span>
+                        <DollarSign className="h-4 w-4 text-blue-700 mb-1" />
+                        <span className="font-bold text-lg text-blue-900">{formatCurrency(req.valorDefinido)}</span>
                       </div>
-                      <div className="flex items-center gap-3 rounded-md bg-muted px-3 py-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-[11px] text-muted-foreground font-semibold">IVA Presupuestado</span>
-                          <span className="font-bold text-lg">{formatCurrency(req.ivaPresupuestado)}</span>
-                        </div>
+                      <div className="flex flex-col items-center justify-center rounded-lg bg-muted px-2.5 py-3.5 shadow border border-muted/30">
+                        <span className="mb-1 text-xs text-foreground/80 font-medium">IVA Presupuestado</span>
+                        <DollarSign className="h-4 w-4 text-amber-700 mb-1" />
+                        <span className="font-bold text-lg text-amber-900">{formatCurrency(req.ivaPresupuestado)}</span>
                       </div>
-                      <div className="flex items-center gap-3 rounded-md bg-muted px-3 py-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-[11px] text-muted-foreground font-semibold">IVA Aprobado</span>
-                          <span className="font-bold text-lg">{formatCurrency(req.ivaDefinido)}</span>
-                        </div>
+                      <div className="flex flex-col items-center justify-center rounded-lg bg-muted px-2.5 py-3.5 shadow border border-muted/30">
+                        <span className="mb-1 text-xs text-foreground/80 font-medium">IVA Aprobado</span>
+                        <DollarSign className="h-4 w-4 text-amber-700 mb-1" />
+                        <span className="font-bold text-lg text-amber-900">{formatCurrency(req.ivaDefinido)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <Separator className="my-2 sm:my-4" />
+                  <Separator className="my-4" />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="col-span-2 space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Justificación */}
+                    <div className="col-span-2 flex flex-col">
                       <p className="text-xs text-muted-foreground mb-1 font-semibold">Justificación</p>
-                      <div className="text-sm bg-muted/70 p-4 rounded-md min-h-[56px] leading-6 wrap-break-word">
+                      <div className="text-sm bg-muted/80 p-4 rounded-lg min-h-[56px] leading-6 wrap-break-word border border-muted/30 shadow-sm">
                         {req.justificacion}
                       </div>
                     </div>
-                    <div className="flex flex-col space-y-2 justify-center">
+                    {/* Estado y motivo de rechazo/aprobación */}
+                    <div className="flex flex-col space-y-3 justify-center">
                       {req.aprobadoPor && (
-                        <div className="bg-green-50 border border-green-200 p-3 rounded-md">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-700" />
-                            <p className="text-sm font-medium text-green-900">Aprobada por: {req.aprobadoPor}</p>
+                        <div className="bg-green-50/80 border border-green-200 shadow-sm p-3 rounded-lg flex flex-row items-center gap-3">
+                          <CheckCircle2 className="h-5 w-5 text-green-700" />
+                          <div>
+                            <p className="text-xs font-bold text-green-800 whitespace-nowrap">Aprobada por</p>
+                            <p className="text-sm font-medium text-green-900">{req.aprobadoPor}</p>
                           </div>
                         </div>
                       )}
                       {req.motivoRechazo && (
-                        <div className="bg-red-50 border border-red-200 p-3 rounded-md">
-                          <div className="flex items-start gap-2">
-                            <XCircle className="h-4 w-4 text-red-700 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium text-red-900 mb-1">Motivo de rechazo:</p>
-                              <p className="text-sm text-red-800">{req.motivoRechazo}</p>
-                            </div>
+                        <div className="bg-red-50/70 border border-red-200 shadow-sm p-3 rounded-lg flex flex-row items-start gap-3">
+                          <XCircle className="h-5 w-5 text-red-700 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-bold text-red-800 mb-0.5">Motivo de rechazo</p>
+                            <p className="text-sm text-red-800">{req.motivoRechazo}</p>
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
+                  {/* Adjuntos - Soportes */}
+                  {req.soportesCotizaciones?.length > 0 && (
+                    <div className="border-t pt-6 mt-3">
+                      <p className="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary/80" />
+                        Soportes de Cotizaciones
+                        <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs font-mono text-muted-foreground ml-2">{req.soportesCotizaciones.length}</span>
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        {req.soportesCotizaciones.map((soporte) => (
+                          <FilePreviewCard key={soporte.path} path={soporte.path} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -187,5 +212,5 @@ export default function HistorialRequisiciones({ user, historialRequisicionesAre
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

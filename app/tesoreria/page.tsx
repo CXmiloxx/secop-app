@@ -80,7 +80,7 @@ export default function TesoreriaPage() {
   }, [pasarCajaMenor])
 
   const isCajaMenor = user?.rol?.nombre === "cajaMenor"
-  const isTesoreria = user?.rol?.nombre === "tesorería"
+  const isTesoreria = user?.rol?.nombre === "tesoreria"
 
 
 

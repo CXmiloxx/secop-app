@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
 import { UserType } from "@/types/user.types"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { registerRequisicionSchema, RegisterRequisicionSchema } from "@/schema/requisicion.schema"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { ProvidersType } from "@/types/provider.types"
 import { CuentasContablesType } from "@/types/cuentas-contables.types"
@@ -22,23 +21,30 @@ import { ProductosType } from "@/types/productos.types"
 interface CrearRequisicionProps {
   user: UserType
   providers: ProvidersType[]
-  cuentasContablesPermitidos: CuentasContablesType[]
-  conceptosPermitidos: ConceptosType[]
+  cuentasContablesPermitidos?: CuentasContablesType[]
+  cuentasContables?: CuentasContablesType[]
+  conceptosPermitidos?: ConceptosType[]
+  conceptos?: ConceptosType[]
   productos: ProductosType[]
   fetchProviders: () => void
-  fetchCuentasContablesPermitidos: (areaId: number, periodo: number) => void
-  fetchConceptosPermitidos: (areaId: number, periodo: number, cuentaContableId: number) => void
+  fetchCuentasContablesPermitidos?: (areaId: number, periodo: number) => void
+  fetchConceptosPermitidos?: (areaId: number, periodo: number, cuentaContableId: number) => void
+  fetchCuentasContables?: () => void
+  fetchConceptos?: (cuentaContableId: number) => void
   fetchProductos: (conceptoId: number) => void
   createSolicitudRequisicion: (data: RegisterRequisicionSchema) => Promise<boolean>
   fetchHistorialRequisicionesArea: (periodo: number, areaId: number) => Promise<boolean | undefined>
   periodo: number
+  tipoRequisicion?: "PARTIDA_NO_PRESUPUESTADA" | "REQUISICION"
 }
 
 export default function CrearRequisicion(
   { user,
     providers,
     cuentasContablesPermitidos,
+    cuentasContables,
     conceptosPermitidos,
+    conceptos,
     productos,
     fetchProviders,
     fetchCuentasContablesPermitidos,
@@ -46,7 +52,10 @@ export default function CrearRequisicion(
     fetchProductos,
     periodo,
     createSolicitudRequisicion,
-    fetchHistorialRequisicionesArea
+    fetchHistorialRequisicionesArea,
+    tipoRequisicion = "REQUISICION",
+    fetchCuentasContables,
+    fetchConceptos,
   }: CrearRequisicionProps) {
 
 
@@ -139,15 +148,23 @@ export default function CrearRequisicion(
   }
 
   useEffect(() => {
-    fetchCuentasContablesPermitidos(user.area.id, periodo);
+    if (tipoRequisicion === "REQUISICION") {
+      fetchCuentasContablesPermitidos?.(user.area.id, periodo);
+    } else {
+      fetchCuentasContables?.();
+    }
     fetchProviders();
-  }, [fetchCuentasContablesPermitidos, fetchProviders, user.area.id, periodo]);
+  }, [fetchCuentasContablesPermitidos, fetchProviders, user.area.id, periodo, fetchCuentasContables, fetchConceptos]);
 
   useEffect(() => {
     if (cuentaContableId) {
-      fetchConceptosPermitidos(user.area.id, periodo, cuentaContableId);
+      if (tipoRequisicion === "REQUISICION") {
+        fetchConceptosPermitidos?.(user.area.id, periodo, cuentaContableId);
+      } else {
+        fetchConceptos?.(cuentaContableId);
+      }
     }
-  }, [cuentaContableId, fetchConceptosPermitidos, user.area.id, periodo]);
+  }, [cuentaContableId, fetchConceptosPermitidos, user.area.id, periodo, fetchConceptos, tipoRequisicion]);
 
   useEffect(() => {
     if (conceptoId) {
@@ -155,8 +172,8 @@ export default function CrearRequisicion(
     }
   }, [conceptoId, fetchProductos]);
 
-  const cuentaSeleccionada = cuentasContablesPermitidos?.find(c => c.id === cuentaContableId);
-  const conceptoSeleccionado = conceptosPermitidos?.find(c => c.id === conceptoId);
+  const  cuentasSeleccionadas = tipoRequisicion === "REQUISICION" ? cuentasContablesPermitidos : cuentasContables;
+  const  conceptosSeleccionados = tipoRequisicion === "REQUISICION" ? conceptosPermitidos : conceptos;
 
   return (
     <Card>
@@ -195,10 +212,10 @@ export default function CrearRequisicion(
                     <SelectValue placeholder="Seleccione la cuenta" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cuentasContablesPermitidos?.length === 0 ? (
+                    {cuentasSeleccionadas?.length === 0 ? (
                       <div className="p-2 text-sm text-muted-foreground">No hay cuentas disponibles</div>
                     ) : (
-                      cuentasContablesPermitidos?.map((cuenta) => (
+                      cuentasSeleccionadas?.map((cuenta) => (
                         <SelectItem key={cuenta.id} value={cuenta.id.toString()}>
                           {cuenta.nombre}
                         </SelectItem>
@@ -224,10 +241,10 @@ export default function CrearRequisicion(
                     <SelectValue placeholder={!cuentaContableId ? "Primero seleccione cuenta" : "Seleccione el concepto"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {conceptosPermitidos?.length === 0 ? (
+                    {conceptosSeleccionados?.length === 0 ? (
                       <div className="p-2 text-sm text-muted-foreground">No hay conceptos disponibles</div>
                     ) : (
-                      conceptosPermitidos?.map((concepto) => (
+                      conceptosSeleccionados?.map((concepto) => (
                         <SelectItem key={concepto.id} value={concepto.id.toString()}>
                           {concepto.nombre}
                         </SelectItem>

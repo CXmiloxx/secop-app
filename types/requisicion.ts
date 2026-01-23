@@ -11,6 +11,7 @@ export type EstadoRequisicion =
 export type TipoPago = 'PAGO' | 'CAJA MENOR' | null;
 
 export interface RequisicionHistorialType {
+  id: number;
   area: string;
   fecha: string;
   estado: EstadoRequisicion;
@@ -26,6 +27,10 @@ export interface RequisicionHistorialType {
   justificacion: string;
   aprobadoPor: string | null;
   motivoRechazo: string | null;
+  soportesCotizaciones: Array<{
+    path: string;
+  }>;
+  partidaNoPresupuestada: boolean;
 }
 export interface RequisicionType {
   id: number;
@@ -46,6 +51,7 @@ export interface RequisicionType {
   producto: string;
   valorTotal: number;
   justificacion: string;
+  partidaNoPresupuestada: boolean;
   fechaSolicitud: string;
   solicitante: string;
   estado: EstadoRequisicion;

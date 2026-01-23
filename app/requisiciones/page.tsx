@@ -24,21 +24,22 @@ export default function RequisicionesPage() {
     await fetchHistorialRequisicionesArea(periodo, user?.area?.id || 0)
   }, [fetchHistorialRequisicionesArea, periodo, user?.area?.id])
 
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const { providers, fetchProviders } = useProviders();
   const { cuentasContablesPermitidos, fetchCuentasContablesPermitidos } = useCuentasContables();
   const { fetchConceptosPermitidos, conceptosPermitidos } = useConceptos();
   const { productos, fetchProductos } = useProductos();
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+
 
   const canCreate =
     user?.rol.nombre === "admin" ||
     user?.rol.nombre === "responsableArea" ||
     user?.rol.nombre === "cajaMenor" ||
     user?.rol.nombre === "consultor" ||
-    user?.rol.nombre === "Pagos"
+    user?.rol.nombre === "tesoreria"
 
   return (
     <section>
@@ -70,7 +71,7 @@ export default function RequisicionesPage() {
           )}
 
           <TabsContent value="historial">
-            <HistorialRequisiciones user={user!} historialRequisicionesArea={historialRequisicionesArea} loadingRequisicion={loadingRequisicion} />
+            <HistorialRequisiciones historialRequisicionesArea={historialRequisicionesArea} loadingRequisicion={loadingRequisicion} />
           </TabsContent>
         </Tabs>
       </main>

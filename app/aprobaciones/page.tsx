@@ -1,6 +1,5 @@
 "use client"
 
-import { DialogTrigger } from "@/components/ui/dialog"
 import { XCircle, Loader2, CheckSquare } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,6 +35,7 @@ import { formatCurrency } from "@/utils/formatCurrency"
 import { formatDate } from "@/lib"
 import Comentario from "@/components/aprobacion/Comentario"
 import Navbar from "@/components/Navbar"
+import { FilePreviewCard } from "@/components/FilePreviewCard"
 
 export default function AprobacionesPage() {
   const { user } = useAuth()
@@ -268,8 +268,9 @@ export default function AprobacionesPage() {
                             )}
                           </div>
                           <h3 className="text-lg font-semibold">{requisicion.concepto}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {requisicion.area} • Solicitante: {requisicion.solicitante}
+                          <p className="text-sm text-muted-foreground font-medium">
+                            Área: {requisicion.area} •
+                            Solicitante: {requisicion.solicitante}
                           </p>
                         </div>
                         <Badge className={getEstadoBadgeColor(requisicion.estado)}>{requisicion.estado}</Badge>
@@ -318,84 +319,28 @@ export default function AprobacionesPage() {
                         <p className="text-sm">{requisicion.comentario ?? 'No hay comentario'}</p>
                       </div>
 
+
                       {
-                        requisicion.soportesCotizaciones && requisicion.soportesCotizaciones.length > 0 && (
+                        requisicion.partidaNoPresupuestada ? (
                           <div className="mb-4 border-t pt-4">
-                            <p className="text-sm font-medium mb-2">Soportes de Cotizaciones:</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                              {requisicion.soportesCotizaciones.map((soporte) => {
-                                const path = soporte.path.toLowerCase();
-                                const fileName = soporte.path.split("/").pop() ?? "";
-                                // Type detection
-                                const isPdf = path.endsWith(".pdf");
-                                const isDoc = path.endsWith(".doc") || path.endsWith(".docx");
-                                const isXls = path.endsWith(".xls") || path.endsWith(".xlsx");
-                                const isImage = path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
-
-                                // Select icon and color
-                                let icon = null;
-                                let color = "";
-                                let label = "";
-                                let preview = null;
-
-                                if (isPdf) {
-                                  // PDF
-                                  icon = <FileTextIcon className="h-10 w-10 text-red-500 mb-1" />;
-                                  color = "text-red-600";
-                                  label = "PDF";
-                                } else if (isDoc) {
-                                  icon = <FileTextIcon className="h-10 w-10 text-blue-500 mb-1" />;
-                                  color = "text-blue-600";
-                                  label = "Word";
-                                } else if (isXls) {
-                                  icon = <FileTextIcon className="h-10 w-10 text-green-500 mb-1" />;
-                                  color = "text-green-700";
-                                  label = "Excel";
-                                } else if (isImage) {
-                                  icon = <></>;
-                                  // Use image preview
-                                  preview = (
-                                    <img
-                                      className="rounded-md border object-cover w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
-                                      src={`${envs.api}/${soporte.path}`}
-                                      alt={`Soporte de Cotización ${fileName}`}
-                                    />
-                                  );
-                                  color = "";
-                                  label = "Imagen";
-                                } else {
-                                  icon = <FileTextIcon className="h-10 w-10 text-gray-500 mb-1" />;
-                                  label = "Archivo";
-                                }
-                                return (
-                                  <div
-                                    key={soporte.path}
-                                    className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg"
-                                  >
-                                    <a
-                                      href={`${envs.api}/${soporte.path}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex flex-col items-center w-full"
-                                    >
-                                      {/* Icon or image preview */}
-                                      <div className="rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm overflow-hidden">
-                                        {preview || icon}
-                                      </div>
-                                      <span className={`text-xs font-medium truncate max-w-[88px] text-center mb-1 ${color}`}>
-                                        {fileName}
-                                      </span>
-                                      <span className="text-xs  underline dark:text-foreground">
-                                        Ver {label}
-                                      </span>
-                                    </a>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                            <p className="text-sm">Partida No Presupuestada</p>
+                          </div>
+                        ) : (
+                          <div className="mb-4 border-t pt-4">
+                            <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                            <p className="text-sm">Requisición</p>
                           </div>
                         )
                       }
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {requisicion.soportesCotizaciones.map((soporte) => (
+                          <FilePreviewCard
+                            key={soporte.path}
+                            path={soporte.path}
+                          />
+                        ))}
+                      </div>
                       {/* acciones del consultor */}
                       <div className="flex gap-2 mt-4">
                         {user?.rol.nombre === "consultor" && (
@@ -528,109 +473,34 @@ export default function AprobacionesPage() {
                       </div>
 
 
-                      {requisicion.motivoRechazo && (
+                      {requisicion.partidaNoPresupuestada ? (
                         <div className="mb-4 border-t pt-4">
-                          <p className="text-sm font-medium mb-2">Motivo de Rechazo:</p>
-                          <div className="space-y-2">
-                            <p className="text-sm">{requisicion.motivoRechazo}</p>
-                          </div>
+                          <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                          <p className="text-sm">Partida No Presupuestada</p>
+                        </div>
+                      ) : (
+                        <div className="mb-4 border-t pt-4">
+                          <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                          <p className="text-sm">Requisición</p>
                         </div>
                       )}
 
-                      {
-                        requisicion.soportesCotizaciones && requisicion.soportesCotizaciones.length > 0 && (
-                          <div className="mb-4 border-t pt-4">
-                            <p className="text-sm font-medium mb-2">Soportes de Cotizaciones:</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                              {requisicion.soportesCotizaciones.map((soporte) => {
-                                const path = soporte.path.toLowerCase();
-                                const fileName = soporte.path.split("/").pop() ?? "";
-                                // Se detecta el tipo de archivo
-                                const isPdf = path.endsWith(".pdf");
-                                const isDoc = path.endsWith(".doc") || path.endsWith(".docx");
-                                const isXls = path.endsWith(".xls") || path.endsWith(".xlsx");
-                                const isImage = path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+                      {requisicion.soportesCotizaciones?.length > 0 && (
+                        <div className="mb-4 border-t pt-4">
+                          <p className="text-sm font-medium mb-2">
+                            Soportes de Cotizaciones:
+                          </p>
 
-                                // Se selecciona el icono y el color
-                                let icon = null;
-                                let color = "";
-                                let label = "";
-                                let preview = null;
-
-                                if (isPdf) {
-                                  // PDF
-                                  icon = <FileTextIcon className="h-10 w-10 text-red-500 mb-1" />;
-                                  color = "text-red-600";
-                                  label = "PDF";
-                                } else if (isDoc) {
-                                  icon = <FileTextIcon className="h-10 w-10 text-blue-500 mb-1" />;
-                                  color = "text-blue-600";
-                                  label = "Word";
-                                } else if (isXls) {
-                                  icon = <FileTextIcon className="h-10 w-10 text-green-500 mb-1" />;
-                                  color = "text-green-700";
-                                  label = "Excel";
-                                } else if (isImage) {
-                                  icon = <></>;
-                                  // Se coloca la imagen de preview
-                                  preview = (
-                                    <img
-                                      className="rounded-md border object-cover w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
-                                      src={`${envs.api}/${soporte.path}`}
-                                      alt={`Soporte de Cotización ${fileName}`}
-                                    />
-                                  );
-                                  color = "";
-                                  label = "Imagen";
-                                } else {
-                                  icon = <FileTextIcon className="h-10 w-10 text-gray-500 mb-1" />;
-                                  label = "Archivo";
-                                }
-                                return (
-                                  <div
-                                    key={soporte.path}
-                                    className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg"
-                                  >
-                                    <a
-                                      href={`${envs.api}/${soporte.path}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex flex-col items-center w-full"
-                                    >
-                                      {/* Se coloca el icono o la imagen de preview */}
-                                      <div className="rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm overflow-hidden">
-                                        {preview || icon}
-                                      </div>
-                                      <span className={`text-xs font-medium truncate max-w-[88px] text-center mb-1 ${color}`}>
-                                        {fileName}
-                                      </span>
-                                      <span className="text-xs  underline dark:text-foreground">
-                                        Ver {label}
-                                      </span>
-                                    </a>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {requisicion.soportesCotizaciones.map((soporte) => (
+                              <FilePreviewCard
+                                key={soporte.path}
+                                path={soporte.path}
+                              />
+                            ))}
                           </div>
-                        )
-                      }
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Trazabilidad
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Trazabilidad de la Requisición</DialogTitle>
-                            <DialogDescription>
-                              Historial completo de estados y acciones para la requisición
-                            </DialogDescription>
-                          </DialogHeader>
-                        </DialogContent>
-                      </Dialog>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -711,66 +581,33 @@ export default function AprobacionesPage() {
                         <p className="text-sm">{requisicion.comentario ?? 'No hay comentario'}</p>
                       </div>
 
+                      {
+                        requisicion.partidaNoPresupuestada ? (
+                          <div className="mb-4 border-t pt-4">
+                            <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                            <p className="text-sm">Partida No Presupuestada</p>
+                          </div>
+                        ) : (
+                          <div className="mb-4 border-t pt-4">
+                            <p className="text-sm font-medium mb-2">Tipo de Requisición:</p>
+                            <p className="text-sm">Requisición</p>
+                          </div>
+                        )
+                      }
+
                       <div className="mb-4">
                         <p className="text-sm text-muted-foreground mb-1">Motivo de Rechazo</p>
                         <p className="text-sm">{requisicion.motivoRechazo ?? 'No hay motivo de rechazo'}</p>
                       </div>
 
-                      {
-                        requisicion.soportesCotizaciones && requisicion.soportesCotizaciones.length > 0 && (
-                          <div className="mb-4 border-t pt-4">
-                            <p className="text-sm font-medium mb-2">Soportes de Cotizaciones:</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                              {requisicion.soportesCotizaciones.map((soporte) => {
-                                const isPdf = soporte.path.toLowerCase().endsWith(".pdf");
-                                return (
-                                  <div
-                                    key={soporte.path}
-                                    className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg"
-                                  >
-                                    {isPdf ? (
-                                      <a
-                                        href={`${envs.api}/${soporte.path}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex flex-col items-center"
-                                      >
-                                        <div className="bg-white rounded-lg flex items-center justify-center w-24 h-32 mb-2 border border-gray-200 shadow-sm">
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-12 w-12 text-red-600"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                          >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-                                            <text x="6" y="22" fontSize="6" fill="red" fontFamily="Verdana">PDF</text>
-                                          </svg>
-                                        </div>
-                                        <span className="text-xs text-blue-700 underline">Ver PDF</span>
-                                      </a>
-                                    ) : (
-                                      <a
-                                        href={`${envs.api}/${soporte.path}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex flex-col items-center"
-                                      >
-                                        <img
-                                          className="rounded-md border border-gray-200 object-contain w-24 h-32 mb-2 shadow transition-transform duration-200 group-hover:scale-105"
-                                          src={`${envs.api}/${soporte.path}`}
-                                          alt={`Soporte de Cotización ${soporte.path.split("/").pop()}`}
-                                        />
-                                        <Label className="text-xs underline">Ver imagen</Label>
-                                      </a>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )
-                      }
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {requisicion.soportesCotizaciones.map((soporte) => (
+                          <FilePreviewCard
+                            key={soporte.path}
+                            path={soporte.path}
+                          />
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

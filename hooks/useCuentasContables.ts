@@ -1,4 +1,3 @@
-import { RegisterProviderSchema } from "@/schema/providers.schema";
 import { cuentasContablesService } from "@/services/cuentas-contables.service";
 import { useCuentasContabesStore } from "@/store/cuentas-contables.store";
 import { ConceptosPorCuentaType, CuentasContablesType } from "@/types/cuentas-contables.types";
@@ -48,32 +47,30 @@ export default function useCuentasContables() {
       if (status === 200 && Array.isArray(data)) {
         setCuentasContablesTotales(data as ConceptosPorCuentaType[]);
         return data as ConceptosPorCuentaType[];
-      } else {
-        console.log("No se pudo obtener la lista de proveedores correctamente")
-        setError("No se pudo obtener la lista de proveedores correctamente.");
       }
     } catch (err) {
+      let errorMessage = "Error desconocido al obtener cuentas contables totales.";
       if (err instanceof ApiError) {
-        setError(err.message);
+        errorMessage = err.message;
       } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Error desconocido al obtener proveedores.");
+        errorMessage = err.message;
       }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [setCuentasContables]);
+  }, [setCuentasContablesTotales]);
 
-
-  const fetchCuentasContablesPermitidos = useCallback(async (areaId: number, periodo: number) => {
+  const fetchCuentasContablesPermitidos = useCallback(async (areaId: number, periodo: number): Promise<CuentasContablesType[] | undefined> => {
     setLoading(true);
     setError(null);
+    setCuentasContablesPermitidos([]);
     try {
       const { data, status } = await cuentasContablesService.findCuentasContablesPermitidos(areaId, periodo);
-      if (status === 200) {
+      if (status === 200 && Array.isArray(data)) {
         setCuentasContablesPermitidos(data as CuentasContablesType[]);
-        return true;
+        return data as CuentasContablesType[];
       }
     } catch (err) {
       let errorMessage = "Error desconocido al obtener cuentas contables permitidas.";
@@ -84,11 +81,10 @@ export default function useCuentasContables() {
       }
       setError(errorMessage);
       toast.error(errorMessage);
-      return false;
     } finally {
       setLoading(false);
     }
-  }, [setCuentasContables]);
+  }, [setCuentasContablesPermitidos]);
 
   return {
     cuentasContables,

@@ -6,12 +6,16 @@ export const RequisicionService = {
     return await api.get(`/requisicion/conceptos-permitidos?areaId=${areaId}&periodo=${periodo}`)
   },
 
-  async findAllArea(periodo: number, areaId: number) {
-    return await api.get(`/requisicion?periodo=${periodo}&areaId=${areaId}`)
+  async findAllArea(periodo: number, areaId: number, partidaNoPresupuestada?: boolean) {
+    return await api.get(`/requisicion?periodo=${periodo}&areaId=${areaId}&partidaNoPresupuestada=${partidaNoPresupuestada ?? false}`)
   },
 
   async findAll(periodo: number) {
     return await api.get(`/requisicion/all?periodo=${periodo}`)
+  },
+
+  async findAllPagadas(periodo: number) {
+    return await api.get(`/requisicion/pagadas?periodo=${periodo}`)
   },
 
   async createRequisicion(requisicion: RegisterRequisicionSchema) {

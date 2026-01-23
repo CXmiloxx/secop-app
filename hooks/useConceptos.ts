@@ -12,7 +12,7 @@ export default function useConceptos() {
   const [errorConceptos, setErrorConceptos] = useState<string | null>(null);
 
 
-  const fetchCoceptos = useCallback(async (idCuenta: number): Promise<ConceptosType[] | undefined> => {
+  const fetchConceptos = useCallback(async (idCuenta: number): Promise<ConceptosType[] | undefined> => {
     setLoadingConceptos(true);
     setErrorConceptos(null);
     try {
@@ -113,7 +113,7 @@ export default function useConceptos() {
     conceptos,
     loadingConceptos,
     errorConceptos,
-    fetchCoceptos,
+    fetchConceptos,
     fetchConceptosPermitidos,
     conceptosPermitidos,
     fetchCreateConcepto,
