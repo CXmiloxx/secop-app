@@ -1,4 +1,4 @@
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, FileImage, FileSpreadsheet, FileArchive, FileType2 } from "lucide-react";
 import { envs } from "@/config/envs";
 import { getFilePreviewMeta } from "@/lib";
 
@@ -6,11 +6,23 @@ type Props = {
   path: string;
 };
 
+// Mapa de iconos por tipo de documento
+const fileTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  pdf: FileTextIcon,
+  doc: FileArchive,
+  xls: FileSpreadsheet,
+  image: FileImage,
+  other: FileType2,
+};
+
 export const FilePreviewCard = ({ path }: Props) => {
   const fileName = path.split("/").pop() ?? "";
   const meta = getFilePreviewMeta(path);
 
   const isImage = meta.type === "image";
+  // Selecciona el icono correcto según el tipo detectado
+  const IconComponent =
+    fileTypeIcons[meta.type] ?? FileType2;
 
   return (
     <div className="bg-muted rounded-lg p-3 flex flex-col items-center justify-center group transition-shadow hover:shadow-lg">
@@ -28,10 +40,8 @@ export const FilePreviewCard = ({ path }: Props) => {
               alt={`Soporte de Cotización ${fileName}`}
             />
           ) : (
-            <FileTextIcon
-              className={`h-10 w-10 mb-1 ${
-                meta.color || "text-gray-500"
-              }`}
+            <IconComponent
+              className={`h-10 w-10 mb-1 ${meta.color || "text-gray-500"}`}
             />
           )}
         </div>
