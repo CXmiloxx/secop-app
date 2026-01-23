@@ -1,6 +1,13 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+
+export type FilePreviewMeta = {
+  type: "pdf" | "doc" | "xls" | "image" | "other";
+  label: string;
+  color: string;
+};
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -56,76 +63,30 @@ export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`;
 }
 
+export const getFilePreviewMeta = (path: string): FilePreviewMeta => {
+  const lower = path.toLowerCase();
 
-export function generateId(prefix: string = ''): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 9);
-  return prefix ? `${prefix}-${timestamp}-${random}` : `${timestamp}-${random}`;
-}
+  const isPdf = lower.endsWith(".pdf");
+  const isDoc = lower.endsWith(".doc") || lower.endsWith(".docx");
+  const isXls = lower.endsWith(".xls") || lower.endsWith(".xlsx");
+  const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(lower);
 
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  if (isPdf) {
+    return { type: "pdf", label: "PDF", color: "text-red-600" };
+  }
 
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
+  if (isDoc) {
+    return { type: "doc", label: "Word", color: "text-blue-600" };
+  }
 
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(later, wait);
-  };
-}
+  if (isXls) {
+    return { type: "xls", label: "Excel", color: "text-green-700" };
+  }
 
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
+  if (isImage) {
+    return { type: "image", label: "Imagen", color: "" };
+  }
 
-  return function executedFunction(...args: Parameters<T>) {
-    if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-}
+  return { type: "other", label: "Archivo", color: "text-gray-500" };
+};
 
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-export function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^[0-9]{10}$/;
-  return phoneRegex.test(phone);
-}
-
-export function isValidNIT(nit: string): boolean {
-  const nitRegex = /^[0-9]{9}-[0-9]$/;
-  return nitRegex.test(nit);
-}
-
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-}
-
-export function capitalizeFirst(text: string): string {
-  if (!text) return '';
-  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-}
-
-export function capitalizeWords(text: string): string {
-  if (!text) return '';
-  return text
-    .split(' ')
-    .map((word) => capitalizeFirst(word))
-    .join(' ');
-}
