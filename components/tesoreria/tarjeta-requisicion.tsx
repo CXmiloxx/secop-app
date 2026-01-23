@@ -5,8 +5,6 @@ import { formatCurrency } from '@/lib'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Eye } from 'lucide-react'
-import TimelineTrazabilidad from './timeline-trazabilidad'
-import HistorialSoportes from './historial-soportes'
 
 interface TarjetaRequisicionProps {
   requisicion: RequisicionType
@@ -132,8 +130,6 @@ export default function TarjetaRequisicion({
               <DialogDescription>Historial completo de eventos y documentos</DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <TimelineTrazabilidad requisicionId={requisicion.id} />
-              <HistorialSoportes requisicionId={requisicion.id} mostrarDescarga={true} />
             </div>
           </DialogContent>
         </Dialog>

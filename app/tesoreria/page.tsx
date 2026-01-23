@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DollarSign, CreditCard, CheckCircle2, History, Clock } from "lucide-react"
+import { DollarSign, CreditCard, CheckCircle2, Clock } from "lucide-react"
 
 import MonitorCajaMenor from "@/components/tesoreria/monitor-caja-menor"
 import SolicitudesCajaMenor from "@/components/tesoreria/solicitudes-caja-menor"
@@ -19,6 +19,7 @@ import TarjetaRequisicion from "@/components/tesoreria/tarjeta-requisicion"
 import Navbar from "@/components/Navbar"
 import useCajaMenor from "@/hooks/useCajaMenor"
 import { UserType } from "@/types/user.types"
+import HistorialPagos from "@/components/tesoreria/HistorialPagos"
 
 export default function TesoreriaPage() {
   const { user } = useAuth()
@@ -39,6 +40,9 @@ export default function TesoreriaPage() {
     solicitudesCajaMenor,
     aprobarSolicitudCajaMenor,
     rechazarSolicitudCajaMenor,
+    fetchHistorialPagos,
+    historialPagos,
+    historialPagosCajaMenor,
   } = usePagos()
 
   const {
@@ -96,18 +100,20 @@ export default function TesoreriaPage() {
       getPendientesPagar()
       getPresupuestoCajaMenor()
       getPendientesCajaMenor()
+      fetchHistorialPagos('TESORERIA')
     }
-  }, [getPendientesPagar, isTesoreria, getPresupuestoCajaMenor, getPendientesCajaMenor])
+  }, [getPendientesPagar, isTesoreria, getPresupuestoCajaMenor, getPendientesCajaMenor, fetchHistorialPagos])
 
 
   useEffect(() => {
     if (isCajaMenor) {
       getPendientesCajaMenor()
       getPendientesPagar()
+      fetchHistorialPagos('CAJA_MENOR')
     } else if (isTesoreria) {
       getSolicitudesCajaMenor()
     }
-  }, [getPendientesPagar, isCajaMenor, getSolicitudesCajaMenor, isTesoreria, getPendientesCajaMenor])
+  }, [getPendientesPagar, isCajaMenor, getSolicitudesCajaMenor, isTesoreria, getPendientesCajaMenor, fetchHistorialPagos])
 
 
   return (
@@ -116,8 +122,8 @@ export default function TesoreriaPage() {
 
       <div className="px-4 py-8">
         {isTesoreria ? (
-          <Tabs defaultValue="pendientes" className="w-full space-y-6">
-            <TabsList className="grid w-full grid-cols-5 gap-5">
+          <Tabs defaultValue="pendientes" className="w-full space-y-6 ">
+            <TabsList className="grid w-full grid-cols-5 gap-5 truncate">
               <TabsTrigger value="pendientes"><span className="flex items-center gap-2">Pendientes <span className="bg-green-500/20 text-green-700 rounded-full px-2 mt-1 text-xs font-bold">{pendientesPagar.length}</span></span> </TabsTrigger>
               <TabsTrigger value="cajamenor"><span className="flex items-center gap-2">Caja Menor <span className="bg-blue-500/20 text-blue-700 rounded-full px-2 mt-1 text-xs font-bold">{pendientesPagarCajaMenor.length}</span></span> </TabsTrigger>
               <TabsTrigger value="monitor">Monitor CM</TabsTrigger>
@@ -243,35 +249,29 @@ export default function TesoreriaPage() {
             </TabsContent>
 
             <TabsContent value="historial">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Historial de Tesorería
-                  </CardTitle>
-                  <CardDescription>
-                    Historial de pagos procesados
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                    <History className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No hay historial de tesorería</p>
-                    <p className="text-sm mt-1">Los pagos procesados por tesorería aparecerán aquí</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <HistorialPagos historialPagos={historialPagos} />
             </TabsContent>
           </Tabs>
         ) : (
-          <CajaMenor
-            pendientesPagarCajaMenor={pendientesPagarCajaMenor}
-            createPagoCajaMenor={createPago}
-            user={user as UserType}
-            loadingPagos={loadingPagos}
-            errorPagos={errorPagos}
-            periodo={periodo}
-          />
+          <Tabs defaultValue="caja-menor" className="w-full space-y-6">
+            <TabsList className="grid w-full grid-cols-2 gap-5">
+              <TabsTrigger value="caja-menor">Caja Menor</TabsTrigger>
+              <TabsTrigger value="historial">Historial</TabsTrigger>
+            </TabsList>
+            <TabsContent value="historial" className="space-y-6">
+              <HistorialPagos historialPagos={historialPagosCajaMenor} />
+            </TabsContent>
+            <TabsContent value="caja-menor" className="space-y-6">
+              <CajaMenor
+                pendientesPagarCajaMenor={pendientesPagarCajaMenor}
+                createPagoCajaMenor={createPago}
+                user={user as UserType}
+                loadingPagos={loadingPagos}
+                errorPagos={errorPagos}
+                periodo={periodo}
+              />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </section>

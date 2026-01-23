@@ -21,7 +21,6 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { UploadIcon, FileTextIcon } from "lucide-react"
-import TimelineTrazabilidad from "@/components/tesoreria/timeline-trazabilidad"
 import useAuth from '@/hooks/useAuth'
 import useRequisicion from "@/hooks/useRequisicion"
 import { usePeriodoStore } from "@/store/periodo.store"
@@ -630,7 +629,6 @@ export default function AprobacionesPage() {
                               Historial completo de estados y acciones para la requisición
                             </DialogDescription>
                           </DialogHeader>
-                          <TimelineTrazabilidad requisicionId={requisicion.id} />
                         </DialogContent>
                       </Dialog>
                     </div>

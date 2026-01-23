@@ -34,4 +34,8 @@ export const PagosService = {
   async rechazarSolicitudCajaMenor(solicitudId: number) {
     return await api.patch(`/caja-menor/rechazar-presupuesto/${solicitudId}`);
   },
+
+  async historialPagos(periodo: number, tipoPago: 'TESORERIA' | 'CAJA_MENOR'){
+    return await api.get(`/pagos/historial?periodo=${periodo}&tipoPago=${tipoPago}`);
+  }
 }

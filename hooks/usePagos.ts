@@ -3,6 +3,7 @@ import { RegisterPagoSchema } from "@/schema/pagos.schema";
 import { PagosService } from "@/services/pagos.service";
 import { usePeriodoStore } from "@/store/periodo.store";
 import { RequisicionType, SolicitudPresupuestoCajaMenorType } from "@/types";
+import { HistorialPagoType } from "@/types/pagos.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ export default function usePagos() {
   const [pendientesPagarCajaMenor, setPendientesPagarCajaMenor] = useState<RequisicionType[]>([]);
   const [solicitudesCajaMenor, setSolicitudesCajaMenor] = useState<SolicitudPresupuestoCajaMenorType[]>([]);
   const { periodo: periodoActual } = usePeriodoStore()
+  const [historialPagos, setHistorialPagos] = useState<HistorialPagoType[]>([]);
+  const [historialPagosCajaMenor, setHistorialPagosCajaMenor] = useState<HistorialPagoType[]>([]);
 
 
 
@@ -34,6 +37,7 @@ export default function usePagos() {
       const response = await PagosService.registerPago(formData);
       if (response.status === 201) {
         await fetchRequisicionesCajaMenor(periodoActual);
+        await fetchHistorialPagos(registerData.tipoPago);
         toast.success(`Pago procesado como ${registerData.tipoPago} con exito`);
         return true;
       } else {
@@ -246,6 +250,36 @@ export default function usePagos() {
     }
   }, []);
 
+  const fetchHistorialPagos = useCallback(async (tipoPago: 'TESORERIA' | 'CAJA_MENOR') => {
+    setLoadingPagos(true);
+    setErrorPagos(null);
+    setHistorialPagos([]);
+    setHistorialPagosCajaMenor([]);
+    try {
+      const { data, status } = await PagosService.historialPagos(periodoActual, tipoPago);
+      if (status === 200 ) {
+        if (tipoPago === 'TESORERIA') {
+          setHistorialPagos(data as HistorialPagoType[]);
+        } else {
+          setHistorialPagosCajaMenor(data as HistorialPagoType[]);
+        }
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener el historial de pagos.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorPagos(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingPagos(false);
+    }
+  }, [setHistorialPagos, setHistorialPagosCajaMenor]);
+
 
   return {
     loadingPagos,
@@ -261,5 +295,8 @@ export default function usePagos() {
     solicitudesCajaMenor,
     aprobarSolicitudCajaMenor,
     rechazarSolicitudCajaMenor,
+    fetchHistorialPagos,
+    historialPagos,
+    historialPagosCajaMenor,
   };
 }
