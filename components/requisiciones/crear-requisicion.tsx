@@ -33,7 +33,6 @@ interface CrearRequisicionProps {
   fetchConceptos?: (cuentaContableId: number) => void
   fetchProductos: (conceptoId: number) => void
   createSolicitudRequisicion: (data: RegisterRequisicionSchema) => Promise<boolean>
-  fetchHistorialRequisicionesArea: (periodo: number, areaId: number) => Promise<boolean | undefined>
   periodo: number
   tipoRequisicion?: "PARTIDA_NO_PRESUPUESTADA" | "REQUISICION"
 }
@@ -52,7 +51,6 @@ export default function CrearRequisicion(
     fetchProductos,
     periodo,
     createSolicitudRequisicion,
-    fetchHistorialRequisicionesArea,
     tipoRequisicion = "REQUISICION",
     fetchCuentasContables,
     fetchConceptos,
@@ -78,6 +76,7 @@ export default function CrearRequisicion(
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<RegisterRequisicionSchema>({
     resolver: zodResolver(registerRequisicionSchema),
@@ -130,20 +129,8 @@ export default function CrearRequisicion(
 
     const res = await createSolicitudRequisicion(dataFinal);
     if (res) {
-      // Recargar historial de requisiciones
-      await fetchHistorialRequisicionesArea(periodo, user.area.id);
-
       // Resetear todos los campos del formulario
-      setCuentaContableId(null);
-      setConceptoId(null);
-      setValue("productoId", undefined as any);
-      setValue("proveedorId", undefined as any);
-      setValue("cantidad", 1);
-      setValue("valorUnitario", 0);
-      setValue("valorPresupuestado", 0);
-      setValue("ivaPresupuestado", 0);
-      setValue("justificacion", "");
-      setValue("periodo", periodo);
+      reset();
     }
   }
 

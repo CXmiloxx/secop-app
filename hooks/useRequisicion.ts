@@ -11,6 +11,8 @@ export default function useRequisicion() {
   const [loadingRequisicion, setLoadingRequisicion] = useState(false);
   const [errorRequisicion, setErrorRequisicion] = useState<string | null>(null);
   const [requisiciones, setRequisiciones] = useState<RequisicionType[]>([]);
+  const [requisicionesPagadas, setRequisicionesPagadas] = useState<RequisicionType[]>([]);
+
   const { periodo: periodoActual } = usePeriodoStore();
 
   const fetchRequisiciones = useCallback(async (periodo: number) => {
@@ -38,21 +40,44 @@ export default function useRequisicion() {
     }
   }, [setRequisiciones]);
 
+
+  const fetchRequisicionesPagadas = useCallback(async (periodo: number) => {
+    setLoadingRequisicion(true);
+    setErrorRequisicion(null);
+    setRequisicionesPagadas([]);
+    try {
+      const { data, status } = await RequisicionService.findAllPagadas(periodo);
+      if (status === 200) {
+        setRequisicionesPagadas(data as RequisicionType[]);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener las requisiciones.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorRequisicion(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingRequisicion(false);
+    }
+  }, [setRequisicionesPagadas]);
+
   const createSolicitudRequisicion = useCallback(async (registerData: RegisterRequisicionSchema) => {
     setLoadingRequisicion(true);
     setErrorRequisicion(null);
 
     try {
-      const response = await RequisicionService.createRequisicion(registerData);
-      if (response.status === 201) {
+      const { status } = await RequisicionService.createRequisicion(registerData);
+      if (status === 201) {
+        await fetchHistorialRequisicionesArea(periodoActual, registerData.areaId);
         toast.success("requisición creada exitosamente");
         return true;
-      } else {
-        const errorMsg = response.message || "No se pudo crear la requisición correctamente.";
-        setErrorRequisicion(errorMsg);
-        toast.error(errorMsg);
-        return false;
       }
+      return false;
     } catch (err) {
       let errorMessage = "Error desconocido al crear la requisición.";
 
@@ -283,9 +308,11 @@ export default function useRequisicion() {
     loadingRequisicion,
     errorRequisicion,
     createSolicitudRequisicion,
+    fetchRequisicionesPagadas,
     fetchHistorialRequisicionesArea,
     fetchRequisiciones,
     requisiciones,
+    requisicionesPagadas,
     aprobarRequisicion,
     rechazarRequisicion,
     adjuntarSoportesCotizaciones,

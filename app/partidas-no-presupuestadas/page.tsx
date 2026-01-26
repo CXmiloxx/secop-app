@@ -18,18 +18,18 @@ import usePartidaNoPresupuestada from "@/hooks/usePartidaNoPresupuestada"
 export default function PartidasNoPresupuestadasPage() {
   const { user } = useAuth()
   const {
-    fetchHistorialRequisicionesArea,
+    fetchHistorialPartidaNoPresupuestadaArea,
     createSolicitudPartidaNoPresupuestada,
-    historialRequisicionesArea,
-    loadingRequisicion
+    historialPartidaNoPresupuestadaArea,
+    loadingPartidaNoPresupuestada
   } = usePartidaNoPresupuestada()
 
 
   const { periodo } = usePeriodoStore()
 
   const loadData = useCallback(async () => {
-    await fetchHistorialRequisicionesArea(periodo, user?.area?.id || 0, true)
-  }, [fetchHistorialRequisicionesArea, periodo, user?.area?.id])
+    await fetchHistorialPartidaNoPresupuestadaArea(periodo, user?.area?.id || 0, true)
+  }, [fetchHistorialPartidaNoPresupuestadaArea, periodo, user?.area?.id])
 
 
   const { providers, fetchProviders } = useProviders();
@@ -56,7 +56,7 @@ export default function PartidasNoPresupuestadasPage() {
         <Tabs defaultValue={canCreate ? "crear" : "historial"} className="w-full">
           <TabsList className="grid w-full grid-cols-2 gap-5">
             {canCreate && <TabsTrigger value="crear">Crear Partida No Presupuestada</TabsTrigger>}
-            <TabsTrigger value="historial">Mis Partidas No Presupuestadas ({historialRequisicionesArea.length})</TabsTrigger>
+            <TabsTrigger value="historial">Mis Partidas No Presupuestadas ({historialPartidaNoPresupuestadaArea.length})</TabsTrigger>
           </TabsList>
 
           {canCreate && (
@@ -73,14 +73,13 @@ export default function PartidasNoPresupuestadasPage() {
                 fetchProductos={fetchProductos}
                 periodo={periodo}
                 createSolicitudRequisicion={createSolicitudPartidaNoPresupuestada}
-                fetchHistorialRequisicionesArea={fetchHistorialRequisicionesArea}
                 tipoRequisicion="PARTIDA_NO_PRESUPUESTADA"
               />
             </TabsContent>
           )}
 
           <TabsContent value="historial">
-            <HistorialRequisiciones historialRequisicionesArea={historialRequisicionesArea} loadingRequisicion={loadingRequisicion} />
+            <HistorialRequisiciones historialRequisicionesArea={historialPartidaNoPresupuestadaArea} loadingRequisicion={loadingPartidaNoPresupuestada} />
           </TabsContent>
         </Tabs>
       </div>

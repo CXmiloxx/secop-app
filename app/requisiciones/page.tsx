@@ -65,7 +65,6 @@ export default function RequisicionesPage() {
                 fetchProductos={fetchProductos}
                 periodo={periodo}
                 createSolicitudRequisicion={createSolicitudRequisicion}
-                fetchHistorialRequisicionesArea={fetchHistorialRequisicionesArea}
               />
             </TabsContent>
           )}
