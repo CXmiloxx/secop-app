@@ -1,7 +1,8 @@
 export interface HistorialPagoType {
   id: number
   tipoPago: 'TESORERIA' | 'CAJA_MENOR'
-  fecha: string
+  fecha: string,
+  tipoRequisicion: 'REQUISICION' | 'PARTIDA NO PRESUPUESTADA'
   total: number
   areaSolicitante: string
   usuarioRegistrador: string

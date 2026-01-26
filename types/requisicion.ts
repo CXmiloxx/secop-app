@@ -35,7 +35,6 @@ export interface RequisicionHistorialType {
 export interface RequisicionType {
   id: number;
   numero?: string;
-  numeroRequisicion?: string;
   area: string;
   proveedor: string;
   cuenta: string;

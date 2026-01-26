@@ -1,141 +1,128 @@
 import { RequisicionType } from '@/types'
 import { Badge } from '@/components/ui/badge'
-import { Hash } from 'lucide-react'
 import { formatCurrency } from '@/lib'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Eye } from 'lucide-react'
 
 interface TarjetaRequisicionProps {
   requisicion: RequisicionType
-  badgeVariant?: 'default' | 'green' | 'orange' | 'blue'
-  badgeText?: string
   mostrarAcciones?: boolean
   acciones?: React.ReactNode
-  mostrarTrazabilidad?: boolean
 }
 
 export default function TarjetaRequisicion({
   requisicion,
-  badgeVariant = 'default',
-  badgeText,
   mostrarAcciones = false,
   acciones,
-  mostrarTrazabilidad = false
 }: TarjetaRequisicionProps) {
   const getBadgeClass = () => {
-    switch (badgeVariant) {
-      case 'green':
+    switch (requisicion.estado) {
+      case 'APROBADA':
         return 'bg-green-600 hover:bg-green-700'
-      case 'orange':
+      case 'PASADA_A_CAJA_MENOR':
         return 'bg-orange-600 hover:bg-orange-700'
-      case 'blue':
+      case 'PAGADO':
         return 'bg-blue-600 hover:bg-blue-700'
       default:
-        return ''
+        return 'bg-gray-600 hover:bg-gray-700'
     }
   }
 
   return (
-    <div className="p-5 border-2 rounded-lg space-y-4 hover:border-primary/50 transition-colors">
-      <div className="flex justify-between items-start">
+    <div className="p-3 border rounded-lg space-y-4 hover:border-primary/70 transition-colors bg-background shadow-sm max-w-full">
+      <div className="flex justify-between items-start gap-3">
         <div>
-          <p className="font-semibold text-lg">{requisicion.area}</p>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
-            {requisicion.numeroRequisicion && (
-              <span className="flex items-center gap-1 font-mono font-medium text-primary">
-                <Hash className="h-3 w-3" />
-                {requisicion.numeroRequisicion}
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-base">{requisicion.area}</p>
+            <Badge className={getBadgeClass() + " ml-1 px-2 py-0.5 text-sm font-semibold"}>
+              {requisicion.estado}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground mt-1">
+            {requisicion.numeroComite && (
+              <span className="flex items-center gap-1 font-mono font-medium text-blue-600">
+                • Comité: {requisicion.numeroComite}
               </span>
             )}
-            {requisicion.numeroComite && (
-              <>
-                <span>•</span>
-                <span className="flex items-center gap-1 font-mono font-medium text-blue-600">
-                  Comité: {requisicion.numeroComite}
-                </span>
-              </>
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {requisicion.aprobadoPor && (
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <span className="font-medium">Aprobada</span>
+                <span>por el {requisicion.aprobadoPor}</span>
+                {requisicion.fechaAprobacion && (
+                  <span>el {new Date(requisicion.fechaAprobacion).toLocaleDateString('es-CO')}</span>
+                )}
+              </div>
+            )}
+            {requisicion.pagadoPor && (
+              <div className="text-sm text-muted-foreground">
+                <span>Enviado por <span className="font-medium">{requisicion.pagadoPor}</span></span>
+              </div>
+            )}
+            {requisicion.fechaPago && (
+              <div className="text-sm text-muted-foreground">
+                <span>Procesado el <span className="font-medium">{new Date(requisicion.fechaPago).toLocaleDateString('es-CO')}</span></span>
+              </div>
             )}
           </div>
-          {requisicion.aprobadoPor && (
-            <p className="text-sm text-muted-foreground">
-              Aprobada por el {requisicion.aprobadoPor}{' '}
-              {requisicion.fechaAprobacion && (
-                <>el {new Date(requisicion.fechaAprobacion).toLocaleDateString('es-CO')}</>
-              )}
-            </p>
-          )}
-          {requisicion.pagadoPor && (
-            <p className="text-sm text-muted-foreground">Enviado por {requisicion.pagadoPor}</p>
-          )}
-          {requisicion.fechaPago && (
-            <p className="text-sm text-muted-foreground">
-              Procesado el {new Date(requisicion.fechaPago).toLocaleDateString('es-CO')}
-            </p>
-          )}
         </div>
-        {badgeText && <Badge className={getBadgeClass()}>{badgeText}</Badge>}
       </div>
 
-      <div className="text-sm space-y-1 bg-muted p-4 rounded-md">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          <p>
-            <strong>Proveedor:</strong> {requisicion.proveedor}
-          </p>
-          <p>
-            <strong>Cantidad:</strong> {requisicion.cantidad}
-          </p>
+      <div className="bg-muted p-3 rounded space-y-2 border">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+          <div>
+            <span className="block text-muted-foreground">Proveedor</span>
+            <span className="font-medium truncate">{requisicion.proveedor}</span>
+          </div>
+          <div>
+            <span className="block text-muted-foreground">Cantidad</span>
+            <span className="font-medium">{requisicion.cantidad}</span>
+          </div>
           {requisicion.cuenta && (
-            <p className="col-span-2">
-              <strong>Cuenta:</strong> {requisicion.cuenta} - {requisicion.nombreCuenta}
-            </p>
+            <div className="col-span-2 truncate">
+              <span className="block text-muted-foreground">Cuenta</span>
+              <span className="font-medium">{requisicion.cuenta} - {requisicion.nombreCuenta}</span>
+            </div>
           )}
-          <p className="col-span-2">
-            <strong>Concepto:</strong> {requisicion.concepto}
-          </p>
+          <div className="col-span-2">
+            <span className="block text-muted-foreground">Concepto</span>
+            <span className="font-medium truncate">{requisicion.concepto}</span>
+          </div>
           {requisicion.valorDefinido !== undefined && requisicion.ivaDefinido !== undefined && (
             <>
-              <p>
-                <strong>Valor Base:</strong> {formatCurrency(Number(requisicion.valorDefinido) - Number(requisicion.ivaDefinido))}
-              </p>
-              <p>
-                <strong>IVA:</strong> {formatCurrency(Number(requisicion.ivaDefinido))}
-              </p>
+              <div>
+                <span className="block text-muted-foreground">Valor Base</span>
+                <span className="font-medium">{formatCurrency(Number(requisicion.valorDefinido) - Number(requisicion.ivaDefinido))}</span>
+              </div>
+              <div>
+                <span className="block text-muted-foreground">IVA</span>
+                <span className="font-medium">{formatCurrency(Number(requisicion.ivaDefinido))}</span>
+              </div>
             </>
           )}
+          {requisicion.partidaNoPresupuestada !== undefined && (
+            <div className="col-span-2">
+              <span className="block text-muted-foreground">Partida No Presupuestada</span>
+              <span className={`font-medium ${requisicion.partidaNoPresupuestada ? "text-orange-700" : "text-green-700"}`}>{requisicion.partidaNoPresupuestada ? 'Sí' : 'No'}</span>
+            </div>
+          )}
           {requisicion.solicitante && (
-            <p className="col-span-2">
-              <strong>Solicitante:</strong> {requisicion.solicitante}
-            </p>
+            <div className="col-span-2 truncate">
+              <span className="block text-muted-foreground">Solicitante</span>
+              <span className="font-medium">{requisicion.solicitante}</span>
+            </div>
           )}
         </div>
-        <div className="pt-2 mt-2 border-t">
-          <p className="text-lg font-bold text-primary">
-            Valor Total: {formatCurrency(requisicion.valorDefinido || requisicion.valorTotal || 0)}
-          </p>
+        <div className="pt-2 mt-1 border-t flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-semibold">Valor Total</span>
+          <span className="text-lg font-extrabold text-primary">{formatCurrency(requisicion.valorDefinido || requisicion.valorTotal || 0)}</span>
         </div>
       </div>
 
-      {mostrarTrazabilidad && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full bg-transparent" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              Ver Soportes y Trazabilidad
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Trazabilidad - Requisición #{requisicion.id}</DialogTitle>
-              <DialogDescription>Historial completo de eventos y documentos</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-            </div>
-          </DialogContent>
-        </Dialog>
+      {mostrarAcciones && acciones && (
+        <div className="flex gap-2 justify-end mt-2">
+          {acciones}
+        </div>
       )}
-
-      {mostrarAcciones && acciones && <div className="flex gap-2">{acciones}</div>}
     </div>
   )
 }

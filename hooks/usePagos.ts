@@ -34,14 +34,14 @@ export default function usePagos() {
         formData.append("soporteFactura", registerData.soporteFactura);
       }
 
-      const response = await PagosService.registerPago(formData);
-      if (response.status === 201) {
+      const { status, message } = await PagosService.registerPago(formData);
+      if (status === 201) {
         await fetchRequisicionesCajaMenor(periodoActual);
         await fetchHistorialPagos(registerData.tipoPago);
-        toast.success(`Pago procesado como ${registerData.tipoPago} con exito`);
+        toast.success(message);
         return true;
       } else {
-        const errorMsg = response.message || "No se pudo crear el pago correctamente.";
+        const errorMsg = message || "No se pudo crear el pago correctamente.";
         setErrorPagos(errorMsg);
         toast.error(errorMsg);
         return false;
@@ -257,7 +257,7 @@ export default function usePagos() {
     setHistorialPagosCajaMenor([]);
     try {
       const { data, status } = await PagosService.historialPagos(periodoActual, tipoPago);
-      if (status === 200 ) {
+      if (status === 200) {
         if (tipoPago === 'TESORERIA') {
           setHistorialPagos(data as HistorialPagoType[]);
         } else {

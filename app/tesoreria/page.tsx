@@ -20,6 +20,7 @@ import Navbar from "@/components/Navbar"
 import useCajaMenor from "@/hooks/useCajaMenor"
 import { UserType } from "@/types/user.types"
 import HistorialPagos from "@/components/tesoreria/HistorialPagos"
+import Loader from "@/components/Loader"
 
 export default function TesoreriaPage() {
   const { user } = useAuth()
@@ -116,6 +117,10 @@ export default function TesoreriaPage() {
   }, [getPendientesPagar, isCajaMenor, getSolicitudesCajaMenor, isTesoreria, getPendientesCajaMenor, fetchHistorialPagos])
 
 
+
+  if (loadingPagos) {
+    return <Loader />
+  }
   return (
     <section>
       <Navbar Icon={DollarSign} title="Gestión de Tesorería" subTitle="Gestión de pagos y requisiciones" />
@@ -153,10 +158,8 @@ export default function TesoreriaPage() {
                     <div className="space-y-4">
                       {pendientesPagar.map((req) => (
                         <TarjetaRequisicion
-                          key={req.id}
+                        key={req.id}
                           requisicion={req}
-                          badgeVariant="green"
-                          badgeText="Aprobada"
                           mostrarAcciones={true}
                           acciones={
                             <>
@@ -169,18 +172,20 @@ export default function TesoreriaPage() {
                                 open={requisicionSeleccionada?.id === req.id}
                                 onOpenChange={(open) => setRequisicionSeleccionada(open ? req : null)}
                               />
-                              <div className="w-full grid grid-cols-2 gap-2">
+                              <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <Button
+                                  className="w-full flex items-center justify-center"
                                   onClick={() => setRequisicionSeleccionada(req)}
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  Aprobar
+                                  <span className="truncate">Aprobar</span>
                                 </Button>
                                 <Button
+                                  className="w-full flex items-center justify-center"
                                   onClick={() => handlePasarACajaMenor(req)}
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  Pasar a Caja Menor
+                                  <span className="truncate">Pasar a Caja Menor</span>
                                 </Button>
                               </div>
                             </>
@@ -217,9 +222,6 @@ export default function TesoreriaPage() {
                         <TarjetaRequisicion
                           key={req.id}
                           requisicion={req}
-                          badgeVariant="orange"
-                          badgeText="Caja Menor"
-                          mostrarTrazabilidad={true}
                         />
                       ))}
                     </div>

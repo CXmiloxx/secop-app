@@ -84,10 +84,10 @@ export default function HistorialPagos({ historialPagos }: HistorialPagosProps) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[120px] ">Tipo</TableHead>
-                    <TableHead className="min-w-[90px]">Total</TableHead>
+                    <TableHead className="min-w-[120px] ">Tipo de Pago</TableHead>
+                    <TableHead className="min-w-[120px]">Total</TableHead>
                     <TableHead className="min-w-[110px]">Área Solicitante</TableHead>
-                    <TableHead className="min-w-[110px]">Registrador</TableHead>
+                    <TableHead className="min-w-[110px]">Tipo de Requisición</TableHead>
                     <TableHead className="min-w-[160px]">Soporte</TableHead>
                     <TableHead className="min-w-[85px]">Estado</TableHead>
                     <TableHead className="min-w-[110px]">Fecha Pago</TableHead>
@@ -118,7 +118,7 @@ export default function HistorialPagos({ historialPagos }: HistorialPagosProps) 
                         {pago.areaSolicitante || 'N/A'}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {pago.usuarioRegistrador || 'N/A'}
+                        {pago.tipoRequisicion}
                       </TableCell>
                       <TableCell className="text-xs truncate max-w-[140px]" title={pago.soporteFactura}>
                         {pago.soporteFactura ? (
