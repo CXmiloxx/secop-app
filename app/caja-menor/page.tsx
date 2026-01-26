@@ -33,7 +33,7 @@ export default function CajaMenorPage() {
   const { periodo } = usePeriodoStore()
   const { providers, fetchProviders } = useProviders();
   const { fetchCuentasContables, cuentasContables } = useCuentasContables();
-  const { conceptos, fetchCoceptos } = useConceptos();
+  const { conceptos, fetchConceptos } = useConceptos();
   const { areas, fetchAreas } = useAreas()
 
   const getDataMovimientos = useCallback(async () => {
@@ -202,7 +202,7 @@ export default function CajaMenorPage() {
             conceptos={conceptos || []}
             presupuestoCajaMenor={presupuestoCajaMenor || null}
             areas={areas || []}
-            fetchCoceptos={fetchCoceptos}
+            fetchCoceptos={fetchConceptos}
             registrarGasto={registrarGasto}
           />
 
