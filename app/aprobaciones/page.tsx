@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Hash, CheckCircle } from "lucide-react"
+import {  Hash, CheckCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -402,12 +402,6 @@ export default function AprobacionesPage() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            {requisicion.numeroRequisicion && (
-                              <Badge variant="outline" className="font-mono">
-                                <Hash className="h-3 w-3 mr-1" />
-                                {requisicion.numeroRequisicion}
-                              </Badge>
-                            )}
                             {requisicion.numeroComite && (
                               <Badge variant="outline" className="font-mono">
                                 <FileTextIcon className="h-3 w-3 mr-1" />
