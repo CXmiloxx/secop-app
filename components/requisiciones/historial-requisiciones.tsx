@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, CheckCircle2, XCircle, Package, DollarSign, FileText, User, Building2 } from "lucide-react"
+import { Calendar, CheckCircle2, XCircle, Package, DollarSign, FileText, User, Building2, Clock, Check } from "lucide-react"
 import { formatDate, formatCurrency } from "@/lib"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -14,26 +14,53 @@ interface HistorialRequisicionesProps {
 }
 
 export default function HistorialRequisiciones({ historialRequisicionesArea, loadingRequisicion }: HistorialRequisicionesProps) {
-  const getEstadoBadge = (req: RequisicionHistorialType) => {
-    if (req.aprobadoPor) {
-      return (
-        <Badge className="bg-green-200 text-green-800 hover:bg-green-200/80 font-semibold px-4 py-1">
-          <CheckCircle2 className="h-4 w-4 mr-1" />Aprobada
-        </Badge>
-      );
-    }
-    if (req.motivoRechazo) {
-      return (
-        <Badge className="bg-red-200 text-red-800 hover:bg-red-200/80 font-semibold px-4 py-1">
-          <XCircle className="h-4 w-4 mr-1" />Rechazada
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="font-semibold px-4 py-1">
-        Pendiente
+
+  const estadosRequisiciones = [
+    {
+      estado: "PENDIENTE",
+      badge: <Badge className="bg-yellow-200 text-yellow-800 hover:bg-yellow-200/80 font-semibold px-4 py-1">
+        <Clock className="h-4 w-4 mr-1" />Pendiente
       </Badge>
-    );
+    },
+    {
+      estado: "APROBADA",
+      badge: <Badge className="bg-green-200 text-green-800 hover:bg-green-200/80 font-semibold px-4 py-1">
+        <CheckCircle2 className="h-4 w-4 mr-1" />Aprobada
+      </Badge>
+    },
+    {
+      estado: "RECHAZADA",
+      badge: <Badge className="bg-red-200 text-red-800 hover:bg-red-200/80 font-semibold px-4 py-1">
+        <XCircle className="h-4 w-4 mr-1" />Rechazada
+      </Badge>
+    },
+    {
+      estado: "PAGADO",
+      badge: <Badge className="bg-blue-200 text-blue-800 hover:bg-blue-200/80 font-semibold px-4 py-1">
+        <DollarSign className="h-4 w-4 mr-1" />Pagado
+      </Badge>
+    },
+    {
+      estado: "PASADA_A_CAJA_MENOR",
+      badge: <Badge className="bg-purple-200 text-purple-800 hover:bg-purple-200/80 font-semibold px-4 py-1">
+        <Package className="h-4 w-4 mr-1" />Pasada a Caja Menor
+      </Badge>
+    },
+    {
+      estado: "PENDIENTE_ENTREGA",
+      badge: <Badge className="bg-purple-200 text-purple-800 hover:bg-purple-200/80 font-semibold px-4 py-1">
+        <Clock className="h-4 w-4 mr-1" />Pendiente de ser entregado
+      </Badge>
+    },
+    {
+      estado: "ENTREGADA",
+      badge: <Badge className="bg-green-200 text-green-800 hover:bg-green-200/80 font-semibold px-4 py-1">
+        <Check className="h-4 w-4 mr-1" />Entregada
+      </Badge>
+    }
+  ]
+  const getEstadoBadge = (req: RequisicionHistorialType) => {
+    return estadosRequisiciones.find(e => e.estado === req.estado)?.badge || null;
   };
 
   if (loadingRequisicion) {
