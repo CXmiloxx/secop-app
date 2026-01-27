@@ -51,7 +51,7 @@ export default function SolicitudesCajaMenor({
 
   console.log(errors)
 
-  const isTesoreria = user.rol.nombre === "tesorería"
+  const isTesoreria = user.rol.nombre === "tesoreria"
 
   // Cuando se selecciona una nueva solicitud y la acción es aprobar, inicializa el form correctamente
   useEffect(() => {
