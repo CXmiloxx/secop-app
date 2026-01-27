@@ -5,6 +5,8 @@ import { useCallback, useState } from "react";
 
 export default function useProductos() {
   const [productos, setProductos] = useState<ProductosType[]>([]);
+  const [productosTotales, setProductosTotales] = useState<ProductosType[]>([]);
+
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [errorProductos, setErrorProductos] = useState<string | null>(null);
 
@@ -34,10 +36,35 @@ export default function useProductos() {
     }
   }, [setProductos]);
 
+
+  const fetchProductosTotales = useCallback(async (): Promise<ProductosType[] | undefined> => {
+    setLoadingProductos(true);
+    setErrorProductos(null);
+    try {
+      const { data, status } = await ProductosService.productos();
+      if (status === 200 && Array.isArray(data)) {
+        setProductosTotales(data as ProductosType[]);
+        return data as ProductosType[];
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener productos.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorProductos(errorMessage);
+    } finally {
+      setLoadingProductos(false);
+    }
+  }, [setProductosTotales]);
+
   return {
     productos,
+    productosTotales,
     loadingProductos,
     errorProductos,
-    fetchProductos
+    fetchProductos,
+    fetchProductosTotales
   };
 }

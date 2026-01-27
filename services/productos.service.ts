@@ -5,6 +5,10 @@ export const ProductosService = {
     return await api.get(`/productos/${conceptoContableId}`)
   },
 
+  async productos() {
+    return await api.get(`/productos`)
+  },
+
 }
 
 
