@@ -16,11 +16,60 @@ export interface Producto {
 export interface MovimientoInventario {
   id: string;
   tipo: TipoMovimiento;
-  producto: string;
+  producto: {
+    id: number;
+    nombre: string;
+  }
+  area: {
+    id: number;
+    nombre: string;
+  }
   cantidad: number;
-  fecha: string;
+  fechaIngreso: string;
   responsable: string;
   observaciones: string;
+}
+
+export interface RequisicionPendienteInventario {
+  id: number;
+  producto: {
+    id: number;
+    nombre: string;
+  }
+  area: {
+    id: number;
+    nombre: string;
+  }
+  cantidad: number;
+  numeroComite: string;
+}
+
+export interface ProductoInventarioGeneral {
+  categoria: string;
+  nombre: string;
+  cantidad: number;
+  areas: string[];
+}
+
+export interface ProductoInventarioArea {
+  categoria: string;
+  nombre: string;
+  cantidad: number;
+  stockMinimo: number;
+
+}
+
+export interface InventarioGeneral {
+  productos: ProductoInventarioGeneral[];
+  totalUnidades: number;
+  totalProductos: number;
+}
+
+
+export interface InventarioArea {
+  productos: ProductoInventarioArea[];
+  totalUnidades: number;
+  totalProductos: number;
 }
 
 export interface SolicitudInventario {
