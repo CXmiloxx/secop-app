@@ -202,7 +202,7 @@ export default function CajaMenorPage() {
             conceptos={conceptos || []}
             presupuestoCajaMenor={presupuestoCajaMenor || null}
             areas={areas || []}
-            fetchCoceptos={fetchConceptos}
+            fetchConceptos={fetchConceptos}
             registrarGasto={registrarGasto}
           />
 
