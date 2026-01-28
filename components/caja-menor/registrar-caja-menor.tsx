@@ -15,7 +15,7 @@ import { AreaType } from "@/types/user.types"
 import { ProvidersType } from "@/types/provider.types"
 import { CuentasContablesType } from "@/types/cuentas-contables.types"
 import { ConceptosType } from "@/types/conceptos.types"
-import {  PresupuestoCajaMenorType } from "@/types/caja-menor"
+import { PresupuestoCajaMenorType } from "@/types/caja-menor"
 import { formatCurrency } from "@/lib/utils"
 
 interface RegistrarCajaMenorProps {
@@ -24,8 +24,8 @@ interface RegistrarCajaMenorProps {
   conceptos: ConceptosType[]
   presupuestoCajaMenor: PresupuestoCajaMenorType | null
   areas: AreaType[]
-  fetchCoceptos: (cuentaContableId: number) => void
-  registrarGasto:  (gasto: RegistrarGastoCajaMenorSchema) => Promise<boolean>
+  fetchConceptos: (cuentaContableId: number) => void
+  registrarGasto: (gasto: RegistrarGastoCajaMenorSchema) => Promise<boolean>
 }
 
 export function RegistrarCajaMenor({
@@ -34,7 +34,7 @@ export function RegistrarCajaMenor({
   conceptos,
   presupuestoCajaMenor,
   areas,
-  fetchCoceptos,
+  fetchConceptos,
   registrarGasto,
 }: RegistrarCajaMenorProps) {
 
@@ -94,9 +94,9 @@ export function RegistrarCajaMenor({
 
   useEffect(() => {
     if (watch("cuentaContableId") && Number(watch("cuentaContableId")) > 0) {
-      fetchCoceptos(Number(watch("cuentaContableId")));
+      fetchConceptos(Number(watch("cuentaContableId")));
     }
-  }, [watch("cuentaContableId"), fetchCoceptos]);
+  }, [watch("cuentaContableId"), fetchConceptos]);
 
   const disponible = presupuestoCajaMenor
     ? presupuestoCajaMenor.saldoDisponible

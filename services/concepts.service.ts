@@ -3,7 +3,7 @@ import { RegisterConceptosSchema } from "@/schema/conceptos.schema";
 
 export const ConceptosService = {
   async conceptosPorCuenta(cuentaContableId: number) {
-    return await api.get(`/conceptos/${cuentaContableId}`)
+    return await api.get(`/conceptos/por-cuenta/${cuentaContableId}`)
   },
 
   async conceptosPermitidos(areaId: number, periodo: number, cuentaContableId: number) {
@@ -16,6 +16,10 @@ export const ConceptosService = {
 
   async deleteConcepto(id: number) {
     return await api.delete(`/conceptos/${id}`);
+  },
+
+  async conceptosTotales() {
+    return await api.get(`/conceptos/totales`);
   },
 
 }

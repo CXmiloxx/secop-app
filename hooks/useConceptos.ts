@@ -8,6 +8,7 @@ import { toast } from "sonner";
 export default function useConceptos() {
   const [conceptos, setConceptos] = useState<ConceptosType[]>([]);
   const [conceptosPermitidos, setConceptosPermitidos] = useState<ConceptosType[]>([]);
+  const [conceptosTotales, setConceptosTotales] = useState<ConceptosType[]>([]);
   const [loadingConceptos, setLoadingConceptos] = useState(false);
   const [errorConceptos, setErrorConceptos] = useState<string | null>(null);
 
@@ -61,6 +62,29 @@ export default function useConceptos() {
     }
   }, [setConceptosPermitidos]);
 
+  const fetchConceptosTotales = useCallback(async (): Promise<ConceptosType[] | undefined> => {
+    setLoadingConceptos(true);
+    setErrorConceptos(null);
+    setConceptosTotales([]);
+    try {
+      const { data, status } = await ConceptosService.conceptosTotales();
+      if (status === 200 && Array.isArray(data)) {
+        setConceptosTotales(data as ConceptosType[]);
+        return data as ConceptosType[];
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener conceptos totales.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorConceptos(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoadingConceptos(false);
+    }
+  }, [setConceptosTotales]);
 
   const fetchCreateConcepto = useCallback(async (data: RegisterConceptosSchema) => {
     setLoadingConceptos(true);
@@ -117,6 +141,8 @@ export default function useConceptos() {
     fetchConceptosPermitidos,
     conceptosPermitidos,
     fetchCreateConcepto,
-    fetchDeleteConcepto
+    fetchDeleteConcepto,
+    fetchConceptosTotales,
+    conceptosTotales
   };
 }

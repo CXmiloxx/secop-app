@@ -31,7 +31,7 @@ export default function SolicitarPresupuestoPage() {
 
   const { user } = useAuth();
   const { fetchCuentasContables, cuentasContables } = useCuentasContables();
-  const { conceptos, fetchCoceptos, errorConceptos, loadingConceptos } = useConceptos();
+  const { conceptos, fetchConceptos, errorConceptos, loadingConceptos } = useConceptos();
   const { error: erroSPresupuesto, loading: loadingSPresupuesto, createSolicitud } = useSolicitudPresupuesto();
 
   // Formulario principal
@@ -68,9 +68,9 @@ export default function SolicitarPresupuestoPage() {
   // Traer conceptos al seleccionar cuenta contable
   useEffect(() => {
     if (cuentaId) {
-      fetchCoceptos(cuentaId);
+      fetchConceptos(cuentaId);
     }
-  }, [cuentaId, fetchCoceptos]);
+  }, [cuentaId, fetchConceptos]);
 
 
   // Calcular total y asignar articulos seleccionados al form principal
