@@ -1,42 +1,57 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { initializeInventoryData } from "@/lib/data"
+import { Package } from "lucide-react"
 import EntradaInventario from "@/components/inventario/entrada-inventario"
 import SalidaInventario from "@/components/inventario/salida-inventario"
 import ConsultaInventario from "@/components/inventario/consulta-inventario"
-import { useAuthStore } from "@/store/auth.store"
+import useAuth from '@/hooks/useAuth'
+import Navbar from "@/components/Navbar"
+import { useCallback, useEffect } from "react"
+import useInventario from "@/hooks/useInventario"
 
 export default function InventarioPage() {
-  const { user } = useAuthStore()
+  const { user } = useAuth()
+  const {
+    requisicionesPendientesInventario,
+    requisicionesPendientes,
+    registerProductoInventario,
+    fetchInventarioGeneral,
+    inventarioGeneral,
+    fetchInventarioArea,
+    inventarioArea,
+    historialMovimientos,
+    fetchHistorialMovimientos,
+  } = useInventario()
 
-  const canManageMovements = user?.rol?.nombre === "Consultor"
+
+  const canManageMovements = user?.rol?.nombre === "consultor"
   const canRequestWithdrawal = user?.rol?.nombre === "responsableArea"
 
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/presupuestos">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Gestión de Inventario</h1>
-              <p className="text-sm text-muted-foreground">Administración de productos y movimientos</p>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
+  const loadData = useCallback(async () => {
+    if ( !user?.area?.id) return
+    if (user?.rol?.nombre === "consultor") {
+      await requisicionesPendientesInventario()
+      await fetchInventarioGeneral()
+      await fetchHistorialMovimientos()
+    }
+    await fetchInventarioArea(user.area.id)
+  }, [requisicionesPendientesInventario, fetchInventarioGeneral, fetchInventarioArea, user?.area?.id, user?.rol?.nombre])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  return (
+    <section>
+      <Navbar
+        title="Gestión de Inventario"
+        subTitle="Administración de productos y movimientos"
+        Icon={Package}
+      />
+
+      <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="consulta" className="w-full">
           <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="consulta">Consulta</TabsTrigger>
@@ -45,12 +60,21 @@ export default function InventarioPage() {
           </TabsList>
 
           <TabsContent value="consulta">
-            <ConsultaInventario user={user} />
+            <ConsultaInventario
+              user={user}
+              inventarioGeneral={inventarioGeneral}
+              inventarioArea={inventarioArea}
+            />
           </TabsContent>
 
           {canManageMovements && (
             <TabsContent value="entrada">
-              <EntradaInventario user={user} />
+              <EntradaInventario
+                user={user}
+                requisicionesPendientesInventario={requisicionesPendientes}
+                registerProductoInventario={registerProductoInventario}
+                historialMovimientos={historialMovimientos}
+              />
             </TabsContent>
           )}
 
@@ -60,7 +84,7 @@ export default function InventarioPage() {
             </TabsContent>
           )}
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </section>
   )
 }
