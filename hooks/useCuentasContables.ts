@@ -1,6 +1,7 @@
+import { RegisterCuentasContablesSchema } from "@/schema/cuentas-contables.schema";
 import { cuentasContablesService } from "@/services/cuentas-contables.service";
 import { useCuentasContabesStore } from "@/store/cuentas-contables.store";
-import { ConceptosPorCuentaType, CuentasContablesType } from "@/types/cuentas-contables.types";
+import { ConceptosPorCuentaType, CuentasContablesType, TiposCuentasType } from "@/types/cuentas-contables.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 export default function useCuentasContables() {
   const { cuentasContables, setCuentasContables } = useCuentasContabesStore();
   const [cuentasContablesPermitidos, setCuentasContablesPermitidos] = useState<CuentasContablesType[]>([]);
+  const [tiposCuentas, setTiposCuentas] = useState<TiposCuentasType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cuentasContablesTotales, setCuentasContablesTotales] = useState<ConceptosPorCuentaType[]>([]);
@@ -38,7 +40,7 @@ export default function useCuentasContables() {
     }
   }, [setCuentasContables]);
 
-  const fetchCuentasContablesTotales = useCallback(async (): Promise<ConceptosPorCuentaType[] | undefined> => {
+  const fetchCuentasConConceptos = useCallback(async (): Promise<ConceptosPorCuentaType[] | undefined> => {
     setLoading(true);
     setError(null);
     setCuentasContablesTotales([]);
@@ -61,6 +63,30 @@ export default function useCuentasContables() {
       setLoading(false);
     }
   }, [setCuentasContablesTotales]);
+
+  const fetchTiposCuentas = useCallback(async (): Promise<boolean | undefined> => {
+    setLoading(true);
+    setError(null);
+    setTiposCuentas([]);
+    try {
+      const { data, status } = await cuentasContablesService.AllRequestTiposCuentas();
+      if (status === 200) {
+        setTiposCuentas(data as TiposCuentasType[]);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener tipos de cuenta.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const fetchCuentasContablesPermitidos = useCallback(async (areaId: number, periodo: number): Promise<CuentasContablesType[] | undefined> => {
     setLoading(true);
@@ -86,6 +112,31 @@ export default function useCuentasContables() {
     }
   }, [setCuentasContablesPermitidos]);
 
+  const fetchCreateCuentaContable = useCallback(async (cuentaContable: RegisterCuentasContablesSchema) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { status } = await cuentasContablesService.createCuentaContable(cuentaContable);
+      if (status === 201) {
+        toast.success("Cuenta contable creada exitosamente");
+        await fetchCuentasContables();
+        await fetchCuentasConConceptos();
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al crear la cuenta contable.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [setCuentasContables]);
+
   return {
     cuentasContables,
     cuentasContablesPermitidos,
@@ -93,7 +144,10 @@ export default function useCuentasContables() {
     error,
     fetchCuentasContables,
     fetchCuentasContablesPermitidos,
-    fetchCuentasContablesTotales,
-    cuentasContablesTotales
+    fetchCuentasConConceptos,
+    cuentasContablesTotales,
+    fetchTiposCuentas,
+    tiposCuentas,
+    fetchCreateCuentaContable
   };
 }

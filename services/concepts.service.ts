@@ -10,6 +10,10 @@ export const ConceptosService = {
     return await api.get(`/conceptos/permitidos?areaId=${areaId}&periodo=${periodo}&cuentaContableId=${cuentaContableId}`)
   },
 
+  async articulosPorCuenta(cuentaContableId: number) {
+    return await api.get(`/conceptos/articulos-por-cuenta/${cuentaContableId}`)
+  },
+
   async createConcepto( data: RegisterConceptosSchema) {
     return await api.post(`/conceptos`, data);
   },

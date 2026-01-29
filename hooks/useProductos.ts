@@ -2,6 +2,7 @@ import { ProductosService } from "@/services/productos.service";
 import { ProductosType } from "@/types/productos.types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 export default function useProductos() {
   const [productos, setProductos] = useState<ProductosType[]>([]);
@@ -14,6 +15,7 @@ export default function useProductos() {
   const fetchProductos = useCallback(async (idConcepto: number): Promise<ProductosType[] | undefined> => {
     setLoadingProductos(true);
     setErrorProductos(null);
+    setProductos([]);
     try {
       const { data, status } = await ProductosService.productosPorConcepto(idConcepto);
       if (status === 200 && Array.isArray(data)) {
@@ -59,12 +61,37 @@ export default function useProductos() {
     }
   }, [setProductosTotales]);
 
+  const fetchDeleteProducto = useCallback(async (productoId: number): Promise<boolean> => {
+    setLoadingProductos(true);
+    setErrorProductos(null);
+    try {
+      const { status } = await ProductosService.deleteProducto(productoId);
+      if (status === 200) {
+        toast.success('Producto eliminado exitosamente');
+        await fetchProductosTotales();
+        return true;
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrorProductos(err.message);
+      } else if (err instanceof Error) {
+        setErrorProductos(err.message);
+      } else {
+        setErrorProductos("Error desconocido al eliminar producto.");
+      }
+    } finally {
+      setLoadingProductos(false);
+    }
+    return false;
+  }, [fetchProductosTotales]);
+
   return {
     productos,
     productosTotales,
     loadingProductos,
     errorProductos,
     fetchProductos,
-    fetchProductosTotales
+    fetchProductosTotales,
+    fetchDeleteProducto
   };
 }

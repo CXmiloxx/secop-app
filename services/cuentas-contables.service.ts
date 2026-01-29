@@ -1,15 +1,20 @@
 import api from "@/lib/api";
-import { RegisterProviderSchema } from "@/schema/providers.schema";
+import { RegisterCuentasContablesSchema } from "@/schema/cuentas-contables.schema";
 
 export const cuentasContablesService = {
-  async registerRequest(proveedor: RegisterProviderSchema) {
-    const response = await api.post("/cuentas-contables", proveedor);
-    return response;
+
+  async createCuentaContable(cuentaContable: RegisterCuentasContablesSchema) {
+    return await api.post("/cuentas-contables", cuentaContable);
   },
 
   async AllRequestCuentasContables() {
     return await api.get(`/cuentas-contables`)
   },
+
+  async AllRequestTiposCuentas() {
+    return await api.get(`/cuentas-contables/tipos-cuenta`)
+  },
+  
 
 
   async RequestConceptosPorCuenta() {

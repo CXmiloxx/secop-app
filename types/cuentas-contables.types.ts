@@ -7,6 +7,11 @@ export interface CuentasContablesType {
   idTipoCuentaContable: number
 }
 
+export interface TiposCuentasType {
+  id: number
+  nombre: string
+}
+
 
 export interface ConceptosPorCuentaType {
   id: number

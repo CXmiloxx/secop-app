@@ -9,6 +9,10 @@ export const ProductosService = {
     return await api.get(`/productos`)
   },
 
+  async deleteProducto(productoId: number) {
+    return await api.delete(`/productos/${productoId}`)
+  },
+
 }
 
 

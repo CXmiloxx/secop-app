@@ -1,21 +1,12 @@
-import { z } from 'zod';
-
+import { z } from "zod"
 
 export const registerCuentasContablesSchema = z.object({
-  nit: z.string().min(4, 'El nit es obligatorio'),
-  nombre: z.string().min(4, 'El nombre debe de ser minino de 4 caracteres'),
-  correo: z.string().email('Correo inválido'),
-  tipo_insumo: z.string().min(4, 'El insumo es obligatorio'),
-  responsable: z.string().min(4, 'El numero de telefono es obligatorio'),
-  telefono: z.string().min(4, 'El numero de telefono es obligatorio'),
+  nombre: z.string().min(4, "El nombre debe tener al menos 4 caracteres"),
+  codigo: z.string().min(2, "El código debe tener al menos 2 caracteres"),
+  tipoCuentaId: z.number().int().positive("El tipo de cuenta es obligatorio"),
+})
 
-});
+export const updateCuentasContablesSchema = registerCuentasContablesSchema.partial()
 
-export const editCuentasContablesSchema = registerCuentasContablesSchema
-  .extend({
-    id: z.number(),
-  });
-
-export type EditCuentasContablesSchema = z.infer<typeof editCuentasContablesSchema>;
-
-export type RegisterCuentasContablesSchema = z.infer<typeof registerCuentasContablesSchema>;
+export type RegisterCuentasContablesSchema = z.infer<typeof registerCuentasContablesSchema>
+export type UpdateCuentasContablesSchema = z.infer<typeof updateCuentasContablesSchema>
