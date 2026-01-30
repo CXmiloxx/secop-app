@@ -165,8 +165,8 @@ export default function CrearRequisicion(
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Crear Nueva Requisición</CardTitle>
-        <CardDescription>Complete el formulario para solicitar una compra</CardDescription>
+        <CardTitle>{tipoRequisicion === "REQUISICION" ? "Crear Nueva Requisición" : "Crear Nueva Partida No Presupuestada"}</CardTitle>
+        <CardDescription>{tipoRequisicion === "REQUISICION" ? "Complete el formulario para solicitar una compra" : "Complete el formulario para crear una partida no presupuestada"}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -469,7 +469,7 @@ export default function CrearRequisicion(
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                Crear Requisición
+                {tipoRequisicion === "REQUISICION" ? "Crear Requisición" : "Crear Partida No Presupuestada"}
               </>
             )}
           </Button>
