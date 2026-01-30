@@ -1,15 +1,22 @@
 export interface Compra {
   id: string;
-  fecha: string;
+  fechaCompra: string;
   area: string;
   proveedor: string;
-  cuenta: string;
-  cuentaContable: string;
-  conceptoDetallado: string;
+  concepto:
+  {
+    nombre: string,
+    codigo: string
+  };
   cantidad: number;
-  valorTotal: number;
-  monto: number;
-  descripcion: string;
-  registradoPor: string;
+  valorPagado: number;
+  justificacion: string;
+}
+
+
+export interface HistorialCompraType {
+  totalCompras: number;
+  totalValorPagado: number;
+  compras: Compra[];
 }
 
