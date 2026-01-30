@@ -30,6 +30,7 @@ import useAuth from '@/hooks/useAuth'
 import { useCallback, useEffect, useState } from 'react'
 import { AreaType, RolType, UserType } from '@/types/user.types'
 import Modal from '../Modal'
+import { Switch } from '../ui/switch'
 
 interface UserProps {
   type: 'create' | 'edit'
@@ -64,7 +65,7 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
       telefono: user.telefono,
       rolId: user.rol.id,
       areaId: user.area.id,
-      contrasena: ''
+      contrasena: '',
     } : undefined
   })
 
@@ -126,7 +127,8 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
         telefono: user.telefono,
         rolId: user.rol.id,
         areaId: user.area.id,
-        contrasena: ''
+        contrasena: '',
+        estado: user.estado
       })
     } else if (type === 'create') {
       reset({
@@ -138,7 +140,8 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
         telefono: '',
         rolId: undefined,
         areaId: undefined,
-        contrasena: ''
+        contrasena: '',
+        estado: true
       })
     }
   }, [user, type, reset])
@@ -447,6 +450,37 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
             </div>
           </div>
 
+          {/* Estado */}
+          {type === 'edit' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Estado
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="estado" className="text-sm font-medium">
+                  Estado
+                </Label>
+                <Controller
+                  name="estado"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="relative">
+                      <Switch id="estado" checked={field.value} onCheckedChange={field.onChange} />
+                      <Label htmlFor="estado" className="text-sm font-medium ml-2">
+                        {field.value ? 'Activo' : 'Inactivo'}
+                        {errors.estado && (
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            {errors.estado.message}
+                          </p>
+                        )}
+                      </Label>
+                    </div>
+                  )}
+                />
+              </div>
+            </div>
+          )}
           {/* Seguridad */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -463,7 +497,7 @@ export default function CreateUser({ type, user, onSuccess, isOpen = true, onClo
                 <Input
                   id="contrasena"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={type === 'edit' ? 'Nueva contraseña (opcional)' : 'Mínimo 4 caracteres'}
+                  placeholder={type === 'edit' ? 'Nueva contraseña (opcional)' : 'Mínimo 6 caracteres'}
                   className="pl-10 pr-10"
                   disabled={isSubmitting || loading}
                   aria-invalid={!!errors.contrasena}

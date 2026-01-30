@@ -14,18 +14,8 @@ import {
   Search,
   Users,
   Shield,
-  AlertTriangle
 } from "lucide-react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog"
+
 import {
   Table,
   TableBody,
@@ -53,7 +43,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<UserType | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-
+  const [openChangeAreaDialog, setOpenChangeAreaDialog] = useState(false)
   const handleCloseModal = () => {
     setOpenModal(false)
     setSelectedUser(undefined)
@@ -69,23 +59,23 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
     setOpenModal(true)
   }
 
-  const handleDeleteClick = (user: UserType) => {
-    setUserToDelete(user)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!userToDelete) return
-
-    setIsDeleting(true)
-    const success = await onDeleteUser(userToDelete.id)
-    setIsDeleting(false)
-
-    if (success) {
-      setDeleteDialogOpen(false)
-      setUserToDelete(null)
+  /*   const handleDeleteClick = (user: UserType) => {
+      setUserToDelete(user)
+      setDeleteDialogOpen(true)
     }
-  }
+  
+    const handleConfirmDelete = async () => {
+      if (!userToDelete) return
+  
+      setIsDeleting(true)
+      const success = await onDeleteUser(userToDelete.id)
+      setIsDeleting(false)
+  
+      if (success) {
+        setDeleteDialogOpen(false)
+        setUserToDelete(null)
+      }
+    } */
 
   const filteredUsers = users?.filter((user) => {
     const searchLower = searchTerm.toLowerCase()
@@ -162,6 +152,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
               <TableHead>Rol</TableHead>
               <TableHead>Área</TableHead>
               <TableHead>Contacto</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -234,6 +225,13 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="flex w-fit items-center gap-1.5">
+                      <Shield className="h-3 w-3" />
+                      {user.estado ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                       <Button
@@ -245,7 +243,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
                         <Edit2 className="mr-1.5 h-3.5 w-3.5" />
                         Editar
                       </Button>
-                      <Button
+                      {/*  <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteClick(user)}
@@ -253,9 +251,10 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
                       >
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                         Eliminar
-                      </Button>
+                      </Button> */}
                     </div>
                   </TableCell>
+
                 </TableRow>
               ))
             )}
@@ -283,7 +282,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
       />
 
       {/* Alert Dialog para confirmar eliminación */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
@@ -329,7 +328,7 @@ export default function ListUsers({ loading, users, error, onUserDeleted, onDele
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   )
 }
