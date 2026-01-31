@@ -20,7 +20,7 @@ interface SolicitudesCajaMenorProps {
   user: UserType
   solicitudesCajaMenor: SolicitudPresupuestoCajaMenorType[]
   aprobarSolicitudCajaMenor: (aprobarSolicitud: AprobarSolicitudCajaMenorSchema, idCajaMenor: number) => Promise<boolean | undefined>
-  rechazarSolicitudCajaMenor:  (solicitudId: number) => Promise<boolean | undefined>
+  rechazarSolicitudCajaMenor: (solicitudId: number) => Promise<boolean | undefined>
   idCajaMenor: number
 }
 
@@ -33,6 +33,8 @@ export default function SolicitudesCajaMenor({
 }: SolicitudesCajaMenorProps) {
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudPresupuestoCajaMenorType | null>(null)
   const [accion, setAccion] = useState<"aprobar" | "rechazar" | null>(null)
+  const [openAprobarDialog, setOpenAprobarDialog] = useState(false)
+  const [openRechazarDialog, setOpenRechazarDialog] = useState(false)
 
   // Mantener el form solo para aprobar, reset con los datos adecuados
   const {
@@ -48,8 +50,6 @@ export default function SolicitudesCajaMenor({
       justificacion: "",
     }
   })
-
-  console.log(errors)
 
   const isTesoreria = user.rol.nombre === "tesoreria"
 
@@ -70,7 +70,14 @@ export default function SolicitudesCajaMenor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solicitudSeleccionada, accion])
 
-  const handleCloseDialog = () => {
+
+  const handleOpenAprobarDialog = (solicitud: SolicitudPresupuestoCajaMenorType) => {
+    setSolicitudSeleccionada(solicitud)
+    setAccion("aprobar")
+    setOpenAprobarDialog(true)
+  }
+  const handleCloseAprobarDialog = () => {
+    setOpenAprobarDialog(false)
     setSolicitudSeleccionada(null)
     setAccion(null)
     reset({
@@ -78,6 +85,19 @@ export default function SolicitudesCajaMenor({
       justificacion: "",
     })
   }
+
+  const handleOpenRechazarDialog = (solicitud: SolicitudPresupuestoCajaMenorType) => {
+    setSolicitudSeleccionada(solicitud)
+    setAccion("rechazar")
+    setOpenRechazarDialog(true)
+  }
+
+  const handleCloseRechazarDialog = () => {
+    setOpenRechazarDialog(false)
+    setSolicitudSeleccionada(null)
+    setAccion(null)
+  }
+
 
   useEffect(() => {
     if (solicitudSeleccionada) {
@@ -90,14 +110,17 @@ export default function SolicitudesCajaMenor({
     if (!solicitudSeleccionada) return
 
     try {
-      await aprobarSolicitudCajaMenor(
+      const success = await aprobarSolicitudCajaMenor(
         {
           ...data,
           solicitudId: solicitudSeleccionada.id,
         },
         idCajaMenor
       )
-      handleCloseDialog()
+      console.log(success)
+      if (success) {
+        handleCloseAprobarDialog()
+      }
     } catch (e) {
       // Maneje el error si es necesario
     }
@@ -107,8 +130,11 @@ export default function SolicitudesCajaMenor({
   const handleRechazar = async () => {
     if (!solicitudSeleccionada) return
     try {
-      await rechazarSolicitudCajaMenor(solicitudSeleccionada.id)
-      handleCloseDialog()
+      const success = await rechazarSolicitudCajaMenor(solicitudSeleccionada.id)
+      console.log(success)
+      if (success) {
+        handleCloseRechazarDialog()
+      }
     } catch (e) {
       // Maneje el error si es necesario
     }
@@ -210,8 +236,7 @@ export default function SolicitudesCajaMenor({
                     <div className="flex gap-2 pt-3 border-t">
                       <Button
                         onClick={() => {
-                          setSolicitudSeleccionada(sol)
-                          setAccion("aprobar")
+                          handleOpenAprobarDialog(sol)
                         }}
                         className="flex-1 bg-green-600 hover:bg-green-700"
                       >
@@ -220,8 +245,7 @@ export default function SolicitudesCajaMenor({
                       </Button>
                       <Button
                         onClick={() => {
-                          setSolicitudSeleccionada(sol)
-                          setAccion("rechazar")
+                          handleOpenRechazarDialog(sol)
                         }}
                         variant="outline"
                         className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
@@ -240,14 +264,12 @@ export default function SolicitudesCajaMenor({
 
       {/* Dialog para aprobar */}
       <Dialog
-        open={accion === "aprobar" && solicitudSeleccionada !== null}
-        onOpenChange={open => {
-          if (!open) handleCloseDialog()
-        }}
+        open={openAprobarDialog}
+        onOpenChange={handleCloseAprobarDialog}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Aprobar Solicitud de Presupuesto</DialogTitle>
+            <DialogTitle>Aprobar Solicitud de Presupuesto </DialogTitle>
             <DialogDescription>
               Configure el monto a aprobar para la caja menor. Puede modificar el monto solicitado.
             </DialogDescription>
@@ -301,7 +323,7 @@ export default function SolicitudesCajaMenor({
                     </Button>
                     <Button
                       type="button"
-                      onClick={handleCloseDialog}
+                      onClick={handleCloseAprobarDialog}
                       variant="outline"
                       className="flex-1"
                     >
@@ -317,10 +339,8 @@ export default function SolicitudesCajaMenor({
 
       {/* Dialog para rechazar */}
       <Dialog
-        open={accion === "rechazar" && solicitudSeleccionada !== null}
-        onOpenChange={open => {
-          if (!open) handleCloseDialog()
-        }}
+        open={openRechazarDialog}
+        onOpenChange={handleCloseRechazarDialog}
       >
         <DialogContent>
           <DialogHeader>
@@ -344,7 +364,7 @@ export default function SolicitudesCajaMenor({
                   </Button>
                   <Button
                     type="button"
-                    onClick={handleCloseDialog}
+                    onClick={handleCloseRechazarDialog}
                     variant="outline"
                     className="flex-1"
                   >

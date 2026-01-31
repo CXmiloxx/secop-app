@@ -43,6 +43,11 @@ export default function HistorialPagos({ historialPagos }: HistorialPagosProps) 
       className: "bg-purple-100 text-purple-800 border-purple-300",
       variant: "default"
     },
+    EN_INVENTARIO: {
+      label: "En Inventario",
+      className: "bg-purple-100 text-purple-800 border-purple-300",
+      variant: "default"
+    },
     ENTREGADA: {
       label: "Entregado",
       className: "bg-teal-100 text-teal-800 border-teal-300",

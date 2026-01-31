@@ -211,6 +211,7 @@ export default function usePagos() {
         toast.success("Solicitud de presupuesto aprobada exitosamente");
         return true;
       }
+      return false;
     } catch (err) {
       let errorMessage = "Error desconocido al aprobar la solicitud del presupuesto.";
       if (err instanceof ApiError) {
@@ -235,6 +236,7 @@ export default function usePagos() {
         toast.success("Solicitud de presupuesto rechazada exitosamente");
         return true;
       }
+      return false;
     } catch (err) {
       let errorMessage = "Error desconocido al rechazar la solicitud del presupuesto.";
       if (err instanceof ApiError) {

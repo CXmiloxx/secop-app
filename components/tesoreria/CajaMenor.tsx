@@ -60,12 +60,6 @@ export default function CajaMenor({
                   <div>
                     <p className="font-semibold text-lg">{req.area}</p>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
-                      {req.numeroRequisicion && (
-                        <span className="flex items-center gap-1 font-mono font-medium text-primary">
-                          <Hash className="h-3 w-3" />
-                          {req.numeroRequisicion}
-                        </span>
-                      )}
                       {req.numeroComite && (
                         <>
                           <span>•</span>

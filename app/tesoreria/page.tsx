@@ -118,11 +118,10 @@ export default function TesoreriaPage() {
 
 
 
-  if (loadingPagos) {
-    return <Loader />
-  }
+
   return (
     <section>
+      {loadingPagos && <Loader />}
       <Navbar Icon={DollarSign} title="Gestión de Tesorería" subTitle="Gestión de pagos y requisiciones" />
 
       <div className="px-4 py-8">
@@ -158,7 +157,7 @@ export default function TesoreriaPage() {
                     <div className="space-y-4">
                       {pendientesPagar.map((req) => (
                         <TarjetaRequisicion
-                        key={req.id}
+                          key={req.id}
                           requisicion={req}
                           mostrarAcciones={true}
                           acciones={
