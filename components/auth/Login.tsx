@@ -13,7 +13,7 @@ import { Label } from '../ui/label'
 import { useForm } from 'react-hook-form'
 import { loginSchema, LoginSchema } from '@/schema/auth.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
-import useAuthUser from '@/hooks/useAuth'
+import useAuth from '@/hooks/useAuth'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +26,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   })
 
-  const { login, error: authError, loading } = useAuthUser()
+  const { login, error: authError, loading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = async (data: LoginSchema) => {
