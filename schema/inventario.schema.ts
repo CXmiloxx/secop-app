@@ -8,7 +8,6 @@ export const registerProductoInventarioSchema = z.object({
   consultorId: z.string().min(1, 'El consultor es obligatorio'),
   cantidad: z.number().min(1, 'La cantidad es obligatoria'),
   ubicacion: z.string().min(1, 'La ubicación es obligatoria'),
-  fechaIngreso: z.string().date()
 
 });
 

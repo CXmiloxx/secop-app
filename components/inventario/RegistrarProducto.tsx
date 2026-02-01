@@ -38,7 +38,6 @@ export default function RegistrarProducto({
       consultorId: consultorId,
       cantidad: 0,
       ubicacion: '',
-      fechaIngreso: new Date().toISOString().split('T')[0] || '',
     },
   })
 
@@ -119,23 +118,6 @@ export default function RegistrarProducto({
                 {errors.cantidad && (
                   <p className="text-xs text-destructive mt-1">
                     {errors.cantidad.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fechaIngreso">
-                  Fecha de Ingreso <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="fechaIngreso"
-                  type="date"
-                  {...register('fechaIngreso')}
-                  className={errors.fechaIngreso ? "border-destructive" : ""}
-                />
-                {errors.fechaIngreso && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.fechaIngreso.message as string}
                   </p>
                 )}
               </div>

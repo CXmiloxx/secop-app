@@ -26,8 +26,6 @@ export default function InventarioPage() {
 
 
   const canManageMovements = user?.rol?.nombre === "consultor"
-  const canRequestWithdrawal = user?.rol?.nombre === "responsableArea"
-
 
   const loadData = useCallback(async () => {
     if ( !user?.area?.id) return
@@ -56,7 +54,6 @@ export default function InventarioPage() {
           <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="consulta">Consulta</TabsTrigger>
             {canManageMovements && <TabsTrigger value="entrada">Entradas</TabsTrigger>}
-            {(canRequestWithdrawal || canManageMovements) && <TabsTrigger value="salida">Salidas</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="consulta">
@@ -75,12 +72,6 @@ export default function InventarioPage() {
                 registerProductoInventario={registerProductoInventario}
                 historialMovimientos={historialMovimientos}
               />
-            </TabsContent>
-          )}
-
-          {(canRequestWithdrawal || canManageMovements) && (
-            <TabsContent value="salida">
-              <SalidaInventario user={user} />
             </TabsContent>
           )}
         </Tabs>
