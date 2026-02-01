@@ -30,6 +30,11 @@ export const aprobarSolicitudPresupuestoSchema = z.object({
   articulos: z.array(articuloAprobacionSchema).min(1, 'Debe agregar al menos un artículo'),
 });
 
+export const editSolicitudPresupuestoSchema = registerSolicitudPresupuestoSchema.extend({
+  id: z.number(),
+});
+
 export type ArticuloPresupuestoSchema = z.infer<typeof articuloPresupuestoSchema>;
 export type AprobarSolicitudPresupuestoSchema = z.infer<typeof aprobarSolicitudPresupuestoSchema>;
 export type RegisterSolicitudPresupuestoSchema = z.infer<typeof registerSolicitudPresupuestoSchema>;
+export type EditSolicitudPresupuestoSchema = z.infer<typeof editSolicitudPresupuestoSchema>;
