@@ -85,19 +85,19 @@ export default function AreasPage() {
     }
   }
 
-  const handleDelete = (area: AreaType) => {
-    setSelectedArea(area)
-    setShowDeleteDialog(true)
-  }
-
-  const confirmDelete = async () => {
-    if (!selectedArea) return
-    const res = await fetchDeleteArea(selectedArea.id)
-    if (res) {
-      setShowDeleteDialog(false)
-      setSelectedArea(null)
+  /*   const handleDelete = (area: AreaType) => {
+      setSelectedArea(area)
+      setShowDeleteDialog(true)
     }
-  }
+  
+    const confirmDelete = async () => {
+      if (!selectedArea) return
+      const res = await fetchDeleteArea(selectedArea.id)
+      if (res) {
+        setShowDeleteDialog(false)
+        setSelectedArea(null)
+      }
+    } */
 
   return (
     <section>
@@ -106,7 +106,6 @@ export default function AreasPage() {
         actionButtonText="Crear Área"
         subTitle="Gestión de áreas"
         Icon={Building2}
-        viewPeriodo={true}
         actionModal={{
           isOpen: showAddAreaDialog,
           onOpenChange: setShowAddAreaDialog,
@@ -193,7 +192,7 @@ export default function AreasPage() {
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button
+                {/*  <Button
                   variant="destructive"
                   size="icon"
                   className="rounded-full"
@@ -201,7 +200,7 @@ export default function AreasPage() {
                   aria-label="Eliminar área"
                 >
                   <Trash2 className="w-4 h-4" />
-                </Button>
+                </Button> */}
               </div>
               <CardContent>
                 {area.descripcion && (
@@ -299,12 +298,12 @@ export default function AreasPage() {
             <AlertDialogCancel onClick={() => setSelectedArea(null)}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
+            {/*  <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar
-            </AlertDialogAction>
+            </AlertDialogAction> */}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
