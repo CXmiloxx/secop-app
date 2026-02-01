@@ -212,7 +212,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                           <CheckCircle2 className="h-4 w-4" />
                           Aprobar
                         </Button>
-                        <Button
+                        {/*  <Button
                           variant="destructive"
                           size="sm"
                           onClick={() => handleOpenReject(solicitud)}
@@ -220,7 +220,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                         >
                           <XCircle className="h-4 w-4" />
                           Rechazar
-                        </Button>
+                        </Button> */}
                       </>
                     )}
                   </div>
