@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { UserType } from "@/types/user.types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { formatDate } from "@/lib"
+import { Textarea } from "../ui/textarea"
 
 interface SolicitarSalidaProps {
   productosDisponiblesArea: ProductosDisponiblesAreaType[]
@@ -41,6 +42,7 @@ export default function SolicitarSalida({
       cantidad: 0,
       areaId: user.area.id,
       solicitadoPorId: user.id,
+      justificacion: "",
     },
   })
 
@@ -258,6 +260,19 @@ export default function SolicitarSalida({
                     </p>
                   )}
                 </div>
+              </div>
+              <div>
+                <label htmlFor="justificacion" className="block mb-1 font-medium text-foreground">
+                  Justificación (Opcional):
+                </label>
+                <Textarea id="justificacion" {...register("justificacion")} placeholder="Ingrese la justificación de la solicitud" className="w-full border-blue-300 focus:border-blue-600" />
+              </div>
+              <div className="mt-1 min-h-[20px]">
+                {errors.justificacion && (
+                  <p className="text-xs text-destructive font-medium">
+                    {errors.justificacion.message}
+                  </p>
+                )}
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <Button type="button" variant="secondary" onClick={handleCloseModal}>

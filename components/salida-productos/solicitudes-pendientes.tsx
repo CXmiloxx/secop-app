@@ -37,7 +37,6 @@ export default function SolicitudesPendientes({
     resolver: zodResolver(aprobarSolicitudSchema),
     defaultValues: {
       idSalida: 0,
-      justificacion: "",
       aprobadorId: user?.id || "",
     },
   })
@@ -68,7 +67,6 @@ export default function SolicitudesPendientes({
     reset({
       idSalida: 0,
       aprobadorId: "",
-      justificacion: "",
     })
   }
 
@@ -191,17 +189,6 @@ export default function SolicitudesPendientes({
             </div>
           </div>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <Textarea
-                placeholder="Explique la justificación para esta aprobación"
-                rows={4}
-                required
-                {...register('justificacion')}
-              />
-              {errors.justificacion && (
-                <p className="text-xs text-destructive pt-1">{errors.justificacion.message}</p>
-              )}
-            </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="secondary" onClick={handleCloseAprobarDialog}>
                 Cancelar
