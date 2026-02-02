@@ -67,9 +67,9 @@ export default function ReporteCompras({ user, areas, fetchAreas, fetchHistorial
       const proveedorParam = filters.proveedor.trim() !== '' ? filters.proveedor.trim() : undefined
 
       // Determinar fechas (normalizado)
-      const hasFechas = filters.fechaInicio && filters.fechaFin
-      const fechaInicioDate = hasFechas ? getStartOfDay(filters.fechaInicio) : undefined
-      const fechaFinDate = hasFechas ? getEndOfDay(filters.fechaFin) : undefined
+
+      const fechaInicioDate = filters.fechaInicio ? getStartOfDay(filters.fechaInicio) : undefined
+      const fechaFinDate = filters.fechaFin ? getEndOfDay(filters.fechaFin) : undefined
 
       // Llamar fetchHistorialCompras
       await fetchHistorialCompras(
