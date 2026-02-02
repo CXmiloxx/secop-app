@@ -1,81 +1,51 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, Star, Calendar, DollarSign } from "lucide-react"
-import type { User } from "@/lib/auth"
-import type { Requisicion } from "@/lib/data"
+import { Download, Star, Calendar, DollarSign, X } from "lucide-react"
+import { UserType } from "@/types/user.types"
+import { ReporteTesoreriaType } from "@/types/reportes.types"
+import { reporteTesoreriaToCSV } from "@/utils/csv/exprotCsv"
+import { Label } from "../ui/label"
+import { Input } from "../ui/input"
 
 interface ReporteTesoreriaProps {
-  user: User
+  fetchReporteTesoreria: (fechaInicio?: Date, fechaFin?: Date) => Promise<boolean | undefined>
+  reporteTesoreria: ReporteTesoreriaType | null
 }
 
-export default function ReporteTesoreria({ user }: ReporteTesoreriaProps) {
-  const [dateRange, setDateRange] = useState({ start: "", end: "" })
+function getStartOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
 
-  const requisiciones = useMemo(() => {
-    const stored = localStorage.getItem("requisiciones")
-    if (!stored) return []
-    const allReqs: Requisicion[] = JSON.parse(stored)
-    // Filter requisitions with treasury ratings
-    return allReqs.filter((req) => req.calificacionTesoreria)
-  }, [])
+function getEndOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
+}
 
-  const filteredRequisiciones = useMemo(() => {
-    return requisiciones.filter((req) => {
-      if (!dateRange.start || !dateRange.end) return true
-      const reqDate = new Date(req.fechaSolicitud)
-      const start = new Date(dateRange.start)
-      const end = new Date(dateRange.end)
-      return reqDate >= start && reqDate <= end
-    })
-  }, [requisiciones, dateRange])
+export default function ReporteTesoreria({ fetchReporteTesoreria, reporteTesoreria }: ReporteTesoreriaProps) {
+  // Filtros de búsqueda
+  const [filters, setFilters] = useState(() => ({
+    fechaInicio: '',
+    fechaFin: ''
+  }))
 
-  const stats = useMemo(() => {
-    if (filteredRequisiciones.length === 0)
-      return { promedio: 0, totalCalificaciones: 0, porNivel: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
+  const genData = useCallback(async () => {
 
-    const porNivel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    let sumaTotal = 0
+    await fetchReporteTesoreria(getStartOfDay(filters.fechaInicio), getEndOfDay(filters.fechaFin))
 
-    filteredRequisiciones.forEach((req) => {
-      if (req.calificacionTesoreria) {
-        const rating = req.calificacionTesoreria.pagoOportuno
-        porNivel[rating as keyof typeof porNivel]++
-        sumaTotal += rating
-      }
-    })
+  }, [fetchReporteTesoreria, filters.fechaInicio, filters.fechaFin, getStartOfDay, getEndOfDay])
 
-    return {
-      promedio: sumaTotal / filteredRequisiciones.length,
-      totalCalificaciones: filteredRequisiciones.length,
-      porNivel,
-    }
-  }, [filteredRequisiciones])
 
-  const exportToCSV = () => {
-    const headers = ["Requisición", "Área", "Proveedor", "Valor", "Calificación", "Comentario", "Fecha"]
+  useEffect(() => {
+    genData()
+  }, [genData])
 
-    const rows = filteredRequisiciones.map((req) => [
-      req.numeroRequisicion,
-      req.area,
-      req.proveedor,
-      `$${req.valorTotal.toLocaleString()}`,
-      req.calificacionTesoreria?.pagoOportuno || "",
-      req.calificacionTesoreria?.comentario || "",
-      new Date(req.fechaSolicitud).toLocaleDateString(),
-    ])
-
-    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.download = `reporte-calificacion-tesoreria-${new Date().toISOString().split("T")[0]}.csv`
-    link.click()
-  }
 
   const getRatingLabel = (rating: number) => {
     switch (rating) {
@@ -101,156 +71,194 @@ export default function ReporteTesoreria({ user }: ReporteTesoreriaProps) {
     return "text-red-600"
   }
 
+  function handleFechaInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaInicio: e.target.value }))
+  }
+  function handleFechaFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaFin: e.target.value }))
+  }
+
+  function clearFechaInicio() {
+    setFilters(f => ({ ...f, fechaInicio: '' }))
+  }
+  function clearFechaFin() {
+    setFilters(f => ({ ...f, fechaFin: '' }))
+  }
+
   return (
     <div className="space-y-6 mt-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Fecha Inicio</label>
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-              className="px-3 py-2 border rounded-md"
-            />
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between md:justify-start mb-4">
+          {/* Fecha inicio */}
+          <div className="space-y-2">
+            <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+            <div className="flex gap-2">
+              <Input
+                id="fechaInicio"
+                type="date"
+                value={filters.fechaInicio}
+                onChange={handleFechaInicioChange}
+              />
+              {filters.fechaInicio && (
+                <Button variant="ghost" size="icon" title="Limpiar fecha inicio" onClick={clearFechaInicio}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Fecha Fin</label>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-              className="px-3 py-2 border rounded-md"
-            />
+
+          {/* Fecha fin */}
+          <div className="space-y-2">
+            <Label htmlFor="fechaFin">Fecha Fin</Label>
+            <div className="flex gap-2">
+              <Input
+                id="fechaFin"
+                type="date"
+                value={filters.fechaFin}
+                onChange={handleFechaFinChange}
+              />
+              {filters.fechaFin && (
+                <Button variant="ghost" size="icon" title="Limpiar fecha fin" onClick={clearFechaFin}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        <Button onClick={exportToCSV} disabled={filteredRequisiciones.length === 0}>
+        <Button onClick={() => reporteTesoreriaToCSV(reporteTesoreria?.reporte || [])} disabled={reporteTesoreria?.reporte.length === 0 || !reporteTesoreria}>
           <Download className="h-4 w-4 mr-2" />
           Exportar CSV
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Calificación Promedio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Star className={`h-8 w-8 ${getRatingColor(stats.promedio)}`} fill="currentColor" />
-              <span className={`text-3xl font-bold ${getRatingColor(stats.promedio)}`}>
-                {stats.promedio.toFixed(1)}
-              </span>
-              <span className="text-muted-foreground">/ 5</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{getRatingLabel(Math.round(stats.promedio))}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Calificaciones</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <span className="text-3xl font-bold">{stats.totalCalificaciones}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Pagos evaluados</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Distribución de Calificaciones</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {[5, 4, 3, 2, 1].map((rating) => (
-                <div key={rating} className="flex items-center gap-2 text-sm">
-                  <span className="w-12">{rating} ⭐</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full"
-                      style={{
-                        width: `${stats.totalCalificaciones > 0 ? (stats.porNivel[rating as keyof typeof stats.porNivel] / stats.totalCalificaciones) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="w-8 text-right">{stats.porNivel[rating as keyof typeof stats.porNivel]}</span>
+      {reporteTesoreria?.reporte.length === 0 || !reporteTesoreria ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No hay calificaciones de tesoreria disponibles
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Calificación Promedio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Star className={`h-8 w-8 ${getRatingColor(reporteTesoreria?.calificaciones.calificacionPromedio || 0)}`} fill="currentColor" />
+                  <span className={`text-3xl font-bold ${getRatingColor(reporteTesoreria?.calificaciones.calificacionPromedio || 0)}`}>
+                    {reporteTesoreria?.calificaciones.calificacionPromedio.toFixed(1)}
+                  </span>
+                  <span className="text-muted-foreground">/ 5</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <p className="text-xs text-muted-foreground mt-2">{getRatingLabel(Math.round(reporteTesoreria?.calificaciones.calificacionPromedio || 0))}</p>
+              </CardContent>
+            </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalle de Calificaciones</CardTitle>
-          <CardDescription>Historial completo de calificaciones de pago oportuno</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredRequisiciones.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No hay calificaciones registradas</div>
-          ) : (
-            <div className="space-y-4">
-              {filteredRequisiciones.map((req) => (
-                <div key={req.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">{req.numeroRequisicion}</h4>
-                        <Badge variant="outline">{req.area}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{req.descripcion}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < (req.calificacionTesoreria?.pagoOportuno || 0)
-                              ? "text-yellow-500 fill-yellow-500"
-                              : "text-gray-300"
-                          }`}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Total Calificaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-8 w-8 text-blue-600" />
+                  <span className="text-3xl font-bold">{reporteTesoreria?.calificaciones.totalCalificaciones}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Pagos evaluados</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Distribución de Calificaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {Object.entries(reporteTesoreria?.calificaciones.distribucionCalificaciones || {}).map(([rating, count]) => (
+                    <div key={rating} className="flex items-center gap-2 text-sm">
+                      <span className="w-12">{rating} ⭐</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-yellow-500 h-2 rounded-full"
+                          style={{
+                            width: `${(count / (reporteTesoreria?.calificaciones.totalCalificaciones || 0)) * 100}%`,
+                          }}
                         />
-                      ))}
-                      <span className="ml-2 font-medium">{req.calificacionTesoreria?.pagoOportuno}</span>
+                      </div>
+                      <span className="w-8 text-right">{count}</span>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Proveedor:</span>
-                      <p className="font-medium">{req.proveedor}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Valor:</span>
-                      <p className="font-medium flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {req.valorTotal.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Fecha:</span>
-                      <p className="font-medium">{new Date(req.fechaSolicitud).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-
-                  {req.calificacionTesoreria?.comentario && (
-                    <div className="bg-muted p-3 rounded-md">
-                      <p className="text-sm font-medium mb-1">Comentario del Consultor:</p>
-                      <p className="text-sm text-muted-foreground">{req.calificacionTesoreria.comentario}</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalle de Calificaciones</CardTitle>
+              <CardDescription>Historial completo de calificaciones de pago oportuno</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {reporteTesoreria?.reporte.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No hay calificaciones registradas</div>
+              ) : (
+                <div className="space-y-4">
+                  {reporteTesoreria?.reporte.map((req) => (
+                    <div key={req.requisicion} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{req.requisicion}</h4>
+                            <Badge variant="outline">{req.area}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">{req.comentario}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${i < (req.calificacion || 0)
+                                ? "text-yellow-500 fill-yellow-500"
+                                : "text-gray-300"
+                                }`}
+                            />
+                          ))}
+                          <span className="ml-2 font-medium">{req.calificacion}</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Proveedor:</span>
+                          <p className="font-medium">{req.proveedor}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Valor:</span>
+                          <p className="font-medium flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            {req.valor.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Fecha:</span>
+                          <p className="font-medium">{new Date(req.fecha).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+
+                      {req.comentario && (
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-sm font-medium mb-1">Comentario del Consultor:</p>
+                          <p className="text-sm text-muted-foreground">{req.comentario}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }
+
