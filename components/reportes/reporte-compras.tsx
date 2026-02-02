@@ -1,126 +1,132 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { User } from '@/lib/auth'
-import { areas } from '@/lib/data'
 import { Download, ShoppingCart } from 'lucide-react'
-
-interface Purchase {
-  id: string
-  fecha: string
-  proveedor: string
-  cuentaContable: string
-  conceptoDetallado: string
-  area: string
-  valorTotal: number
-  cantidad: number
-  descripcion: string
-  registradoPor: string
-}
+import { AreaType, UserType } from '@/types/user.types'
+import { HistorialCompraType } from '@/types'
+import { formatCurrency, formatDate } from '@/lib'
+import { reporteComprasToCSV } from '@/utils/csv/exprotCsv'
 
 interface ReporteComprasProps {
-  user: User
+  user: UserType
+  areas: AreaType[]
+  fetchAreas: () => Promise<AreaType[] | undefined>
+  fetchHistorialCompras: (fechaInicio?: Date, fechaFin?: Date, areaId?: number, proveedor?: string) => Promise<void>
+  reporteComprasTotal: HistorialCompraType | null
 }
 
-export default function ReporteCompras({ user }: ReporteComprasProps) {
-  const [purchases, setPurchases] = useState<Purchase[]>([])
-  const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([])
-  const [filters, setFilters] = useState({
-    area: user.role === 'Administrador' || user.role === 'Auditoría' ? 'todas' : user.area,
+function getStartOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
+
+function getEndOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
+}
+
+export default function ReporteCompras({ user, areas, fetchAreas, fetchHistorialCompras, reporteComprasTotal }: ReporteComprasProps) {
+  const canViewAll = user.rol.nombre === 'admin'
+
+  // Filtros de búsqueda
+  const [filters, setFilters] = useState(() => ({
+    area: canViewAll ? 'todas' : (user?.area?.id?.toString() ?? ''),
+    proveedor: '',
     fechaInicio: '',
     fechaFin: ''
-  })
+  }))
 
+  const hasFetchedAreas = useRef(false)
+
+  // Al montar, obtener las áreas si aplica
   useEffect(() => {
-    loadPurchases()
-  }, [])
+    if (canViewAll && !hasFetchedAreas.current) {
+      hasFetchedAreas.current = true
+      fetchAreas()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canViewAll])
 
+  // Fetch compras con los filtros actuales cuando alguno cambia
   useEffect(() => {
-    applyFilters()
-  }, [purchases, filters])
+    const f = async () => {
+      // Determinar área para fetch
+      const areaId = canViewAll
+        ? (filters.area && filters.area !== 'todas' ? Number(filters.area) : undefined)
+        : (user?.area?.id ?? undefined)
 
-  const loadPurchases = () => {
-    const purchasesData = localStorage.getItem('compras')
-    if (purchasesData) {
-      setPurchases(JSON.parse(purchasesData))
+      // Determinar proveedor
+      const proveedorParam = filters.proveedor.trim() !== '' ? filters.proveedor.trim() : undefined
+
+      // Determinar fechas (normalizado)
+      const hasFechas = filters.fechaInicio && filters.fechaFin
+      const fechaInicioDate = hasFechas ? getStartOfDay(filters.fechaInicio) : undefined
+      const fechaFinDate = hasFechas ? getEndOfDay(filters.fechaFin) : undefined
+
+      // Llamar fetchHistorialCompras
+      await fetchHistorialCompras(
+        fechaInicioDate,
+        fechaFinDate,
+        areaId,
+        proveedorParam
+      )
     }
+    f()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    filters.area,
+    filters.proveedor,
+    filters.fechaInicio,
+    filters.fechaFin
+  ])
+
+  // Handler para cambios en filtros
+  function handleAreaChange(value: string) {
+    setFilters(f => ({ ...f, area: value }))
+  }
+  function handleProveedorChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, proveedor: e.target.value }))
+  }
+  function handleProveedorBlur(e: React.FocusEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, proveedor: f.proveedor.trim() }))
+  }
+  function handleFechaInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaInicio: e.target.value }))
+  }
+  function handleFechaFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaFin: e.target.value }))
   }
 
-  const applyFilters = () => {
-    let filtered = [...purchases]
-
-    if (filters.area !== 'todas') {
-      filtered = filtered.filter(p => p.area === filters.area)
-    }
-
-    if (filters.fechaInicio) {
-      filtered = filtered.filter(p => p.fecha >= filters.fechaInicio)
-    }
-
-    if (filters.fechaFin) {
-      filtered = filtered.filter(p => p.fecha <= filters.fechaFin)
-    }
-
-    filtered.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-    setFilteredPurchases(filtered)
+  // Limpiar filtros individualmente y todos
+  function clearArea() {
+    setFilters(f => ({ ...f, area: 'todas' }))
   }
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(value)
+  function clearProveedor() {
+    setFilters(f => ({ ...f, proveedor: '' }))
   }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  function clearFechaInicio() {
+    setFilters(f => ({ ...f, fechaInicio: '' }))
+  }
+  function clearFechaFin() {
+    setFilters(f => ({ ...f, fechaFin: '' }))
+  }
+  function clearAllFilters() {
+    setFilters({
+      area: canViewAll ? 'todas' : (user?.area?.id?.toString() ?? ''),
+      proveedor: '',
+      fechaInicio: '',
+      fechaFin: ''
     })
   }
 
-  const exportToCSV = () => {
-    const headers = ['Fecha', 'Proveedor', 'Cuenta Contable', 'Concepto', 'Área', 'Cantidad', 'Valor Total', 'Descripción']
-    const rows = filteredPurchases.map(purchase => [
-      purchase.fecha,
-      purchase.proveedor,
-      purchase.cuentaContable,
-      purchase.conceptoDetallado,
-      purchase.area,
-      purchase.cantidad,
-      purchase.valorTotal,
-      purchase.descripcion
-    ])
-
-    let csvContent = headers.join(',') + '\n'
-    rows.forEach(row => {
-      csvContent += row.map(cell => `"${cell}"`).join(',') + '\n'
-    })
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `reporte_compras_${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const totalCompras = filteredPurchases.length
-  const valorTotal = filteredPurchases.reduce((sum, p) => sum + p.valorTotal, 0)
-  const cantidadTotal = filteredPurchases.reduce((sum, p) => sum + p.cantidad, 0)
-
-  const canViewAll = user.role === 'Administrador' || user.role === 'Auditoría'
 
   return (
     <div className="space-y-6">
@@ -130,53 +136,108 @@ export default function ReporteCompras({ user }: ReporteComprasProps) {
           <CardTitle>Filtros de Período</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Selector de área */}
             {canViewAll && (
               <div className="space-y-2">
                 <Label htmlFor="filterArea">Área</Label>
-                <Select 
-                  value={filters.area}
-                  onValueChange={(value) => setFilters({ ...filters, area: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas las áreas</SelectItem>
-                    {areas.map((area) => (
-                      <SelectItem key={area} value={area}>{area}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={filters.area}
+                    onValueChange={handleAreaChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Área" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas las áreas</SelectItem>
+                      {areas.map((area) => (
+                        <SelectItem key={area.id?.toString() || ''} value={area.id?.toString() || ''}>
+                          {area.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {filters.area !== 'todas' && (
+                    <Button variant="ghost" size="icon" title="Limpiar área" onClick={clearArea}>
+                      ×
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
+            {/* Proveedor */}
             <div className="space-y-2">
-              <Label htmlFor="fechaInicio">Fecha Inicio</Label>
-              <Input
-                id="fechaInicio"
-                type="date"
-                value={filters.fechaInicio}
-                onChange={(e) => setFilters({ ...filters, fechaInicio: e.target.value })}
-              />
+              <Label htmlFor="proveedor">Proveedor</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="proveedor"
+                  type="text"
+                  value={filters.proveedor}
+                  onChange={handleProveedorChange}
+                  onBlur={handleProveedorBlur}
+                  placeholder="Escriba proveedor"
+                />
+                {filters.proveedor && (
+                  <Button variant="ghost" size="icon" title="Limpiar proveedor" onClick={clearProveedor}>
+                    ×
+                  </Button>
+                )}
+              </div>
             </div>
 
+            {/* Fecha inicio */}
+            <div className="space-y-2">
+              <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="fechaInicio"
+                  type="date"
+                  value={filters.fechaInicio}
+                  onChange={handleFechaInicioChange}
+                />
+                {filters.fechaInicio && (
+                  <Button variant="ghost" size="icon" title="Limpiar fecha inicio" onClick={clearFechaInicio}>
+                    ×
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Fecha fin */}
             <div className="space-y-2">
               <Label htmlFor="fechaFin">Fecha Fin</Label>
-              <Input
-                id="fechaFin"
-                type="date"
-                value={filters.fechaFin}
-                onChange={(e) => setFilters({ ...filters, fechaFin: e.target.value })}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="fechaFin"
+                  type="date"
+                  value={filters.fechaFin}
+                  onChange={handleFechaFinChange}
+                />
+                {filters.fechaFin && (
+                  <Button variant="ghost" size="icon" title="Limpiar fecha fin" onClick={clearFechaFin}>
+                    ×
+                  </Button>
+                )}
+              </div>
             </div>
+          </div>
+          {/* Botón limpiar todo y resumen */}
+          <div className="flex gap-2 mt-4 justify-between items-center">
+            <Button variant="secondary" onClick={clearAllFilters}>
+              Limpiar filtros
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Se actualiza automáticamente al cambiar un filtro.
+            </span>
           </div>
         </CardContent>
       </Card>
 
       {/* Botón de exportación */}
       <div className="flex justify-end">
-        <Button onClick={exportToCSV}>
+        <Button onClick={() => reporteComprasToCSV(reporteComprasTotal?.compras ?? [])}>
           <Download className="h-4 w-4 mr-2" />
           Exportar a CSV
         </Button>
@@ -192,7 +253,7 @@ export default function ReporteCompras({ user }: ReporteComprasProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCompras}</div>
+            <div className="text-2xl font-bold">{reporteComprasTotal?.totalCompras ?? 0}</div>
           </CardContent>
         </Card>
 
@@ -201,16 +262,19 @@ export default function ReporteCompras({ user }: ReporteComprasProps) {
             <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatCurrency(valorTotal)}</div>
+            <div className="text-2xl font-bold text-primary">
+              {formatCurrency(reporteComprasTotal?.totalValorPagado || 0)}
+            </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Items Totales</CardTitle>
+            <CardTitle className="text-sm font-medium">Cantidad Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{cantidadTotal}</div>
+            <div className="text-2xl font-bold">
+              {reporteComprasTotal?.compras?.reduce((acc, curr) => acc + Number(curr.cantidad), 0) ?? 0}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -220,11 +284,11 @@ export default function ReporteCompras({ user }: ReporteComprasProps) {
         <CardHeader>
           <CardTitle>Detalle de Compras</CardTitle>
           <CardDescription>
-            {filteredPurchases.length} compra(s) en el período seleccionado
+            {reporteComprasTotal?.compras?.length ?? 0} compra(s) en el período seleccionado
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredPurchases.length === 0 ? (
+          {(reporteComprasTotal?.compras?.length ?? 0) === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No se encontraron compras con los filtros seleccionados
             </div>
@@ -242,24 +306,24 @@ export default function ReporteCompras({ user }: ReporteComprasProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPurchases.map((purchase) => (
+                  {reporteComprasTotal?.compras?.map((purchase) => (
                     <TableRow key={purchase.id}>
                       <TableCell className="whitespace-nowrap">
-                        {formatDate(purchase.fecha)}
+                        {formatDate(purchase.fechaCompra)}
                       </TableCell>
                       <TableCell>{purchase.proveedor}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-sm">{purchase.cuentaContable}</p>
+                          <p className="font-medium text-sm">{purchase.concepto.nombre}</p>
                           <p className="text-xs text-muted-foreground">
-                            {purchase.conceptoDetallado}
+                            {purchase.concepto.codigo}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell>{purchase.area}</TableCell>
                       <TableCell className="text-right">{purchase.cantidad}</TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(purchase.valorTotal)}
+                        {formatCurrency(purchase.valorPagado)}
                       </TableCell>
                     </TableRow>
                   ))}
