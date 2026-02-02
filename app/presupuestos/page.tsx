@@ -109,7 +109,7 @@ export default function PresupuestosPage() {
         title="Gestión de Presupuestos"
         subTitle={isAdmin ? `Presupuesto de Todas las Áreas - ${periodo}` : `Presupuesto de ${user?.area.nombre} - ${periodo}`}
         Icon={Wallet}
-        viewPeriodo={true}
+        viewPeriodo={isAdmin ? true : false}
       />
 
       {/* Main Content */}
