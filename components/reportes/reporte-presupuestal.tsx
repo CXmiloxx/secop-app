@@ -8,7 +8,7 @@ import { Download, TrendingDown, TrendingUp, DollarSign, Search } from "lucide-r
 import { Presupuesto, PresupuestoGeneral } from "@/types"
 import { Input } from "../ui/input"
 import { calculatePercentage, formatCurrency } from "@/lib"
-import { PresupuestoToCSV } from "@/utils/exprotCvs"
+import { reportePresupuestalToCSV } from "@/utils/csv/exprotCsv"
 
 
 interface ReportePresupuestalProps {
@@ -46,7 +46,7 @@ export default function ReportePresupuestal({ datosGenerales, fetchDatosGenerale
             onChange={(e) => setSelectedYear(e.target.value)} />
         </div>
 
-        <Button onClick={() => PresupuestoToCSV(Array.from(presupuestos))}>
+        <Button onClick={() => reportePresupuestalToCSV(Array.from(presupuestos))}>
           <Download className="h-4 w-4 mr-2" />
           Exportar a CSV
         </Button>
