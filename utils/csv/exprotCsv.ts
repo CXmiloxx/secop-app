@@ -1,6 +1,7 @@
 import { calculatePercentage, formatCurrency, formatDate } from "@/lib";
 import { Compra, Presupuesto } from "@/types";
 import { generateCSV } from "./generateCsv";
+import { ReporteProveedoresType, ReporteTesoreriaItemType } from "@/types/reportes.types";
 
 
 
@@ -71,3 +72,45 @@ export const reporteComprasToCSV = (reporteComprasTotal: Compra[]) => {
 
 };
 
+export const reporteProveedoresToCSV = (reporteProveedores: ReporteProveedoresType[]) => {
+  const headers = [
+    "Proveedor",
+    "Cantidad Productos",
+    "Valor Total",
+    "Calificación Promedio",
+  ];
+
+  const data = reporteProveedores.map((prov) => [
+    prov.proveedor,
+    prov.cantidadProductos,
+    formatCurrency(prov.valorTotal),
+    prov.calificacionPromedio.toFixed(1)
+    
+  ]);
+
+  return generateCSV(headers, data, "reporte_proveedores");
+}
+
+export const reporteTesoreriaToCSV = (reporteTesoreria: ReporteTesoreriaItemType[]) => {
+  const headers = [
+    "Requisición",
+    "Área",
+    "Proveedor",
+    "Valor",
+    "Calificación",
+    "Comentario",
+    "Fecha"
+  ];
+
+  const data = reporteTesoreria.map((req) => [
+    req.requisicion,
+    req.area,
+    req.proveedor,
+    formatCurrency(req.valor),
+    req.calificacion,
+    req.comentario,
+    formatDate(req.fecha)
+  ]);
+
+  return generateCSV(headers, data, "reporte_tesoreria");
+}
