@@ -1,143 +1,35 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { User } from "@/lib/auth"
-import { Download, TrendingDown, TrendingUp, DollarSign } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Download, TrendingDown, TrendingUp, DollarSign, Search } from "lucide-react"
+import { Presupuesto, PresupuestoGeneral } from "@/types"
+import { Input } from "../ui/input"
+import { calculatePercentage, formatCurrency } from "@/lib"
+import { PresupuestoToCSV } from "@/utils/exprotCvs"
 
-interface Budget {
-  area: string
-  presupuestoAnual: number
-  totalGastado: number
-}
 
 interface ReportePresupuestalProps {
-  user: User
+  datosGenerales: PresupuestoGeneral | null
+  fetchDatosGenerales: (periodo: number) => Promise<boolean | undefined>
+  fetchPresupuestos: (periodo: number) => Promise<boolean | undefined>
+  presupuestos: Presupuesto[]
 }
 
-export default function ReportePresupuestal({ user }: ReportePresupuestalProps) {
-  const [budgets, setBudgets] = useState<Budget[]>([])
+export default function ReportePresupuestal({ datosGenerales, fetchDatosGenerales, fetchPresupuestos, presupuestos }: ReportePresupuestalProps) {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
-  const [availableYears, setAvailableYears] = useState<string[]>([])
+
+  const loadData = useCallback(async () => {
+    await fetchDatosGenerales(Number(selectedYear))
+    await fetchPresupuestos(Number(selectedYear))
+  }, [fetchDatosGenerales, fetchPresupuestos, selectedYear])
 
   useEffect(() => {
-    loadAvailableYears()
-  }, [])
+    loadData()
+  }, [loadData])
 
-  useEffect(() => {
-    loadBudgets()
-  }, [selectedYear])
-
-  const loadAvailableYears = () => {
-    const comprasData = localStorage.getItem("compras")
-    const solicitudesData = localStorage.getItem("solicitudesPresupuesto")
-
-    const years = new Set<string>()
-
-    if (comprasData) {
-      const compras = JSON.parse(comprasData)
-      compras.forEach((compra: any) => {
-        const year = new Date(compra.fecha).getFullYear().toString()
-        years.add(year)
-      })
-    }
-
-    if (solicitudesData) {
-      const solicitudes = JSON.parse(solicitudesData)
-      solicitudes.forEach((solicitud: any) => {
-        if (solicitud.periodo) {
-          years.add(solicitud.periodo)
-        }
-      })
-    }
-
-    years.add(new Date().getFullYear().toString())
-
-    const sortedYears = Array.from(years).sort((a, b) => Number.parseInt(b) - Number.parseInt(a))
-    setAvailableYears(sortedYears)
-  }
-
-  const loadBudgets = () => {
-    const budgetsData = localStorage.getItem("presupuestos")
-    const comprasData = localStorage.getItem("compras")
-
-    if (budgetsData) {
-      const allBudgets: Budget[] = JSON.parse(budgetsData)
-
-      const filteredBudgets = user.role === "Administrador" || user.role === "Auditoría" ? allBudgets : []
-
-      if (comprasData) {
-        const compras = JSON.parse(comprasData)
-        const comprasDelAnio = compras.filter((compra: any) => {
-          const compraYear = new Date(compra.fecha).getFullYear().toString()
-          return compraYear === selectedYear
-        })
-
-        const budgetsConGastoActualizado = filteredBudgets.map((budget) => {
-          const gastosArea = comprasDelAnio
-            .filter((compra: any) => compra.area === budget.area)
-            .reduce((sum: number, compra: any) => sum + (compra.valorTotal || 0), 0)
-
-          return {
-            ...budget,
-            totalGastado: gastosArea,
-          }
-        })
-
-        setBudgets(budgetsConGastoActualizado)
-      } else {
-        setBudgets(filteredBudgets)
-      }
-    }
-  }
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-    }).format(value)
-  }
-
-  const calculateSaldo = (presupuesto: number, gastado: number) => {
-    return presupuesto - gastado
-  }
-
-  const calculatePercentage = (gastado: number, presupuesto: number) => {
-    return ((gastado / presupuesto) * 100).toFixed(1)
-  }
-
-  const exportToCSV = () => {
-    const headers = ["Área", "Presupuesto Anual", "Total Gastado", "Saldo Disponible", "% Ejecutado"]
-    const rows = budgets.map((budget) => {
-      const saldo = calculateSaldo(budget.presupuestoAnual, budget.totalGastado)
-      const percentage = calculatePercentage(budget.totalGastado, budget.presupuestoAnual)
-      return [budget.area, budget.presupuestoAnual, budget.totalGastado, saldo, `${percentage}%`]
-    })
-
-    let csvContent = headers.join(",") + "\n"
-    rows.forEach((row) => {
-      csvContent += row.join(",") + "\n"
-    })
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `reporte_presupuestal_${selectedYear}_${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const totalPresupuesto = budgets.reduce((sum, b) => sum + b.presupuestoAnual, 0)
-  const totalGastado = budgets.reduce((sum, b) => sum + b.totalGastado, 0)
-  const totalSaldo = totalPresupuesto - totalGastado
-  const porcentajeTotal = totalPresupuesto > 0 ? ((totalGastado / totalPresupuesto) * 100).toFixed(1) : "0.0"
 
   return (
     <div className="space-y-6">
@@ -146,21 +38,15 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
           <label htmlFor="year-select" className="text-sm font-medium">
             Año:
           </label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger id="year-select" className="w-32">
-              <SelectValue placeholder="Seleccionar año" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            type="number"
+            value={selectedYear}
+            min="2000"
+            max="2100"
+            onChange={(e) => setSelectedYear(e.target.value)} />
         </div>
 
-        <Button onClick={exportToCSV}>
+        <Button onClick={() => PresupuestoToCSV(Array.from(presupuestos))}>
           <Download className="h-4 w-4 mr-2" />
           Exportar a CSV
         </Button>
@@ -175,7 +61,7 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalPresupuesto)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(datosGenerales?.presupuestoTotal || 0)}</div>
             <p className="text-xs text-muted-foreground mt-1">Año {selectedYear}</p>
           </CardContent>
         </Card>
@@ -188,7 +74,7 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalGastado)}</div>
+            <div className="text-2xl font-bold text-destructive">{formatCurrency(datosGenerales?.totalEjecutado || 0)}</div>
             <p className="text-xs text-muted-foreground mt-1">Año {selectedYear}</p>
           </CardContent>
         </Card>
@@ -196,12 +82,12 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Saldo Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Saldo Disponible</CardTitle>
               <TrendingUp className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatCurrency(totalSaldo)}</div>
+            <div className="text-2xl font-bold text-primary">{formatCurrency(Number(datosGenerales?.saldoDisponible || 0))}</div>
             <p className="text-xs text-muted-foreground mt-1">Año {selectedYear}</p>
           </CardContent>
         </Card>
@@ -212,11 +98,10 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
-                Number.parseFloat(porcentajeTotal) > 90 ? "text-destructive" : "text-foreground"
-              }`}
+              className={`text-2xl font-bold ${calculatePercentage(datosGenerales?.totalEjecutado || 0, datosGenerales?.presupuestoTotal || 0) > 90 ? "text-destructive" : "text-foreground"
+                }`}
             >
-              {porcentajeTotal}%
+              {5}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">Año {selectedYear}</p>
           </CardContent>
@@ -227,11 +112,11 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
         <CardHeader>
           <CardTitle>Ejecución Presupuestal por Área - {selectedYear}</CardTitle>
           <CardDescription>
-            Detalle de la ejecución presupuestal de {budgets.length} área(s) en el año {selectedYear}
+            Detalle de la ejecución presupuestal de {presupuestos.length} área(s) en el año {selectedYear}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {budgets.length === 0 ? (
+          {presupuestos.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No hay datos de presupuesto disponibles para el año {selectedYear}
             </div>
@@ -249,12 +134,9 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {budgets.map((budget) => {
-                    const saldo = calculateSaldo(budget.presupuestoAnual, budget.totalGastado)
-                    const percentage = Number.parseFloat(
-                      calculatePercentage(budget.totalGastado, budget.presupuestoAnual),
-                    )
-
+                  {presupuestos?.map((budget) => {
+                    const percentage =
+                      calculatePercentage(budget.totalGastado, budget.presupuestoAnual)
                     let estado = "Normal"
                     let estadoColor = "text-green-600"
                     if (percentage > 90) {
@@ -266,15 +148,15 @@ export default function ReportePresupuestal({ user }: ReportePresupuestalProps) 
                     }
 
                     return (
-                      <TableRow key={budget.area}>
-                        <TableCell className="font-medium">{budget.area}</TableCell>
+                      <TableRow key={budget.id?.toString() || ""}>
+                        <TableCell className="font-medium">{budget?.area?.nombre || ""}</TableCell>
                         <TableCell className="text-right">{formatCurrency(budget.presupuestoAnual)}</TableCell>
                         <TableCell className="text-right text-destructive">
                           {formatCurrency(budget.totalGastado)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className={saldo < 0 ? "text-destructive font-semibold" : "text-primary"}>
-                            {formatCurrency(saldo)}
+                          <span className={budget.saldoDisponible < 0 ? "text-destructive font-semibold" : "text-primary"}>
+                            {formatCurrency(budget.saldoDisponible)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
