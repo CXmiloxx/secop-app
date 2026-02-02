@@ -1,109 +1,105 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { User } from "@/lib/auth"
-import { Download, Star } from "lucide-react"
+import { Download, RefreshCcw, Star } from "lucide-react"
+import { UserType } from "@/types/user.types"
+import { formatCurrency } from "@/lib"
+import { reporteProveedoresToCSV } from "@/utils/csv/exprotCsv"
+import { ReporteProveedoresType } from "@/types/reportes.types"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
 
-interface Requisicion {
-  id: string
-  proveedor: string
-  concepto: string
-  valorTotal: number
-  fecha: string
-  calificacionProveedor?: {
-    calificacion: number
-    comentario: string
-  }
-  comentarios?: Array<{
-    usuario: string
-    fecha: string
-    comentario: string
-  }>
+function getStartOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
+
+function getEndOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
 }
 
 interface ReporteProveedoresProps {
-  user: User
+  fetchReporteCalificacionesProveedor: (fechaInicio?: Date, fechaFin?: Date) => Promise<boolean | undefined>
+  reporteProveedores: ReporteProveedoresType[]
 }
 
-export default function ReporteProveedores({ user }: ReporteProveedoresProps) {
-  const [proveedoresData, setProveedoresData] = useState<any[]>([])
+export default function ReporteProveedores({ fetchReporteCalificacionesProveedor, reporteProveedores }: ReporteProveedoresProps) {
+
+  // Filtros de búsqueda
+  const [filters, setFilters] = useState(() => ({
+    fechaInicio: '',
+    fechaFin: ''
+  }))
+
+  function handleFechaInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaInicio: e.target.value }))
+  }
+  function handleFechaFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaFin: e.target.value }))
+  }
+
+  function clearFechaInicio() {
+    setFilters(f => ({ ...f, fechaInicio: '' }))
+  }
+  function clearFechaFin() {
+    setFilters(f => ({ ...f, fechaFin: '' }))
+  }
+  const getData = useCallback(async () => {
+    await fetchReporteCalificacionesProveedor(getStartOfDay(filters.fechaInicio), getEndOfDay(filters.fechaFin))
+  }, [fetchReporteCalificacionesProveedor, filters.fechaInicio, filters.fechaFin])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    getData()
+  }, [getData])
 
-  const loadData = () => {
-    const requisiciones: Requisicion[] = JSON.parse(localStorage.getItem("requisiciones") || "[]")
-    const calificadas = requisiciones.filter((r) => r.calificacionProveedor)
-
-    // Agrupar por proveedor
-    const proveedoresMap = new Map()
-
-    calificadas.forEach((req) => {
-      if (!proveedoresMap.has(req.proveedor)) {
-        proveedoresMap.set(req.proveedor, {
-          proveedor: req.proveedor,
-          totalCompras: 0,
-          totalValor: 0,
-          calificaciones: [],
-        })
-      }
-
-      const data = proveedoresMap.get(req.proveedor)
-      data.totalCompras++
-      data.totalValor += req.valorTotal
-      data.calificaciones.push(req.calificacionProveedor!.calificacion)
-    })
-
-    const proveedores = Array.from(proveedoresMap.values()).map((p) => ({
-      ...p,
-      promedioCalificacion: p.calificaciones.reduce((a: number, b: number) => a + b, 0) / p.calificaciones.length,
-    }))
-
-    proveedores.sort((a, b) => b.promedioCalificacion - a.promedioCalificacion)
-    setProveedoresData(proveedores)
-  }
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-    }).format(value)
-  }
-
-  const exportToCSV = () => {
-    const headers = ["Proveedor", "Total Compras", "Valor Total", "Calificación Promedio"]
-    const rows = proveedoresData.map((p) => [
-      p.proveedor,
-      p.totalCompras,
-      p.totalValor,
-      p.promedioCalificacion.toFixed(1),
-    ])
-
-    let csvContent = headers.join(",") + "\n"
-    rows.forEach((row) => {
-      csvContent += row.join(",") + "\n"
-    })
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `reporte_proveedores_${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between md:justify-start mb-4">
+        {/* Fecha inicio */}
+        <div className="space-y-2">
+          <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+          <div className="flex gap-2">
+            <Input
+              id="fechaInicio"
+              type="date"
+              value={filters.fechaInicio}
+              onChange={handleFechaInicioChange}
+            />
+            {filters.fechaInicio && (
+              <Button variant="ghost" size="icon" title="Limpiar fecha inicio" onClick={clearFechaInicio}>
+                ×
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Fecha fin */}
+        <div className="space-y-2">
+          <Label htmlFor="fechaFin">Fecha Fin</Label>
+          <div className="flex gap-2">
+            <Input
+              id="fechaFin"
+              type="date"
+              value={filters.fechaFin}
+              onChange={handleFechaFinChange}
+            />
+            {filters.fechaFin && (
+              <Button variant="ghost" size="icon" title="Limpiar fecha fin" onClick={clearFechaFin}>
+                ×
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="flex justify-end">
-        <Button onClick={exportToCSV}>
+        <Button onClick={() => reporteProveedoresToCSV(reporteProveedores)}>
           <Download className="h-4 w-4 mr-2" />
           Exportar a CSV
         </Button>
@@ -115,7 +111,7 @@ export default function ReporteProveedores({ user }: ReporteProveedoresProps) {
           <CardDescription>Calificaciones de productos recibidos por proveedor</CardDescription>
         </CardHeader>
         <CardContent>
-          {proveedoresData.length === 0 ? (
+          {reporteProveedores.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No hay calificaciones de proveedores disponibles
             </div>
@@ -132,8 +128,8 @@ export default function ReporteProveedores({ user }: ReporteProveedoresProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {proveedoresData.map((prov, idx) => {
-                    const promedio = prov.promedioCalificacion
+                  {reporteProveedores.map((prov) => {
+                    const promedio = prov.calificacionPromedio
                     let estado = "Excelente"
                     let estadoColor = "text-green-600"
 
@@ -149,10 +145,10 @@ export default function ReporteProveedores({ user }: ReporteProveedoresProps) {
                     }
 
                     return (
-                      <TableRow key={idx}>
+                      <TableRow key={prov.proveedor}>
                         <TableCell className="font-medium">{prov.proveedor}</TableCell>
-                        <TableCell className="text-center">{prov.totalCompras}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(prov.totalValor)}</TableCell>
+                        <TableCell className="text-center">{prov.cantidadProductos}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(prov.valorTotal)}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1">
                             <Star className="h-4 w-4 fill-primary text-primary" />
