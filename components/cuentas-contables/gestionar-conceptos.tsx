@@ -47,7 +47,7 @@ export function GestionarConceptos({
   const [selectedCuentaContable, setSelectedCuentaContable] = useState<ConceptosPorCuentaType | null>(null)
   const [conceptoExpandidoId, setConceptoExpandidoId] = useState<number | null>(null)
   const [productoNombre, setProductoNombre] = useState("")
-  const [productoTipo, setProductoTipo] = useState<"NORMAL" | "ACTIVO">("NORMAL")
+  const [productoTipo, setProductoTipo] = useState<"GASTO" | "ACTIVO">("GASTO")
 
   const {
     register,
@@ -75,7 +75,7 @@ export function GestionarConceptos({
     if (!productoNombre.trim() || productoNombre.length < 2) return
     appendProducto({ nombre: productoNombre.trim(), tipo: productoTipo })
     setProductoNombre("")
-    setProductoTipo("NORMAL")
+    setProductoTipo("GASTO")
   }, [productoNombre, productoTipo, appendProducto])
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function GestionarConceptos({
     if (ok) {
       reset()
       setProductoNombre("")
-      setProductoTipo("NORMAL")
+      setProductoTipo("GASTO")
     }
   }
 
@@ -186,14 +186,14 @@ export function GestionarConceptos({
                       />
                       <Select
                         value={productoTipo}
-                        onValueChange={(v) => setProductoTipo(v as "NORMAL" | "ACTIVO")}
+                        onValueChange={(v) => setProductoTipo(v as "GASTO" | "ACTIVO")}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger className="w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="NORMAL">Normal</SelectItem>
+                          <SelectItem value="GASTO">Gasto</SelectItem>
                           <SelectItem value="ACTIVO">Activo</SelectItem>
                         </SelectContent>
                       </Select>
