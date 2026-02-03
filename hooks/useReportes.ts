@@ -4,8 +4,7 @@ import { PresupuestoAreaService } from "@/services/presupuesto-area.service"
 import { PresupuestoGeneralService } from "@/services/presupuesto-general.service"
 import { ReportesService } from "@/services/reportes.service"
 import { HistorialCompraType, Presupuesto, PresupuestoGeneral } from "@/types"
-import { HistorialCalificacionTesoreriaType } from "@/types/calificaciones.types"
-import { ReporteProveedoresType, ReporteTesoreriaType } from "@/types/reportes.types"
+import { ReportePartidasNoPresupuestadasType, ReporteProveedoresType, ReporteTesoreriaType } from "@/types/reportes.types"
 import { ApiError } from "@/utils/api-error"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
@@ -18,6 +17,7 @@ export const useReportes = () => {
   const [reporteTesoreria, setReporteTesoreria] = useState<ReporteTesoreriaType | null>(null)
   const [loadingReportes, setLoadingReportes] = useState(false)
   const [errorReportes, setErrorReportes] = useState<string | null>(null)
+  const [reportePartidasNoPresupuestadas, setReportePartidasNoPresupuestadas] = useState<ReportePartidasNoPresupuestadasType | null>(null)
 
   const fetchDatosGenerales = useCallback(async (periodo: number) => {
     setLoadingReportes(true);
@@ -146,6 +146,32 @@ export const useReportes = () => {
     }
   }, [setReporteProveedores]);
 
+
+  const fetchReportePartidasNoPresupuestadas = useCallback(async (fechaInicio?: Date, fechaFin?: Date) => {
+    setLoadingReportes(true);
+    setErrorReportes(null);
+    setReportePartidasNoPresupuestadas(null);
+    try {
+      const { data, status } = await ReportesService.partidasNoPresupuestadas(fechaInicio, fechaFin);
+      if (status === 200) {
+        setReportePartidasNoPresupuestadas(data as ReportePartidasNoPresupuestadasType);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener el historial de partidas no presupuestadas.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorReportes(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingReportes(false);
+    }
+  }, [setReportePartidasNoPresupuestadas]);
+
   return {
     datosGenerales,
     loadingReportes,
@@ -159,5 +185,7 @@ export const useReportes = () => {
     reporteTesoreria,
     fetchReporteTesoreria,
     fetchReporteCalificacionesProveedor,
+    fetchReportePartidasNoPresupuestadas,
+    reportePartidasNoPresupuestadas,
   }
 }

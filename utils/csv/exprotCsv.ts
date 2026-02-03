@@ -1,7 +1,7 @@
 import { calculatePercentage, formatCurrency, formatDate } from "@/lib";
 import { Compra, Presupuesto } from "@/types";
 import { generateCSV } from "./generateCsv";
-import { ReporteProveedoresType, ReporteTesoreriaItemType } from "@/types/reportes.types";
+import { ReportePartidasNoPresupuestadasItemType, ReporteProveedoresType, ReporteTesoreriaItemType } from "@/types/reportes.types";
 
 
 
@@ -113,4 +113,30 @@ export const reporteTesoreriaToCSV = (reporteTesoreria: ReporteTesoreriaItemType
   ]);
 
   return generateCSV(headers, data, "reporte_tesoreria");
+}
+
+export const reportePartidasNoPresupuestadasToCSV = (reportePartidasNoPresupuestadas: ReportePartidasNoPresupuestadasItemType[]) => {
+  const headers = [
+    "Número Comite",
+    "Justificación",
+    "Área",
+    "Proveedor",
+    "Valor Unitario",
+    "Valor Total",
+    "Fecha",
+    "Estado",
+  ];
+
+  const data = reportePartidasNoPresupuestadas.map((proyecto) => [
+    proyecto.numeroComite,
+    proyecto.justificacion,
+    proyecto.area,
+    proyecto.proveedor,
+    formatCurrency(proyecto.valorUnitario),
+    formatCurrency(proyecto.valorTotal),
+    formatDate(proyecto.fecha),
+    proyecto.estado,
+  ]);
+
+  return generateCSV(headers, data, "reporte_partidas_no_presupuestadas");
 }

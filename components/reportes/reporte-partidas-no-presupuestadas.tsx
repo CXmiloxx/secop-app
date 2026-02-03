@@ -1,154 +1,65 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { FileDown, Calendar, Filter } from "lucide-react"
+import { Calendar, X, Download } from "lucide-react"
+import { ReportePartidasNoPresupuestadasType } from "@/types/reportes.types"
+import { formatCurrency, formatDate } from "@/lib"
+import { reportePartidasNoPresupuestadasToCSV } from "@/utils/csv/exprotCsv"
 
-interface ProyectoInversion {
-  id: string
-  no: number
-  seccion: string
-  descripcion: string
-  cantidad: number
-  valorUnitario: number
-  valorTotal: number
-  año: number
-  presupuesto2025: number
-  ejecutadoMes: number
-  mesEjecutado: string
-  partidasNoPresupuestadas: number
-  porEjecutar2025: number
-  justificacion: string
-  fechaCreacion: string
+
+function getStartOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
 }
 
-export function ReportePartidasNoPresupuestadas() {
-  const [proyectos, setProyectos] = useState<ProyectoInversion[]>([])
-  const [proyectosFiltrados, setProyectosFiltrados] = useState<ProyectoInversion[]>([])
-  const [fechaInicio, setFechaInicio] = useState("")
-  const [fechaFin, setFechaFin] = useState("")
-  const [loading, setLoading] = useState(true)
+function getEndOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
+}
+interface ReportePartidasNoPresupuestadasProps {
+  fetchReportePartidasNoPresupuestadas: (fechaInicio?: Date, fechaFin?: Date) => Promise<boolean | undefined>
+  reportePartidasNoPresupuestadas: ReportePartidasNoPresupuestadasType | null
+}
+
+export function ReportePartidasNoPresupuestadas(
+  {
+    fetchReportePartidasNoPresupuestadas,
+    reportePartidasNoPresupuestadas
+  }: ReportePartidasNoPresupuestadasProps) {
+
+  // Filtros de búsqueda
+  const [filters, setFilters] = useState(() => ({
+    fechaInicio: '',
+    fechaFin: ''
+  }))
+
+  const getData = useCallback(async () => {
+    await fetchReportePartidasNoPresupuestadas(getStartOfDay(filters.fechaInicio), getEndOfDay(filters.fechaFin))
+  }, [fetchReportePartidasNoPresupuestadas, filters.fechaInicio, filters.fechaFin])
 
   useEffect(() => {
-    cargarProyectos()
-  }, [])
+    getData()
+  }, [getData])
 
-  useEffect(() => {
-    aplicarFiltros()
-  }, [proyectos, fechaInicio, fechaFin])
-
-  const cargarProyectos = () => {
-    try {
-      const stored = localStorage.getItem("proyectosInversion")
-      if (stored) {
-        const todosProyectos = JSON.parse(stored) as ProyectoInversion[]
-        // Filtrar solo proyectos con partidas no presupuestadas
-        const conPartidas = todosProyectos.filter((p) => p.partidasNoPresupuestadas && p.partidasNoPresupuestadas > 0)
-        setProyectos(conPartidas)
-      }
-    } catch (error) {
-      console.error("Error al cargar proyectos:", error)
-    } finally {
-      setLoading(false)
-    }
+  function handleFechaInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaInicio: e.target.value }))
+  }
+  function handleFechaFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaFin: e.target.value }))
   }
 
-  const aplicarFiltros = () => {
-    let filtrados = [...proyectos]
-
-    if (fechaInicio) {
-      filtrados = filtrados.filter((p) => new Date(p.fechaCreacion) >= new Date(fechaInicio))
-    }
-
-    if (fechaFin) {
-      filtrados = filtrados.filter((p) => new Date(p.fechaCreacion) <= new Date(fechaFin))
-    }
-
-    setProyectosFiltrados(filtrados)
+  function clearFechaInicio() {
+    setFilters(f => ({ ...f, fechaInicio: '' }))
   }
-
-  const limpiarFiltros = () => {
-    setFechaInicio("")
-    setFechaFin("")
-  }
-
-  const calcularTotales = () => {
-    return proyectosFiltrados.reduce(
-      (acc, proyecto) => ({
-        valorTotal: acc.valorTotal + proyecto.valorTotal,
-        partidasNoPresupuestadas: acc.partidasNoPresupuestadas + proyecto.partidasNoPresupuestadas,
-      }),
-      { valorTotal: 0, partidasNoPresupuestadas: 0 },
-    )
-  }
-
-  const exportarCSV = () => {
-    const headers = [
-      "No.",
-      "Sección",
-      "Descripción",
-      "Cantidad",
-      "Valor Unitario",
-      "Valor Total",
-      "Año",
-      "Partidas No Presupuestadas",
-      "Mes Ejecutado",
-      "Fecha Creación",
-      "Justificación",
-    ]
-
-    const rows = proyectosFiltrados.map((proyecto) => [
-      proyecto.no,
-      proyecto.seccion,
-      proyecto.descripcion,
-      proyecto.cantidad,
-      proyecto.valorUnitario.toFixed(2),
-      proyecto.valorTotal.toFixed(2),
-      proyecto.año,
-      proyecto.partidasNoPresupuestadas.toFixed(2),
-      proyecto.mesEjecutado,
-      new Date(proyecto.fechaCreacion).toLocaleDateString(),
-      proyecto.justificacion,
-    ])
-
-    const totales = calcularTotales()
-    rows.push([
-      "",
-      "",
-      "",
-      "",
-      "",
-      totales.valorTotal.toFixed(2),
-      "",
-      totales.partidasNoPresupuestadas.toFixed(2),
-      "",
-      "",
-      "",
-    ])
-
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `partidas-no-presupuestadas-${new Date().toISOString().split("T")[0]}.csv`
-    a.click()
-  }
-
-  const totales = calcularTotales()
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-muted-foreground">Cargando...</p>
-        </CardContent>
-      </Card>
-    )
+  function clearFechaFin() {
+    setFilters(f => ({ ...f, fechaFin: '' }))
   }
 
   return (
@@ -161,37 +72,68 @@ export function ReportePartidasNoPresupuestadas() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 items-end">
+            {/* Fecha inicio */}
             <div className="space-y-2">
               <Label htmlFor="fechaInicio">Fecha Inicio</Label>
-              <Input
-                id="fechaInicio"
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="fechaInicio"
+                  type="date"
+                  value={filters.fechaInicio}
+                  onChange={handleFechaInicioChange}
+                />
+                {filters.fechaInicio && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Limpiar fecha inicio"
+                    onClick={clearFechaInicio}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Fecha fin */}
             <div className="space-y-2">
               <Label htmlFor="fechaFin">Fecha Fin</Label>
-              <Input id="fechaFin" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
+              <div className="flex gap-2">
+                <Input
+                  id="fechaFin"
+                  type="date"
+                  value={filters.fechaFin}
+                  onChange={handleFechaFinChange}
+                />
+                {filters.fechaFin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Limpiar fecha fin"
+                    onClick={clearFechaFin}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={aplicarFiltros} className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filtrar
-              </Button>
-              <Button variant="outline" onClick={limpiarFiltros}>
-                Limpiar
-              </Button>
-            </div>
-            <div className="flex items-end">
+
+            {/* Botón de exportar */}
+            <div className="flex w-full md:justify-end">
               <Button
-                onClick={exportarCSV}
-                variant="outline"
-                className="w-full gap-2 bg-transparent"
-                disabled={proyectosFiltrados.length === 0}
+                onClick={() =>
+                  reportePartidasNoPresupuestadasToCSV(
+                    reportePartidasNoPresupuestadas?.reporte || []
+                  )
+                }
+                disabled={
+                  reportePartidasNoPresupuestadas?.reporte.length === 0 ||
+                  !reportePartidasNoPresupuestadas
+                }
+                className="w-full md:w-auto"
               >
-                <FileDown className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>
             </div>
@@ -201,10 +143,10 @@ export function ReportePartidasNoPresupuestadas() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Proyectos con Partidas No Presupuestadas ({proyectosFiltrados.length})</CardTitle>
+          <CardTitle>Proyectos con Partidas No Presupuestadas ({reportePartidasNoPresupuestadas?.reporte?.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {proyectosFiltrados.length === 0 ? (
+          {reportePartidasNoPresupuestadas?.reporte?.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No hay proyectos con partidas no presupuestadas en el rango seleccionado
             </p>
@@ -213,47 +155,40 @@ export function ReportePartidasNoPresupuestadas() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Sección</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Valor Unit.</TableHead>
-                    <TableHead className="text-right">Valor Total</TableHead>
-                    <TableHead>Año</TableHead>
-                    <TableHead className="text-right">Partidas No Presup.</TableHead>
-                    <TableHead>Mes Ejecutado</TableHead>
-                    <TableHead>Fecha Creación</TableHead>
+                    <TableHead>Número Comite</TableHead>
                     <TableHead>Justificación</TableHead>
+                    <TableHead>Área</TableHead>
+                    <TableHead>Proveedor</TableHead>
+                    <TableHead className="text-right">Valor Unitario</TableHead>
+                    <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead>Fecha Creación</TableHead>
+                    <TableHead>Estado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {proyectosFiltrados.map((proyecto) => (
-                    <TableRow key={proyecto.id}>
-                      <TableCell>{proyecto.no}</TableCell>
-                      <TableCell>{proyecto.seccion}</TableCell>
-                      <TableCell className="max-w-xs">{proyecto.descripcion}</TableCell>
-                      <TableCell className="text-right">{proyecto.cantidad}</TableCell>
+                  {reportePartidasNoPresupuestadas?.reporte?.map((proyecto) => (
+                    <TableRow key={proyecto.numeroComite}>
+                      <TableCell>{proyecto.numeroComite}</TableCell>
+                      <TableCell>{proyecto.justificacion}</TableCell>
+                      <TableCell>{proyecto.area}</TableCell>
+                      <TableCell>{proyecto.proveedor}</TableCell>
                       <TableCell className="text-right">${proyecto.valorUnitario.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-medium">${proyecto.valorTotal.toLocaleString()}</TableCell>
-                      <TableCell>{proyecto.año}</TableCell>
-                      <TableCell className="text-right font-semibold text-orange-600">
-                        ${proyecto.partidasNoPresupuestadas.toLocaleString()}
-                      </TableCell>
-                      <TableCell>{proyecto.mesEjecutado}</TableCell>
-                      <TableCell>{new Date(proyecto.fechaCreacion).toLocaleDateString()}</TableCell>
-                      <TableCell className="max-w-xs">{proyecto.justificacion}</TableCell>
+                      <TableCell>{formatDate(proyecto.fecha)}</TableCell>
+                      <TableCell>{proyecto.estado}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell colSpan={5} className="text-right">
-                      TOTALES:
+                    <TableCell colSpan={3} className="text-right">
+                      <span className="text-muted-foreground">Valor Total:</span>
                     </TableCell>
-                    <TableCell className="text-right">${totales.valorTotal.toLocaleString()}</TableCell>
-                    <TableCell />
-                    <TableCell className="text-right text-orange-600">
-                      ${totales.partidasNoPresupuestadas.toLocaleString()}
+                    <TableCell className="text-right">{formatCurrency(Number(reportePartidasNoPresupuestadas?.totales?.valorTotal))}</TableCell>
+                    <TableCell colSpan={2} />
+                    <TableCell className="text-right text-muted-foreground">
+                      <span className="text-muted-foreground">Partidas Totales:</span>
+                      {reportePartidasNoPresupuestadas?.totales?.partidasTotales || 0}
                     </TableCell>
-                    <TableCell colSpan={3} />
+                    <TableCell colSpan={2} />
                   </TableRow>
                 </TableBody>
               </Table>

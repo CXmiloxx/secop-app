@@ -39,4 +39,10 @@ export const ReportesService = {
     const response = await api.get(`/reportes/presupuesto-general?fechaInicio=${fechaInicio?.toISOString()}&fechaFin=${fechaFin?.toISOString()}`)
     return response
   },
+
+  async partidasNoPresupuestadas(fechaInicio?: Date, fechaFin?: Date) {
+    const params = this.getParams(fechaInicio, fechaFin);
+    const response = await api.get(`/reportes/partidas-no-presupuestadas`, { params })
+    return response
+  },
 }

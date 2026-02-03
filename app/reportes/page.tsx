@@ -34,7 +34,9 @@ export default function ReportesPage() {
     reporteProveedores,
     fetchReporteCalificacionesProveedor,
     reporteTesoreria,
-    fetchReporteTesoreria
+    fetchReporteTesoreria,
+    fetchReportePartidasNoPresupuestadas,
+    reportePartidasNoPresupuestadas
   } = useReportes()
 
 
@@ -161,19 +163,21 @@ export default function ReportesPage() {
                   <CardDescription>Reportes financieros y de ejecución presupuestal</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="ejecucion" className="w-full">
-                    <TabsList className="grid w-full max-w-2xl grid-cols-3 mb-6">
-                      <TabsTrigger value="ejecucion">Resumen Ejecución</TabsTrigger>
-                      <TabsTrigger value="partidas">Partidas No Presupuestadas</TabsTrigger>
-                      <TabsTrigger value="gastos">Ejecución Actual</TabsTrigger>
+                  <Tabs defaultValue="partidas" className="w-full">
+                    <TabsList className="grid w-full max-w-2xl grid-cols-2 mb-6">
+                      {/*                       <TabsTrigger value="ejecucion">Resumen Ejecución</TabsTrigger>
+ */}                      <TabsTrigger value="partidas">Partidas No Presupuestadas</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="ejecucion">
+                    {/*  <TabsContent value="ejecucion">
                       <ReporteEjecucion user={user} />
-                    </TabsContent>
+                    </TabsContent> */}
 
                     <TabsContent value="partidas">
-                      <ReportePartidasNoPresupuestadas />
+                      <ReportePartidasNoPresupuestadas
+                        fetchReportePartidasNoPresupuestadas={fetchReportePartidasNoPresupuestadas}
+                        reportePartidasNoPresupuestadas={reportePartidasNoPresupuestadas}
+                      />
                     </TabsContent>
 
                     <TabsContent value="gastos">

@@ -1,3 +1,5 @@
+import { EstadoRequisicion } from "./requisicion"
+
 export interface ReporteProveedoresType {
   proveedor: string
   cantidadProductos: number
@@ -33,4 +35,24 @@ export interface ReporteTesoreriaType {
     totalCalificaciones: number
   }
   reporte: ReporteTesoreriaItemType[]
+}
+
+export interface ReportePartidasNoPresupuestadasItemType {
+  numeroComite: string
+  justificacion: string
+  area: string
+  proveedor:string
+  valorUnitario: number
+  valorTotal: number
+  fecha: string
+  estado: EstadoRequisicion
+  cantidad: number
+}
+
+export interface ReportePartidasNoPresupuestadasType {
+  reporte: ReportePartidasNoPresupuestadasItemType[]
+  totales: {
+    valorTotal: number
+    partidasTotales: number
+  }
 }
