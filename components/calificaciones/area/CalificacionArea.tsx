@@ -55,8 +55,6 @@ export default function CalificacionArea({ calificacionPendientes, user, guardar
     }
   }
 
-  console.log(errors)
-
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <Card>

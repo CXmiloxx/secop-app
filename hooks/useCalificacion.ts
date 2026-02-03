@@ -156,6 +156,7 @@ export default function useCalificacion() {
       if (status === 201) {
         toast.success("Calificación de área guardada correctamente");
         await fetchCalificacionPendientesArea(data.areaId);
+        await fetchHistorialCalificacionesArea(data.areaId);
         return true;
       }
       return false;
@@ -173,7 +174,7 @@ export default function useCalificacion() {
     } finally {
       setLoadingCalificacion(false);
     }
-  }, [fetchCalificacionPendientes, fetchHistorialCalificacionesProveedor, fetchHistorialCalificacionesTesoreria]);
+  }, []);
 
 
   const fetchHistorialCalificacionesArea = useCallback(async (idArea: number) => {

@@ -60,13 +60,13 @@ export default function CalificacionesPage() {
   }, [getCalificacionPendientes])
 
 
-  if (loadingCalificacion) {
-    return <Loader />
-  }
 
 
   return (
-    <div className="container mx-auto p-6">
+    <section>
+      {loadingCalificacion && (
+        <Loader />
+      )}
       <Navbar
         Icon={FileText}
         title={user?.rol?.nombre === "consultor" ? "Calificaciones de Proveedores y Tesorería" : "Calificaciones de Consultor"}
@@ -74,7 +74,7 @@ export default function CalificacionesPage() {
       />
       {user?.rol?.nombre === "consultor" ? (
 
-        <Tabs defaultValue="proveedor" className="w-full">
+        <Tabs defaultValue="proveedor" className="container mx-auto">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="proveedor">
               Calificar Proveedores ({calificacionPendientes.length})
@@ -84,8 +84,8 @@ export default function CalificacionesPage() {
 
           <TabsContent value="proveedor" className="space-y-4">
             {calificacionPendientes.length > 0 ? (
-            <Calificacion
-              calificacionPendientes={calificacionPendientes}
+              <Calificacion
+                calificacionPendientes={calificacionPendientes}
                 user={user}
                 guardarCalificacionConsultor={guardarCalificacionConsultor}
               />
@@ -104,7 +104,7 @@ export default function CalificacionesPage() {
           </TabsContent>
         </Tabs>
       ) : (
-        <Tabs defaultValue="consultor" className="w-full">
+        <Tabs defaultValue="consultor" className="container mx-auto">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="consultor">
               Calificar Consultor ({calificacionPendientesArea.length})
@@ -112,30 +112,21 @@ export default function CalificacionesPage() {
             <TabsTrigger value="historial">Historial de Calificaciones</TabsTrigger>
           </TabsList>
           <TabsContent value="consultor" className="space-y-4">
-            {calificacionPendientesArea.length > 0 ? (
+
             <CalificacionArea
               calificacionPendientes={calificacionPendientesArea}
-                user={user}
-                guardarCalificacionArea={guardarCalificacionArea}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <span className="text-muted-foreground">No hay calificaciones registradas</span>
-              </div>
-            )}
+              user={user}
+              guardarCalificacionArea={guardarCalificacionArea}
+            />
+
           </TabsContent>
           <TabsContent value="historial" className="space-y-4">
-            {historialCalificacionesArea.length > 0 ? (
-              <HistorialArea historialCalificaciones={historialCalificacionesArea} />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <span className="text-muted-foreground">No hay calificaciones registradas</span>
-              </div>
-            )}
+
+            <HistorialArea historialCalificaciones={historialCalificacionesArea} />
           </TabsContent>
 
         </Tabs>
       )}
-    </div>
+    </section>
   )
 }
