@@ -1,123 +1,240 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { User } from "@/lib/auth"
-import { Download, Star } from "lucide-react"
+import { BarChart, Calendar, Download, Star, X } from "lucide-react"
+import { ReporteConsultorType } from "@/types/reportes.types"
+import { AreaType } from "@/types/user.types"
+import { Label } from "../ui/label"
+import { Input } from "../ui/input"
+import { reporteConsultorToCSV } from "@/utils/csv/exprotCsv"
+import { formatCurrency, formatDate } from "@/lib"
 
-interface Requisicion {
-  id: string
-  area: string
-  concepto: string
-  valorTotal: number
-  fecha: string
-  calificacionConsultor?: {
-    calificacion: number
-    comentario: string
-  }
-  comentarios?: Array<{
-    usuario: string
-    fecha: string
-    comentario: string
-  }>
+
+function getStartOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
 }
 
+function getEndOfDay(dateString: string) {
+  if (!dateString) return undefined
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999)
+}
 interface ReporteConsultorProps {
-  user: User
+  fetchReporteConsultor: (fechaInicio?: Date, fechaFin?: Date) => Promise<boolean | undefined>
+  reporteConsultor: ReporteConsultorType | null
+  fetchAreas: () => Promise<AreaType[] | undefined>
+  areas: AreaType[]
 }
 
-export default function ReporteConsultor({ user }: ReporteConsultorProps) {
-  const [areasData, setAreasData] = useState<any[]>([])
+export default function ReporteConsultor({
+  fetchReporteConsultor,
+  reporteConsultor,
+  fetchAreas,
+  areas,
+}: ReporteConsultorProps) {
+
+  // Filtros de búsqueda
+  const [filters, setFilters] = useState(() => ({
+    fechaInicio: '',
+    fechaFin: ''
+  }))
+
+  const getData = useCallback(async () => {
+    await fetchReporteConsultor(getStartOfDay(filters.fechaInicio), getEndOfDay(filters.fechaFin))
+  }, [fetchReporteConsultor, filters.fechaInicio, filters.fechaFin, getStartOfDay, getEndOfDay])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    getData()
+  }, [getData])
 
-  const loadData = () => {
-    const requisiciones: Requisicion[] = JSON.parse(localStorage.getItem("requisiciones") || "[]")
-    const calificadas = requisiciones.filter((r) => r.calificacionConsultor)
 
-    // Agrupar por área
-    const areasMap = new Map()
-
-    calificadas.forEach((req) => {
-      if (!areasMap.has(req.area)) {
-        areasMap.set(req.area, {
-          area: req.area,
-          totalEntregas: 0,
-          totalValor: 0,
-          calificaciones: [],
-        })
-      }
-
-      const data = areasMap.get(req.area)
-      data.totalEntregas++
-      data.totalValor += req.valorTotal
-      data.calificaciones.push(req.calificacionConsultor!.calificacion)
-    })
-
-    const areas = Array.from(areasMap.values()).map((a) => ({
-      ...a,
-      promedioCalificacion: a.calificaciones.reduce((a: number, b: number) => a + b, 0) / a.calificaciones.length,
-    }))
-
-    areas.sort((a, b) => b.promedioCalificacion - a.promedioCalificacion)
-    setAreasData(areas)
+  const getRatingLabel = (rating: number) => {
+    switch (rating) {
+      case 1:
+        return "Insatisfecho"
+      case 2:
+        return "Poco Satisfecho"
+      case 3:
+        return "Neutral"
+      case 4:
+        return "Satisfecho"
+      case 5:
+        return "Muy Satisfecho"
+      default:
+        return ""
+    }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-    }).format(value)
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4.5) return "text-green-600"
+    if (rating >= 3.5) return "text-blue-600"
+    if (rating >= 2.5) return "text-yellow-600"
+    return "text-red-600"
   }
 
-  const exportToCSV = () => {
-    const headers = ["Área", "Total Entregas", "Valor Total", "Calificación Promedio"]
-    const rows = areasData.map((a) => [a.area, a.totalEntregas, a.totalValor, a.promedioCalificacion.toFixed(1)])
-
-    let csvContent = headers.join(",") + "\n"
-    rows.forEach((row) => {
-      csvContent += row.join(",") + "\n"
-    })
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `reporte_consultor_${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  function handleFechaInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaInicio: e.target.value }))
+  }
+  function handleFechaFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFilters(f => ({ ...f, fechaFin: e.target.value }))
   }
 
-  const promedioGeneral =
-    areasData.length > 0 ? areasData.reduce((sum, a) => sum + a.promedioCalificacion, 0) / areasData.length : 0
+  function clearFechaInicio() {
+    setFilters(f => ({ ...f, fechaInicio: '' }))
+  }
+  function clearFechaFin() {
+    setFilters(f => ({ ...f, fechaFin: '' }))
+  }
+
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <Card className="flex-1 mr-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Calificación General del Consultor</CardTitle>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between md:justify-start mb-4">
+          {/* Fecha inicio */}
+          <div className="space-y-2">
+            <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+            <div className="flex gap-2">
+              <Input
+                id="fechaInicio"
+                type="date"
+                value={filters.fechaInicio}
+                onChange={handleFechaInicioChange}
+              />
+              {filters.fechaInicio && (
+                <Button variant="ghost" size="icon" title="Limpiar fecha inicio" onClick={clearFechaInicio}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Fecha fin */}
+          <div className="space-y-2">
+            <Label htmlFor="fechaFin">Fecha Fin</Label>
+            <div className="flex gap-2">
+              <Input
+                id="fechaFin"
+                type="date"
+                value={filters.fechaFin}
+                onChange={handleFechaFinChange}
+              />
+              {filters.fechaFin && (
+                <Button variant="ghost" size="icon" title="Limpiar fecha fin" onClick={clearFechaFin}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={() => reporteConsultorToCSV(reporteConsultor?.reporte || [])} disabled={reporteConsultor?.reporte.length === 0 || !reporteConsultor}>
+          <Download className="h-4 w-4 mr-2" />
+          Exportar CSV
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Calificación Promedio</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <Star className="h-6 w-6 fill-primary text-primary" />
-              <span className="text-3xl font-bold">{promedioGeneral.toFixed(1)}</span>
-              <span className="text-muted-foreground">/ 5.0</span>
+              <Star className={`h-8 w-8 ${getRatingColor(reporteConsultor?.calificaciones.calificacionPromedio || 0)}`} fill="currentColor" />
+              <span className={`text-3xl font-bold ${getRatingColor(reporteConsultor?.calificaciones.calificacionPromedio || 0)}`}>
+                {reporteConsultor?.calificaciones.calificacionPromedio.toFixed(1)}
+              </span>
+              <span className="text-muted-foreground">/ 5</span>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">{getRatingLabel(Math.round(reporteConsultor?.calificaciones.calificacionPromedio || 0))}</p>
           </CardContent>
         </Card>
 
-        <Button onClick={exportToCSV}>
-          <Download className="h-4 w-4 mr-2" />
-          Exportar a CSV
-        </Button>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Total Calificaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-8 w-8 text-blue-600" />
+              <span className="text-3xl font-bold">{reporteConsultor?.calificaciones.totalCalificaciones}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Pagos evaluados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Distribución de Calificaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-6">
+              {/* Calidad Producto */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="text-yellow-500 w-5 h-5" />
+                  <span className="text-sm font-semibold">Distribución Calidad del Producto</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {Object.entries(reporteConsultor?.calificaciones.distribucionCalificaciones.calidadProducto || {})
+                    .sort((a, b) => Number(b[0]) - Number(a[0]))
+                    .map(([rating, count]) => {
+                      const porcentaje = reporteConsultor?.calificaciones.totalCalificaciones
+                        ? (count / reporteConsultor.calificaciones.totalCalificaciones) * 100
+                        : 0;
+                      return (
+                        <div key={rating} className="flex items-center text-sm">
+                          <span className="w-12">{rating} ⭐</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-3 mx-2 relative">
+                            <div
+                              className="bg-yellow-400 h-3 rounded-full transition-all duration-300"
+                              style={{ width: `${porcentaje}%` }}
+                            />
+                            <span className="absolute right-2 top-0 text-xs text-gray-700">{porcentaje.toFixed(0)}%</span>
+                          </div>
+                          <span className="w-8 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+              {/* Tiempo Entrega */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="text-blue-500 w-5 h-5" />
+                  <span className="text-sm font-semibold">Distribución Tiempo de Entrega</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {Object.entries(reporteConsultor?.calificaciones.distribucionCalificaciones.tiempoEntrega || {})
+                    .sort((a, b) => Number(b[0]) - Number(a[0]))
+                    .map(([rating, count]) => {
+                      const porcentaje = reporteConsultor?.calificaciones.totalCalificaciones
+                        ? (count / reporteConsultor.calificaciones.totalCalificaciones) * 100
+                        : 0;
+                      return (
+                        <div key={rating} className="flex items-center text-sm">
+                          <span className="w-12">{rating} ⭐</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-3 mx-2 relative">
+                            <div
+                              className="bg-blue-400 h-3 rounded-full transition-all duration-300"
+                              style={{ width: `${porcentaje}%` }}
+                            />
+                            <span className="absolute right-2 top-0 text-xs text-gray-700">{porcentaje.toFixed(0)}%</span>
+                          </div>
+                          <span className="w-8 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -126,61 +243,46 @@ export default function ReporteConsultor({ user }: ReporteConsultorProps) {
           <CardDescription>Calificaciones de productos entregados por el consultor a cada área</CardDescription>
         </CardHeader>
         <CardContent>
-          {areasData.length === 0 ? (
+          {reporteConsultor?.reporte.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No hay calificaciones del consultor disponibles
             </div>
           ) : (
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Área</TableHead>
-                    <TableHead className="text-center">Total Entregas</TableHead>
-                    <TableHead className="text-right">Valor Total</TableHead>
-                    <TableHead className="text-center">Calificación Promedio</TableHead>
-                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-center">Calidad Producto</TableHead>
+                    <TableHead className="text-center">Tiempo Entrega</TableHead>
+                    <TableHead className="text-center">Promedio Calificación</TableHead>
+                    <TableHead className="text-center">Producto</TableHead>
+                    <TableHead className="text-center">Comentario</TableHead>
+                    <TableHead className="text-center">Fecha</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {areasData.map((area, idx) => {
-                    const promedio = area.promedioCalificacion
-                    let estado = "Excelente"
-                    let estadoColor = "text-green-600"
-
-                    if (promedio < 3) {
-                      estado = "Malo"
-                      estadoColor = "text-destructive"
-                    } else if (promedio < 4) {
-                      estado = "Regular"
-                      estadoColor = "text-orange-600"
-                    } else if (promedio < 4.5) {
-                      estado = "Bueno"
-                      estadoColor = "text-blue-600"
-                    }
+                  {reporteConsultor?.reporte.map((item, idx) => {
 
                     return (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{area.area}</TableCell>
-                        <TableCell className="text-center">{area.totalEntregas}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(area.totalValor)}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Star className="h-4 w-4 fill-primary text-primary" />
-                            <span className="font-semibold">{promedio.toFixed(1)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${estadoColor}`}>
-                            {estado}
-                          </span>
-                        </TableCell>
+                        <TableCell className="font-medium">{item.area}</TableCell>
+                        <TableCell className="text-center">{formatCurrency(item.valor)}</TableCell>
+                        <TableCell className="text-center">{item.calidadProducto}</TableCell>
+                        <TableCell className="text-center">{item.tiempoEntrega}</TableCell>
+                        <TableCell className="text-center">{item.calificacion}</TableCell>
+                        <TableCell className="text-center">{item.producto}</TableCell>
+                        <TableCell className="text-center">{item.comentario}</TableCell>
+                        <TableCell className="text-center">{formatDate(item.fecha)}</TableCell>
                       </TableRow>
                     )
                   })}
                 </TableBody>
               </Table>
             </div>
+
           )}
         </CardContent>
       </Card>

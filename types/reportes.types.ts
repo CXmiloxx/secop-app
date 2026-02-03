@@ -56,3 +56,32 @@ export interface ReportePartidasNoPresupuestadasType {
     partidasTotales: number
   }
 }
+
+
+
+export interface ReporteConsultorItemType {
+  area: string
+  valor: number
+  calidadProducto: number
+  tiempoEntrega: number
+  calificacion: number
+  comentario: string
+  fecha: string
+  producto: string
+}
+
+export interface ReporteConsultorType {
+  calificaciones: {
+    distribucionCalificaciones: {
+      calidadProducto: {
+        [key: number]: number
+      }
+      tiempoEntrega: {
+        [key: number]: number
+      }
+    }
+    calificacionPromedio: number
+    totalCalificaciones: number
+  }
+  reporte: ReporteConsultorItemType[]
+}

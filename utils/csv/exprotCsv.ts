@@ -1,7 +1,7 @@
 import { calculatePercentage, formatCurrency, formatDate } from "@/lib";
 import { Compra, Presupuesto } from "@/types";
 import { generateCSV } from "./generateCsv";
-import { ReportePartidasNoPresupuestadasItemType, ReporteProveedoresType, ReporteTesoreriaItemType } from "@/types/reportes.types";
+import { ReporteConsultorItemType, ReportePartidasNoPresupuestadasItemType, ReporteProveedoresType, ReporteTesoreriaItemType } from "@/types/reportes.types";
 
 
 
@@ -139,4 +139,28 @@ export const reportePartidasNoPresupuestadasToCSV = (reportePartidasNoPresupuest
   ]);
 
   return generateCSV(headers, data, "reporte_partidas_no_presupuestadas");
+}
+
+export const reporteConsultorToCSV = (reporteConsultor: ReporteConsultorItemType[]) => {
+  const headers = [
+    "Área",
+    "Valor",
+    "Calidad Producto",
+    "Tiempo Entrega",
+    "Calificación",
+    "Comentario",
+    "Fecha"
+  ];
+
+  const data = reporteConsultor.map((item) => [
+    item.area,
+    formatCurrency(item.valor),
+    item.calidadProducto,
+    item.tiempoEntrega,
+    item.calificacion,
+    item.comentario,
+    formatDate(item.fecha)
+  ]);
+
+  return generateCSV(headers, data, "reporte_consultor");
 }

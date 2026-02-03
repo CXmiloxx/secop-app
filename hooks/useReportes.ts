@@ -4,7 +4,7 @@ import { PresupuestoAreaService } from "@/services/presupuesto-area.service"
 import { PresupuestoGeneralService } from "@/services/presupuesto-general.service"
 import { ReportesService } from "@/services/reportes.service"
 import { HistorialCompraType, Presupuesto, PresupuestoGeneral } from "@/types"
-import { ReportePartidasNoPresupuestadasType, ReporteProveedoresType, ReporteTesoreriaType } from "@/types/reportes.types"
+import { ReporteConsultorType, ReportePartidasNoPresupuestadasType, ReporteProveedoresType, ReporteTesoreriaType } from "@/types/reportes.types"
 import { ApiError } from "@/utils/api-error"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
@@ -18,6 +18,7 @@ export const useReportes = () => {
   const [loadingReportes, setLoadingReportes] = useState(false)
   const [errorReportes, setErrorReportes] = useState<string | null>(null)
   const [reportePartidasNoPresupuestadas, setReportePartidasNoPresupuestadas] = useState<ReportePartidasNoPresupuestadasType | null>(null)
+  const [reporteConsultor, setReporteConsultor] = useState<ReporteConsultorType | null>(null)
 
   const fetchDatosGenerales = useCallback(async (periodo: number) => {
     setLoadingReportes(true);
@@ -104,6 +105,7 @@ export const useReportes = () => {
       const { data, status } = await ReportesService.tesoreria(fechaInicio, fechaFin);
       if (status === 200) {
         setReporteTesoreria(data as ReporteTesoreriaType);
+        toast.success("Reporte de tesoreria obtenido exitosamente");
         return true;
       }
     } catch (err) {
@@ -128,6 +130,7 @@ export const useReportes = () => {
     try {
       const { data, status } = await ReportesService.proveedores(fechaInicio, fechaFin);
       if (status === 200) {
+        toast.success("Reporte de proveedores obtenido exitosamente");
         setReporteProveedores(data as ReporteProveedoresType[]);
         return true;
       }
@@ -155,6 +158,7 @@ export const useReportes = () => {
       const { data, status } = await ReportesService.partidasNoPresupuestadas(fechaInicio, fechaFin);
       if (status === 200) {
         setReportePartidasNoPresupuestadas(data as ReportePartidasNoPresupuestadasType);
+        toast.success("Reporte de partidas no presupuestadas obtenido exitosamente");
         return true;
       }
     } catch (err) {
@@ -172,6 +176,32 @@ export const useReportes = () => {
     }
   }, [setReportePartidasNoPresupuestadas]);
 
+  const fetchReporteConsultor = useCallback(async (fechaInicio?: Date, fechaFin?: Date) => {
+    setLoadingReportes(true);
+    setErrorReportes(null);
+    setReporteConsultor(null);
+    try {
+      const { data, status } = await ReportesService.consultor(fechaInicio, fechaFin);
+      if (status === 200) {
+        toast.success("Reporte de consultor obtenido exitosamente");
+        setReporteConsultor(data as ReporteConsultorType);
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al obtener el historial de consultor.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setErrorReportes(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoadingReportes(false);
+    }
+  }, [setReporteConsultor]);
+
   return {
     datosGenerales,
     loadingReportes,
@@ -187,5 +217,7 @@ export const useReportes = () => {
     fetchReporteCalificacionesProveedor,
     fetchReportePartidasNoPresupuestadas,
     reportePartidasNoPresupuestadas,
+    fetchReporteConsultor,
+    reporteConsultor,
   }
 }
