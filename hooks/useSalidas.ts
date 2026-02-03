@@ -93,6 +93,8 @@ export default function useSalidas() {
       if (status === 201) {
         toast.success("Salida solicitada exitosamente")
         await fetchProductosDisponiblesArea(solicitud.areaId)
+        await fetchSolicitudesPendientes()
+        await fetchHistorialSolicitudes(solicitud.areaId)
         return true
       }
       return false
