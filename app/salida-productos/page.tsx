@@ -20,6 +20,8 @@ export default function SalidaProductosPage() {
     aprobarSolicitud,
     solicitudesPendientes,
     historialSolicitudes,
+    rechazarSolicitud,
+
   } = useSalidas()
   const canAprobar = user?.rol?.nombre === "consultor"
 
@@ -60,6 +62,7 @@ export default function SalidaProductosPage() {
             solicitudesPendientes={solicitudesPendientes}
             fetchSolicitudesPendientes={fetchSolicitudesPendientes}
             aprobarSolicitud={aprobarSolicitud}
+            rechazarSolicitud={rechazarSolicitud}
             user={user as UserType}
           />
         </TabsContent>}

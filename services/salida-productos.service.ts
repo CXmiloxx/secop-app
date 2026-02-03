@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { AprobarSolicitudSchema, SolicitarSalidaProductoSchema } from "@/schema/salida-producto.schema";
+import { AprobarSolicitudSchema, RechazarSolicitudSchema, SolicitarSalidaProductoSchema } from "@/schema/salida-producto.schema";
 
 export const SalidaProductosService = {
 
@@ -21,6 +21,9 @@ export const SalidaProductosService = {
   
   async aprobarSolicitud(solicitud: AprobarSolicitudSchema) {
     return await api.patch('/salida-producto/aprobar', solicitud)
+  },
+  async rechazarSolicitud(solicitud: RechazarSolicitudSchema) {
+    return await api.patch('/salida-producto/rechazar', solicitud)
   }
 }
 

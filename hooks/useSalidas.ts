@@ -1,4 +1,4 @@
-import { AprobarSolicitudSchema, SolicitarSalidaProductoSchema } from "@/schema/salida-producto.schema"
+import { AprobarSolicitudSchema, RechazarSolicitudSchema, SolicitarSalidaProductoSchema } from "@/schema/salida-producto.schema"
 import { SalidaProductosService } from "@/services/salida-productos.service"
 import { HistorialSolicitudesType, ProductosDisponiblesAreaType, SolicitudesPendientesType } from "@/types/salida-producto.types"
 import { ApiError } from "@/utils/api-error"
@@ -138,6 +138,31 @@ export default function useSalidas() {
     }
   }, [])
 
+  const rechazarSolicitud = useCallback(async (solicitud: RechazarSolicitudSchema) => {
+    setLoadingSalidas(true)
+    setErrorSalidas(null)
+    try {
+      const { status } = await SalidaProductosService.rechazarSolicitud(solicitud)
+      if (status === 200) {
+        toast.success("Salida rechazada exitosamente")
+        await fetchSolicitudesPendientes()
+        return true
+      }
+      return false
+    } catch (error) {
+      let errorMessage = "Error desconocido al rechazar la salida"
+      if (error instanceof ApiError) {
+        errorMessage = error.message
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+      setErrorSalidas(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setLoadingSalidas(false)
+    }
+  }, [])
+
 
 
   return {
@@ -149,6 +174,7 @@ export default function useSalidas() {
     fetchProductosDisponiblesArea,
     solicitarSalida,
     aprobarSolicitud,
+    rechazarSolicitud,
     fetchSolicitudesPendientes,
     fetchHistorialSolicitudes,
   }

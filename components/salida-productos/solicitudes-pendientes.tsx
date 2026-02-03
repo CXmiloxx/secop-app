@@ -1,4 +1,4 @@
-import { aprobarSolicitudSchema, AprobarSolicitudSchema } from '@/schema/salida-producto.schema'
+import { aprobarSolicitudSchema, AprobarSolicitudSchema, rechazarSolicitudSchema, RechazarSolicitudSchema } from '@/schema/salida-producto.schema'
 import { SolicitudesPendientesType } from '@/types/salida-producto.types'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
@@ -8,13 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import Modal from '../Modal'
 import { Textarea } from '../ui/textarea'
 import { Badge } from '../ui/badge'
-import { CheckCircle, ClipboardList } from "lucide-react"
+import { CheckCircle, ClipboardList, X } from "lucide-react"
 import { UserType } from '@/types/user.types'
 
 interface SolicitudesPendientesProps {
   solicitudesPendientes: SolicitudesPendientesType[]
   fetchSolicitudesPendientes: () => Promise<void>
   aprobarSolicitud: (solicitud: AprobarSolicitudSchema) => Promise<boolean | undefined>
+  rechazarSolicitud: (solicitud: RechazarSolicitudSchema) => Promise<boolean | undefined>
   user: UserType | null
 }
 
@@ -22,11 +23,14 @@ export default function SolicitudesPendientes({
   solicitudesPendientes,
   fetchSolicitudesPendientes,
   aprobarSolicitud,
+  rechazarSolicitud,
   user,
 }: SolicitudesPendientesProps) {
   const [selectedSolicitud, setSelectedSolicitud] = useState<SolicitudesPendientesType | null>(null)
   const [isAprobarDialogOpen, setIsAprobarDialogOpen] = useState(false)
-
+  const [isRechazarDialogOpen, setIsRechazarDialogOpen] = useState(false)
+  
+  
   const {
     setValue,
     handleSubmit,
@@ -41,6 +45,21 @@ export default function SolicitudesPendientes({
     },
   })
 
+  const {
+    setValue: setValueRechazar,
+    handleSubmit: handleSubmitRechazar,
+    register: registerRechazar,
+    formState: { errors: errorsRechazar, isSubmitting: isSubmittingRechazar },
+    reset: resetRechazar,
+  } = useForm<RechazarSolicitudSchema>({
+    resolver: zodResolver(rechazarSolicitudSchema),
+    defaultValues: {
+      idSalida: 0,
+      rechazadorId: user?.id || "",
+      motivoRechazo: "",
+    },
+  })
+
   const getData = useCallback(async () => {
     await fetchSolicitudesPendientes()
   }, [fetchSolicitudesPendientes])
@@ -52,31 +71,49 @@ export default function SolicitudesPendientes({
   // Lógica para mantener actualizado el form al seleccionar otra solicitud
   useEffect(() => {
     if (selectedSolicitud) {
+      setValueRechazar('idSalida', selectedSolicitud.id)
       setValue('idSalida', selectedSolicitud.id)
     }
-  }, [selectedSolicitud, setValue])
+  }, [selectedSolicitud, setValue, setValueRechazar])
 
   const handleOpenAprobarDialog = (solicitud: SolicitudesPendientesType) => {
     setSelectedSolicitud(solicitud)
     setIsAprobarDialogOpen(true)
   }
 
+  const handleOpenRechazarDialog = (solicitud: SolicitudesPendientesType) => {
+    setSelectedSolicitud(solicitud)
+    setIsRechazarDialogOpen(true)
+  }
+
   const handleCloseAprobarDialog = () => {
     setIsAprobarDialogOpen(false)
     setSelectedSolicitud(null)
-    reset({
-      idSalida: 0,
-      aprobadorId: "",
-    })
+  }
+
+  const handleCloseRechazarDialog = () => {
+    setIsRechazarDialogOpen(false)
+    setSelectedSolicitud(null)
   }
 
   const onSubmit = async (data: AprobarSolicitudSchema) => {
     const res = await aprobarSolicitud(data)
     if (res) {
+      reset()
       handleCloseAprobarDialog()
     }
   }
 
+  const onRechazarSubmit = async (data: RechazarSolicitudSchema) => {
+    const res = await rechazarSolicitud(data)
+    if (res) {
+      resetRechazar()
+      handleCloseRechazarDialog()
+    }
+  }
+
+
+  console.log(errorsRechazar)
   const statusColor = (estado: string) => {
     switch (estado) {
       case "PENDIENTE":
@@ -89,8 +126,6 @@ export default function SolicitudesPendientes({
         return "default"
     }
   }
-
-  console.log(errors)
 
   return (
     <div className="m-5">
@@ -107,7 +142,7 @@ export default function SolicitudesPendientes({
               <TableHead>Área</TableHead>
               <TableHead>Solicitado por</TableHead>
               <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="text-center"></TableHead>
+              <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -132,15 +167,24 @@ export default function SolicitudesPendientes({
                       {solicitud.estado}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center flex gap-2 justify-center">
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="default"
                       onClick={() => handleOpenAprobarDialog(solicitud)}
                       className="flex items-center gap-1"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Aprobar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleOpenRechazarDialog(solicitud)}
+                      className="flex items-center gap-1"
+                    >
+                      <X className="w-4 h-4" />
+                      Rechazar
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -195,6 +239,68 @@ export default function SolicitudesPendientes({
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Aprobando..." : "Aprobar"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRechazarDialogOpen}
+        onClose={handleCloseRechazarDialog}
+        title="Rechazar Solicitud"
+        description="Complete el motivo para registrar el rechazo."
+      >
+        <div className="space-y-4 py-2 px-2">
+          <div className="border rounded-lg bg-muted/60 p-4 mb-4">
+            <h3 className="text-base font-medium mb-1 text-primary">
+              Detalles de la solicitud
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <div>
+                <span className="font-medium text-foreground">Producto:</span>
+                <div>{selectedSolicitud?.producto.nombre}</div>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Cantidad:</span>
+                <div>{selectedSolicitud?.cantidad}</div>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Área:</span>
+                <div>{selectedSolicitud?.area.nombre}</div>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Solicitado por:</span>
+                <div>{selectedSolicitud?.solicitadoPor}</div>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Estado:</span>
+                {selectedSolicitud ? (
+                  <Badge variant={statusColor(selectedSolicitud.estado)} className="capitalize text-xs px-2 py-1 mt-0.5">
+                    {selectedSolicitud.estado}
+                  </Badge>
+                ) : null}
+              </div>
+            </div>
+              <div>
+                <span className="font-medium text-foreground">Motivo de rechazo:</span>
+                <Textarea
+                  {...registerRechazar("motivoRechazo")}
+                  placeholder="Motivo de rechazo"
+                  className="resize-none h-24"
+                />
+              </div>
+              {errorsRechazar.motivoRechazo && (
+                <p className="text-xs text-red-500">{errorsRechazar.motivoRechazo.message}</p>
+              )}
+          </div>
+          <form className="space-y-4" onSubmit={handleSubmitRechazar(onRechazarSubmit)}>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="secondary" onClick={handleCloseRechazarDialog}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmittingRechazar}>
+                {isSubmittingRechazar ? "Rechazando..." : "Rechazar"}
               </Button>
             </div>
           </form>

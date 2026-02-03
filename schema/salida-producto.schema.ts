@@ -13,5 +13,12 @@ export const aprobarSolicitudSchema = z.object({
   aprobadorId: z.string().min(1, 'El usuario aprobador es obligatorio'),
 })
 
+export const rechazarSolicitudSchema = z.object({
+  idSalida: z.number().min(1, 'La salida es obligatoria'),
+  rechazadorId: z.string().min(1, 'El usuario rechazador es obligatorio'),
+  motivoRechazo: z.string().min(1, 'El motivo es obligatorio'),
+})
+
 export type SolicitarSalidaProductoSchema = z.infer<typeof solicitarSalidaProductoSchema>;
 export type AprobarSolicitudSchema = z.infer<typeof aprobarSolicitudSchema>;
+export type RechazarSolicitudSchema = z.infer<typeof rechazarSolicitudSchema>;
