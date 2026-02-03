@@ -32,6 +32,7 @@ export default function DetalleInventario({
     nombre: "",
     categoria: "todas",
     area: "todas",
+    estado: "SIN_ESTADO",
   })
   const [selectedProduct, setSelectedProduct] = useState<EditStockMinimo | null>(null)
   const STOCK_BAJO_UMBRAL = 3
@@ -67,6 +68,13 @@ export default function DetalleInventario({
       )
     }
 
+    // Filtrar por estado
+    if (filters.estado !== "SIN_ESTADO") {
+      products = products.filter((product: ProductoInventarioGeneral | ProductoInventarioArea) =>
+        "estado" in product && product.estado === filters.estado
+      )
+    }
+
     // Ordenar por cantidad bajando (primero más alto, para llamar visualmente más la atención)
     products.sort((a, b) => b.cantidad - a.cantidad)
 
@@ -99,6 +107,7 @@ export default function DetalleInventario({
             <TableHead className="min-w-[60px] text-center">Cantidad</TableHead>
             <TableHead className="min-w-[100px] text-center">Tipo</TableHead>
             {tipoInventario === "area" && <TableHead className="min-w-[100px] text-center">Stock Mínimo</TableHead>}
+            <TableHead className="min-w-[100px] text-center">Estado</TableHead>
             {canEdit && <TableHead className="min-w-[100px] text-center">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
@@ -138,6 +147,11 @@ export default function DetalleInventario({
               {tipoInventario === "area" && (
                 <TableCell className="text-center">
                   {(product as ProductoInventarioArea)?.stockMinimo}
+                </TableCell>
+              )}
+              {(
+                <TableCell className="text-center">
+                  {(product as ProductoInventarioArea)?.estado ?? 'No definido'}
                 </TableCell>
               )}
               {canEdit && (
@@ -214,8 +228,6 @@ export default function DetalleInventario({
       }
     }
   }
-  console.log(errors)
-
 
   return (
     <div className="space-y-6">
@@ -248,15 +260,20 @@ export default function DetalleInventario({
           <CardTitle className="text-base">Filtros de Búsqueda</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className={clsx(
-            "grid gap-4",
-            tipoInventario === "area"
-              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              : "grid-cols-1 md:grid-cols-3"
-          )}>
+          <div
+            className={clsx(
+              "w-full flex flex-col md:flex-row md:gap-4 flex-wrap",
+              // Espaciado vertical en mobile, horizontal en desktop
+              tipoInventario === "area"
+                ? "md:items-end"
+                : "md:items-end"
+            )}
+          >
             {/* Filtro por nombre */}
-            <div className="space-y-1">
-              <Label htmlFor="filterNombre" className="text-sm">Nombre del Producto</Label>
+            <div className="flex-1 min-w-[220px] md:max-w-xs space-y-1 mb-2 md:mb-0">
+              <Label htmlFor="filterNombre" className="text-sm">
+                Nombre del Producto
+              </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -264,24 +281,33 @@ export default function DetalleInventario({
                   type="text"
                   placeholder="Buscar producto"
                   value={filters.nombre}
-                  onChange={(e) => setFilters({ ...filters, nombre: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, nombre: e.target.value })
+                  }
                   className="pl-10 bg-muted/70 focus:bg-white transition"
                   autoComplete="off"
                 />
-                {
-                  filters.nombre.trim() !== "" && (
-                    <X className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer" onClick={() => setFilters({ ...filters, nombre: "" })} />
-                  )
-                }
+                {filters.nombre.trim() !== "" && (
+                  <X
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer"
+                    onClick={() =>
+                      setFilters({ ...filters, nombre: "" })
+                    }
+                  />
+                )}
               </div>
             </div>
 
             {/* Filtro por categoría */}
-            <div className="space-y-1">
-              <Label htmlFor="filterCategoria" className="text-sm">Categoría</Label>
+            <div className="flex-1 min-w-[170px] md:max-w-xs space-y-1 mb-2 md:mb-0">
+              <Label htmlFor="filterCategoria" className="text-sm">
+                Categoría
+              </Label>
               <Select
                 value={filters.categoria}
-                onValueChange={(value) => setFilters({ ...filters, categoria: value })}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, categoria: value })
+                }
               >
                 <SelectTrigger className="bg-muted/70 focus:bg-white transition">
                   <SelectValue placeholder="Todas las categorías" />
@@ -296,13 +322,18 @@ export default function DetalleInventario({
                 </SelectContent>
               </Select>
             </div>
+
             {/* Área solo si tipoInventario !== "area" */}
             {tipoInventario !== "area" && (
-              <div className="space-y-1">
-                <Label htmlFor="filterArea" className="text-sm">Área</Label>
+              <div className="flex-1 min-w-[170px] md:max-w-xs space-y-1 mb-2 md:mb-0">
+                <Label htmlFor="filterArea" className="text-sm">
+                  Área
+                </Label>
                 <Select
                   value={filters.area}
-                  onValueChange={(value) => setFilters({ ...filters, area: value })}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, area: value })
+                  }
                 >
                   <SelectTrigger className="bg-muted/70 focus:bg-white transition">
                     <SelectValue placeholder="Todas las áreas" />
@@ -318,6 +349,30 @@ export default function DetalleInventario({
                 </Select>
               </div>
             )}
+
+            {/* Estado, siempre */}
+            <div className="flex-1 min-w-[170px] md:max-w-xs space-y-1">
+              <Label htmlFor="filterEstado" className="text-sm">
+                Estado
+              </Label>
+              <Select
+                value={filters.estado}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, estado: value })
+                }
+              >
+                <SelectTrigger className="bg-muted/70 focus:bg-white transition">
+                  <SelectValue placeholder="Sin Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIN_ESTADO">Sin Estado</SelectItem>
+                  <SelectItem value="ACTIVO">Activo</SelectItem>
+                  <SelectItem value="EN_REPARACION">En Reparación</SelectItem>
+                  <SelectItem value="DADO_DE_BAJA">Dado de Baja</SelectItem>
+                  <SelectItem value="EN_MANTENIMIENTO">En Mantenimiento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
