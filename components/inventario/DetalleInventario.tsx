@@ -1,4 +1,4 @@
-import { InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
+import { EditStockMinimo, InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Label } from "../ui/label"
 import { Pencil, Search, X } from "lucide-react"
@@ -7,10 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { AreaType } from "@/types/user.types"
 import { ConceptosType } from "@/types/conceptos.types"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import clsx from "clsx"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
+import { useForm } from "react-hook-form"
+import { editStockMinimoSchema, EditStockMinimoSchema } from "@/schema/inventario.schema"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 interface DetalleInventarioProps {
   inventario: InventarioGeneral | InventarioArea | null
@@ -18,20 +22,22 @@ interface DetalleInventarioProps {
   areas: AreaType[]
   conceptosTotales: ConceptosType[]
   canEdit: boolean
+  editStockMinimo?: (data: EditStockMinimoSchema) => Promise<boolean | undefined>
 }
 
-export default function DetalleInventario({ inventario, tipoInventario, areas, conceptosTotales, canEdit }: DetalleInventarioProps) {
+export default function DetalleInventario({
+  inventario, tipoInventario, areas, conceptosTotales, canEdit, editStockMinimo
+}: DetalleInventarioProps) {
   const [filters, setFilters] = useState({
     nombre: "",
     categoria: "todas",
     area: "todas",
   })
+  const [selectedProduct, setSelectedProduct] = useState<EditStockMinimo | null>(null)
+  const STOCK_BAJO_UMBRAL = 3
 
-  // Mejor cálculo para ejemplo de stock bajo o agotado
-  // (en app real sería props/config/env)
-  const STOCK_BAJO_UMBRAL = 5
 
-  // Producción: Filtrado avanzado y cálculos para UI bonita
+  // Filtrado avanzado y cálculos
   const filteredProducts: (ProductoInventarioGeneral | ProductoInventarioArea)[] = useMemo(() => {
     let products = [...(inventario?.productos ?? [])]
 
@@ -74,9 +80,14 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
     useMemo(() => filteredProducts.filter((p) => p.cantidad === 0), [filteredProducts]);
 
 
-  const handleEditProduct = (product: ProductoInventarioGeneral | ProductoInventarioArea) => {
-    console.log(product)
+  const handleOpenEditProduct = (product: EditStockMinimo) => {
+    setSelectedProduct(product)
   }
+
+  const handleCloseEditProduct = () => {
+    setSelectedProduct(null)
+  }
+
 
   const renderProductTable = (products: (ProductoInventarioGeneral | ProductoInventarioArea)[]) => (
     <div className="overflow-x-auto rounded-lg border border-muted/50">
@@ -86,6 +97,8 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
             <TableHead className="min-w-[120px]">Producto</TableHead>
             <TableHead className="min-w-[120px]">Categoría</TableHead>
             <TableHead className="min-w-[60px] text-center">Cantidad</TableHead>
+            <TableHead className="min-w-[100px] text-center">Tipo</TableHead>
+            {tipoInventario === "area" && <TableHead className="min-w-[100px] text-center">Stock Mínimo</TableHead>}
             {canEdit && <TableHead className="min-w-[100px] text-center">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
@@ -95,7 +108,7 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
               key={product.nombre}
               className={clsx(
                 product.cantidad === 0 && "bg-red-50 dark:bg-red-900/10",
-                product.cantidad > 0 && product.cantidad <= STOCK_BAJO_UMBRAL && "bg-yellow-50 dark:bg-yellow-900/10"
+                product.cantidad > 0 && product.cantidad <= (product as ProductoInventarioArea).stockMinimo && "bg-yellow-50 dark:bg-yellow-900/10"
               )}
             >
               <TableCell className="font-medium">{product.nombre}</TableCell>
@@ -110,7 +123,7 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
                     "rounded px-2 py-0.5",
                     product.cantidad === 0
                       ? "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200"
-                      : product.cantidad <= STOCK_BAJO_UMBRAL
+                      : product.cantidad <= (product as ProductoInventarioArea).stockMinimo
                         ? "bg-yellow-100 text-yellow-900 dark:bg-yellow-800/70 dark:text-yellow-200"
                         : "bg-green-100 text-green-900 dark:bg-green-800/70 dark:text-green-200"
                   )}
@@ -119,13 +132,20 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
                   {product.cantidad}
                 </span>
               </TableCell>
-
+              <TableCell className="text-center">
+                {product.tipo}
+              </TableCell>
+              {tipoInventario === "area" && (
+                <TableCell className="text-center">
+                  {(product as ProductoInventarioArea)?.stockMinimo}
+                </TableCell>
+              )}
               {canEdit && (
                 <TableCell className="text-center">
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleEditProduct(product)}
+                    onClick={() => handleOpenEditProduct(product as unknown as EditStockMinimo)}
                     className="hover:bg-primary/10"
                   >
                     <Pencil className="h-4 w-4 text-primary" />
@@ -160,11 +180,47 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
     </Card>
   )
 
+  const {
+    setValue,
+    handleSubmit,
+    register,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<EditStockMinimoSchema>({
+    resolver: zodResolver(editStockMinimoSchema),
+    defaultValues: {
+      areaId: 0,
+      productoId: selectedProduct?.id ?? 0,
+      stockMinimo: 0,
+    },
+  })
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setValue('areaId', selectedProduct.areaId)
+      setValue('productoId', selectedProduct.id)
+      setValue('stockMinimo', selectedProduct.stockMinimo)
+    }
+  }, [selectedProduct, setValue])
+
+
+
+  const onSubmit = async (data: EditStockMinimoSchema) => {
+    if (editStockMinimo) {
+      const res = await editStockMinimo(data)
+      if (res) {
+        handleCloseEditProduct()
+        reset()
+      }
+    }
+  }
+  console.log(errors)
+
+
   return (
     <div className="space-y-6">
       <div className={clsx(
-        "w-full grid gap-4",
-        tipoInventario === "area" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-2"
+        "w-full grid gap-4 grid-cols-1 md:grid-cols-3"
       )}>
         {renderStatCard(
           "Total Productos",
@@ -178,24 +234,13 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
           "",
           null,
         )}
-        {tipoInventario === "area" && (
-          <>
-            {renderStatCard(
-              "Stock Bajo",
-              stockBajoProducts.length,
-              "",
-              null,
-              "≤ " + STOCK_BAJO_UMBRAL + " unidades"
-            )}
-            {renderStatCard(
-              "Agotados",
-              agotadosProducts.length,
-              "",
-              null,
-              "Cantidad: 0"
-            )}
-          </>
+        {renderStatCard(
+          "Productos Agotados",
+          agotadosProducts.length,
+          "",
+          null,
         )}
+
       </div>
 
       <Card>
@@ -313,50 +358,46 @@ export default function DetalleInventario({ inventario, tipoInventario, areas, c
             </CardContent>
           </Card>
         </TabsContent>
-
-        {tipoInventario === "area" && (
-          <>
-            <TabsContent value="stockBajo">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Stock Bajo</CardTitle>
-                  <CardDescription>
-                    Inventario con ≤ {STOCK_BAJO_UMBRAL} unidades ({stockBajoProducts.length})
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {stockBajoProducts.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No hay productos con stock bajo
-                    </div>
-                  ) : (
-                    renderProductTable(stockBajoProducts)
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="agotados">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Agotados</CardTitle>
-                  <CardDescription>
-                    Productos con cantidad 0 ({agotadosProducts.length})
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {agotadosProducts.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No hay productos agotados
-                    </div>
-                  ) : (
-                    renderProductTable(agotadosProducts)
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </>
-        )}
       </Tabs>
+
+      <Dialog open={!!selectedProduct} onOpenChange={handleCloseEditProduct}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Stock Mínimo</DialogTitle>
+            <DialogDescription>Modifique el stock mínimo del producto</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Producto</Label>
+                <Input value={selectedProduct?.nombre ?? ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Stock Actual (Solo lectura)</Label>
+                <Input value={selectedProduct?.stockMinimo ?? 0} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-stock-minimo">Nuevo Stock Mínimo</Label>
+                <Input
+                  id="edit-stock-minimo"
+                  type="number"
+                  min="0"
+                  {...register('stockMinimo', { valueAsNumber: true })}
+                />
+                {errors.stockMinimo && <p className="text-red-500 text-sm">{errors.stockMinimo.message}</p>}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleCloseEditProduct}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>{
+                  isSubmitting ? "Guardando..." : "Guardar Cambios"
+                }</Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

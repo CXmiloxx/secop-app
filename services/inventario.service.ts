@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
+import { EditStockMinimoSchema, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
 import { InventarioArea, InventarioGeneral, MovimientoInventario, RequisicionPendienteInventario } from "@/types";
 
 export const InventarioService = {
@@ -23,6 +23,11 @@ export const InventarioService = {
   
   async historialMovimientos() {
     return await api.get<MovimientoInventario[]>(`/inventario/historial-movimientos`)
+  },
+
+
+  async editStockMinimo(data: EditStockMinimoSchema) {
+    return await api.patch(`/inventario/stock-minimo`, data)
   }
 
 }

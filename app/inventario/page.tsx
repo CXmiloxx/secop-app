@@ -22,6 +22,7 @@ export default function InventarioPage() {
     inventarioArea,
     historialMovimientos,
     fetchHistorialMovimientos,
+    editStockMinimo,
   } = useInventario()
 
 
@@ -61,6 +62,7 @@ export default function InventarioPage() {
               user={user}
               inventarioGeneral={inventarioGeneral}
               inventarioArea={inventarioArea}
+              editStockMinimo={editStockMinimo}
             />
           </TabsContent>
 

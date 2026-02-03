@@ -47,17 +47,28 @@ export interface RequisicionPendienteInventario {
 export interface ProductoInventarioGeneral {
   categoria: string;
   nombre: string;
+  tipo: "GASTO" | "ACTIVO";
   cantidad: number;
   areas: string[];
 }
 
 export interface ProductoInventarioArea {
+  id: number;
   categoria: string;
   nombre: string;
+  tipo: "GASTO" | "ACTIVO";
   cantidad: number;
   stockMinimo: number;
-
+  areaId: number;
 }
+
+export interface EditStockMinimo {
+  id: number;
+  areaId: number;
+  stockMinimo: number;
+  nombre: string;
+}
+
 
 export interface InventarioGeneral {
   productos: ProductoInventarioGeneral[];
