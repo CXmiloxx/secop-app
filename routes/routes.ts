@@ -17,31 +17,44 @@ import {
   ArrowRightLeft,
   User,
   BookOpen,
+  Users,
+  Briefcase,
+  Settings,
+  Send,
+  ShieldCheck,
+  FilePlus2,
+  ClipboardCheck,
+  BarChart2,
+  Layers,
+  Coins,
+  Archive,
+  Repeat,
+  FolderOpen,
+  BadgeDollarSign,
 } from "lucide-react"
-
 
 const menuItems: RouterType[] = [
   {
     title: "Áreas",
-    icon: User,
+    icon: Layers, // Mejor que User, representa estructura o secciones
     href: "/areas",
     roles: ["admin"],
   },
   {
     title: "Creacion de usuarios",
-    icon: User,
+    icon: Users, // Grupal, indica gestión de usuarios
     href: "/admin",
     roles: ["admin"],
   },
   {
     title: "Proveedores",
-    icon: Building2,
+    icon: Briefcase, // Relacionado a negocios/partners
     href: "/proveedores",
     roles: ["admin"],
   },
   {
     title: "Cuentas contables",
-    icon: BookOpen,
+    icon: Coins, // Más financiero que BookOpen
     href: "/cuentas-contables",
     roles: ["admin"],
   },
@@ -53,55 +66,55 @@ const menuItems: RouterType[] = [
   },
   {
     title: "Solicitar Presupuesto",
-    icon: FileText,
+    icon: Send, // Representa enviar o solicitar
     href: "/solicitar-presupuesto",
     roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
   },
   {
     title: "Salida de Productos",
-    icon: Package,
+    icon: ArrowRightLeft, // Movimiento, salida de productos
     href: "/salida-productos",
     roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
   },
   {
     title: "Aprobación de Presupuesto Áreas",
-    icon: CheckSquare,
+    icon: ShieldCheck, // Representa aprobación/seguridad
     href: "/aprobaciones-presupuesto",
     roles: ["admin", "rector"],
   },
   {
     title: "Requisiciones",
-    icon: ClipboardList,
+    icon: ClipboardList, // Lista de requerimientos, representa requisiciones
     href: "/requisiciones",
     roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
   },
   {
     title: "Partidas No Presupuestadas",
-    icon: FileText,
+    icon: FilePlus2, // Añadir archivo/partida
     href: "/partidas-no-presupuestadas",
     roles: ["admin", "responsableArea", "consultor", "cajaMenor", "tesoreria", "Auditoría"],
   },
   {
     title: "Aprobaciones",
-    icon: CheckSquare,
+    icon: ClipboardCheck, // Mejor que CheckSquare para el flujo de revisión
     href: "/aprobaciones",
     roles: ["consultor"],
   },
   {
     title: "caja Menor",
-    icon: Wallet,
+    icon: Wallet, // Dinero inmediato, correcto
     href: "/caja-menor",
     roles: ["cajaMenor", "admin"],
   },
   {
     title: "tesoreria",
-    icon: CreditCard,
+    icon: CreditCard, // Correcto para representar tesorería
     href: "/tesoreria",
     roles: ["tesoreria", "cajaMenor"],
   },
   {
     title: "Calificaciones",
-    icon: Star,
+    icon: Star, // Representa puntuación
     href: "/calificaciones",
     roles: ["consultor", "responsableArea", "tesoreria", "cajaMenor", "admin"],
   },
@@ -113,7 +126,7 @@ const menuItems: RouterType[] = [
   },
   {
     title: "Inventario",
-    icon: Package,
+    icon: Archive, // Más exacto que Package, representa guardado/depósito/inventario
     href: "/inventario",
     roles: ["admin", "responsableArea", "Auditoría", "consultor", "cajaMenor", "tesoreria"],
   },
@@ -125,13 +138,13 @@ const menuItems: RouterType[] = [
    }, */
   /* {
     title: "Traslados de Activos",
-    icon: ArrowRightLeft,
+    icon: Repeat,
     href: "/traslados-activos",
     roles: ["admin", "responsableArea"],
   }, */
   {
     title: "Reportes",
-    icon: FileText,
+    icon: BarChart2, // Mejor que FileText para representar reportes
     href: "/reportes",
     roles: ["admin", "Auditoría", "consultor"],
   },
