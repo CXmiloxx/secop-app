@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart, Calendar, Download, Star, X } from "lucide-react"
+import {  Calendar, Download, Star, X } from "lucide-react"
 import { ReporteConsultorType } from "@/types/reportes.types"
-import { AreaType } from "@/types/user.types"
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { reporteConsultorToCSV } from "@/utils/csv/exprotCsv"
@@ -27,15 +26,12 @@ function getEndOfDay(dateString: string) {
 interface ReporteConsultorProps {
   fetchReporteConsultor: (fechaInicio?: Date, fechaFin?: Date) => Promise<boolean | undefined>
   reporteConsultor: ReporteConsultorType | null
-  fetchAreas: () => Promise<AreaType[] | undefined>
-  areas: AreaType[]
+
 }
 
 export default function ReporteConsultor({
   fetchReporteConsultor,
   reporteConsultor,
-  fetchAreas,
-  areas,
 }: ReporteConsultorProps) {
 
   // Filtros de búsqueda

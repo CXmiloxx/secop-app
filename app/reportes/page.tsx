@@ -36,7 +36,9 @@ export default function ReportesPage() {
     reporteTesoreria,
     fetchReporteTesoreria,
     fetchReportePartidasNoPresupuestadas,
-    reportePartidasNoPresupuestadas
+    reportePartidasNoPresupuestadas,
+    fetchReporteConsultor,
+    reporteConsultor,
   } = useReportes()
 
 
@@ -138,7 +140,12 @@ export default function ReportesPage() {
 
                   {showRatingsReports && (
                     <TabsContent value="consultor">
-                      <ReporteConsultor user={user} />
+                      <ReporteConsultor
+                        fetchReporteConsultor={fetchReporteConsultor}
+                        reporteConsultor={reporteConsultor}
+                        fetchAreas={fetchAreas}
+                        areas={areas}
+                      />
                     </TabsContent>
                   )}
 
