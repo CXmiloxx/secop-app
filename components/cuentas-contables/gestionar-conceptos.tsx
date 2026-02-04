@@ -21,13 +21,14 @@ import {
 } from "@/components/ui/select"
 import { registerConceptosSchema, RegisterConceptosSchema } from "@/schema/conceptos.schema"
 import { ConceptosPorCuentaType } from "@/types/cuentas-contables.types"
-import { ProductosType } from "@/types/productos.types"
 import { ChevronDown, Package, Plus, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cn } from "@/lib/utils"
 import { ArticulosPorCuentaType } from "@/types/conceptos.types"
+import { registerProductoSchema, RegisterProductoSchema } from "@/schema/producto.schema"
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
 
 interface GestionarConceptosProps {
   cuentasContablesTotales: ConceptosPorCuentaType[]
@@ -35,6 +36,7 @@ interface GestionarConceptosProps {
   loadingArticulos: boolean
   articulosPorCuenta: ArticulosPorCuentaType[]
   fetchArticulosPorCuenta: (idCuenta: number) => Promise<boolean | undefined>
+  createProducto: (data: RegisterProductoSchema) => Promise<boolean | undefined>
 }
 
 export function GestionarConceptos({
@@ -43,12 +45,13 @@ export function GestionarConceptos({
   loadingArticulos,
   articulosPorCuenta,
   fetchArticulosPorCuenta,
+  createProducto,
 }: GestionarConceptosProps) {
   const [selectedCuentaContable, setSelectedCuentaContable] = useState<ConceptosPorCuentaType | null>(null)
   const [conceptoExpandidoId, setConceptoExpandidoId] = useState<number | null>(null)
   const [productoNombre, setProductoNombre] = useState("")
   const [productoTipo, setProductoTipo] = useState<"GASTO" | "ACTIVO">("GASTO")
-
+  const [openAgregarProductoDialog, setOpenAgregarProductoDialog] = useState(false)
   const {
     register,
     handleSubmit,
@@ -66,6 +69,21 @@ export function GestionarConceptos({
     },
   })
 
+  const {
+    register: registerProducto,
+    handleSubmit: handleSubmitProducto,
+    reset: resetProducto,
+    setValue: setValueProducto,
+    control: controlProducto,
+    formState: { errors: errorsProducto, isSubmitting: isSubmittingProducto },
+  } = useForm<RegisterProductoSchema>({
+    resolver: zodResolver(registerProductoSchema),
+    defaultValues: {
+      nombre: "",
+      tipo: "GASTO",
+    },
+  })
+
   const { fields: productosFields, append: appendProducto, remove: removeProducto } = useFieldArray({
     control,
     name: "productos",
@@ -77,6 +95,22 @@ export function GestionarConceptos({
     setProductoNombre("")
     setProductoTipo("GASTO")
   }, [productoNombre, productoTipo, appendProducto])
+
+
+  const handleOpenDialogAgregarProducto = useCallback((conceptoId: number) => {
+    console.log(conceptoId)
+    setOpenAgregarProductoDialog(true)
+    setValueProducto("conceptoContableId", conceptoId)
+  }, [setOpenAgregarProductoDialog, setValueProducto])
+
+
+  const onSubmitAgregarProducto = useCallback(async (data: RegisterProductoSchema) => {
+    const ok = await createProducto(data)
+    if (ok) {
+      setOpenAgregarProductoDialog(false)
+      resetProducto()
+    }
+  }, [createProducto, resetProducto, setOpenAgregarProductoDialog])
 
   useEffect(() => {
     if (selectedCuentaContable) setValue("cuentaContableId", selectedCuentaContable.id)
@@ -295,6 +329,9 @@ export function GestionarConceptos({
                                     />
                                   </Button>
                                 </CollapsibleTrigger>
+                                  <Button variant="outline" size="sm" onClick={() => handleOpenDialogAgregarProducto(articulo.id)}>
+                                    <Plus className="h-4 w-4" /> Agregar producto al concepto
+                                  </Button>
                               </div>
                             </div>
                             <CollapsibleContent>
@@ -334,6 +371,46 @@ export function GestionarConceptos({
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={openAgregarProductoDialog} onOpenChange={(open) => !open && setOpenAgregarProductoDialog(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Agregar producto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Agregue un producto al concepto.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <form onSubmit={handleSubmitProducto(onSubmitAgregarProducto)}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nombre del producto</Label>
+                <Input {...registerProducto("nombre")} placeholder="Ej: Suministros de oficina" />
+                {errorsProducto.nombre && (
+                  <p className="text-xs text-destructive">{errorsProducto.nombre.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de producto</Label>
+                <Select value={productoTipo} onValueChange={(v) => setProductoTipo(v as "GASTO" | "ACTIVO")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GASTO">Gasto</SelectItem>
+                    <SelectItem value="ACTIVO">Activo</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errorsProducto.tipo && (
+                  <p className="text-xs text-destructive">{errorsProducto.tipo.message}</p>
+                )}
+              </div>
+            </div>
+            <Button type="submit" disabled={isSubmittingProducto}>
+              {isSubmittingProducto ? "Guardando..." : "Guardar producto"}
+            </Button>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/*       <AlertDialog open={openDeleteDialog} onOpenChange={(open) => !open && handleCancelDelete()}>
         <AlertDialogContent>

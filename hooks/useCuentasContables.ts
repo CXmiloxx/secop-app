@@ -1,5 +1,7 @@
 import { RegisterCuentasContablesSchema } from "@/schema/cuentas-contables.schema";
+import { RegisterProductoSchema } from "@/schema/producto.schema";
 import { cuentasContablesService } from "@/services/cuentas-contables.service";
+import { ProductosService } from "@/services/productos.service";
 import { useCuentasContabesStore } from "@/store/cuentas-contables.store";
 import { ConceptosPorCuentaType, CuentasContablesType, TiposCuentasType } from "@/types/cuentas-contables.types";
 import { ApiError } from "@/utils/api-error";
@@ -137,6 +139,32 @@ export default function useCuentasContables() {
     }
   }, [setCuentasContables]);
 
+
+  const fetchCreateProducto = useCallback(async (producto: RegisterProductoSchema) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { status } = await ProductosService.createProducto(producto);
+      if (status === 201) {
+        toast.success("Producto creado exitosamente");
+        await fetchCuentasContables();
+        await fetchCuentasConConceptos();
+        return true;
+      }
+    } catch (err) {
+      let errorMessage = "Error desconocido al crear el producto.";
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [setCuentasContables]);
+
   return {
     cuentasContables,
     cuentasContablesPermitidos,
@@ -148,6 +176,7 @@ export default function useCuentasContables() {
     cuentasContablesTotales,
     fetchTiposCuentas,
     tiposCuentas,
-    fetchCreateCuentaContable
+    fetchCreateCuentaContable,
+    fetchCreateProducto
   };
 }

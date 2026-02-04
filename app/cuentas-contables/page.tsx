@@ -20,6 +20,7 @@ export default function CuentasContablesPage() {
     fetchTiposCuentas,
     tiposCuentas,
     fetchCreateCuentaContable,
+    fetchCreateProducto,
   } = useCuentasContables()
   const { fetchCreateConcepto, fetchArticulosPorCuenta, articulosPorCuenta, loadingConceptos } = useConceptos()
   const [showCreateCuentaContableModal, setShowCreateCuentaContableModal] = useState(false)
@@ -103,6 +104,7 @@ export default function CuentasContablesPage() {
               loadingArticulos={loadingConceptos}
               articulosPorCuenta={articulosPorCuenta}
               fetchArticulosPorCuenta={fetchArticulosPorCuenta}
+              createProducto={fetchCreateProducto}
             />
           </TabsContent>
         </Tabs>
