@@ -3,7 +3,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Package } from "lucide-react"
 import EntradaInventario from "@/components/inventario/entrada-inventario"
-import SalidaInventario from "@/components/inventario/salida-inventario"
 import ConsultaInventario from "@/components/inventario/consulta-inventario"
 import useAuth from '@/hooks/useAuth'
 import Navbar from "@/components/Navbar"
@@ -32,11 +31,9 @@ export default function InventarioPage() {
     if ( !user?.area?.id) return
     if (user?.rol?.nombre === "consultor") {
       await requisicionesPendientesInventario()
-      await fetchInventarioGeneral()
       await fetchHistorialMovimientos()
     }
-    await fetchInventarioArea(user.area.id)
-  }, [requisicionesPendientesInventario, fetchInventarioGeneral, fetchInventarioArea, user?.area?.id, user?.rol?.nombre])
+  }, [requisicionesPendientesInventario, user?.area?.id, user?.rol?.nombre])
 
   useEffect(() => {
     loadData()
@@ -63,6 +60,8 @@ export default function InventarioPage() {
               inventarioGeneral={inventarioGeneral}
               inventarioArea={inventarioArea}
               editStockMinimo={editStockMinimo}
+              fetchInventarioGeneral={fetchInventarioGeneral}
+              fetchInventarioArea={fetchInventarioArea}
             />
           </TabsContent>
 
