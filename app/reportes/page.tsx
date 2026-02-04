@@ -73,12 +73,12 @@ export default function ReportesPage() {
                 Reportes Contabilidad
               </TabsTrigger>
             )}
-            {showActivosReport && (
+            {/* {showActivosReport && (
               <TabsTrigger value="activos" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Reportes Activos
               </TabsTrigger>
-            )}
+            )} */}
           </TabsList>
 
           <TabsContent value="requisicion">
