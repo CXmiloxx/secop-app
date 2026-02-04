@@ -49,7 +49,7 @@ const menuItems: RouterType[] = [
     title: "Presupuestos",
     icon: DollarSign,
     href: "/presupuestos",
-    roles: ["admin", "responsableArea", "Auditoría", "consultor", "cajaMenor", "tesoreria"],
+    roles: ["admin", "responsableArea", "rector", "consultor", "cajaMenor", "tesoreria"],
   },
   {
     title: "Solicitar Presupuesto",
@@ -67,7 +67,7 @@ const menuItems: RouterType[] = [
     title: "Aprobación de Presupuesto Áreas",
     icon: CheckSquare,
     href: "/aprobaciones-presupuesto",
-    roles: ["admin"],
+    roles: ["admin", "rector"],
   },
   {
     title: "Requisiciones",
@@ -85,7 +85,7 @@ const menuItems: RouterType[] = [
     title: "Aprobaciones",
     icon: CheckSquare,
     href: "/aprobaciones",
-    roles: ["Rector", "consultor"],
+    roles: ["consultor"],
   },
   {
     title: "caja Menor",

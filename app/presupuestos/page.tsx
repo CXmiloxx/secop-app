@@ -35,7 +35,7 @@ export default function PresupuestosPage() {
     errorPresupuestoGeneral,
     fetchPresupuestoGeneral } = usePresupuestoGeneral()
 
-  const isAdmin = user?.rol?.nombre === "admin"
+  const isAdmin = user?.rol?.nombre === "admin" || user?.rol?.nombre === "rector"
 
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 

@@ -2,7 +2,7 @@ export type RolNombre =
   | 'admin'
   | 'responsableArea'
   | 'Auditoría'
-  | 'Rector'
+  | 'rector'
   | 'consultor'
   | 'tesoreria'
   | 'cajaMenor'

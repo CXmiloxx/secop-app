@@ -8,14 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Percent, XCircle } from "lucide-react"
+import { CheckCircle2, Percent } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AprobarSolicitudPresupuesto } from "@/types"
 import { SolicitudArticuloPresupuesto } from "@/types/articulos-presupuesto.types"
 import { useForm } from "react-hook-form"
 import { AprobarSolicitudPresupuestoSchema, aprobarSolicitudPresupuestoSchema } from "@/schema/solicitar-presupuesto.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
-import useSolicitudPresupuesto from "@/hooks/useSolicitudPresupuesto"
 import useAuth from '@/hooks/useAuth'
 
 interface AprobarSolicitudesProps {
@@ -32,6 +31,8 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
   const [articulosConAprobacion, setArticulosConAprobacion] = useState<SolicitudArticuloPresupuesto[]>([]);
   const { user } = useAuth()
 
+  const isRector = user?.rol?.nombre === "rector"
+  const isConsultor = user?.rol?.nombre === "admin"
 
   const {
     handleSubmit,
@@ -210,17 +211,8 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                           className="gap-1"
                         >
                           <CheckCircle2 className="h-4 w-4" />
-                          Aprobar
+                          {isRector ? "Ver Solicitud" : "Aprobar"}
                         </Button>
-                        {/*  <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleOpenReject(solicitud)}
-                          className="gap-1"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Rechazar
-                        </Button> */}
                       </>
                     )}
                   </div>
@@ -277,7 +269,7 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
               </TabsContent>
 
               <TabsContent value="aprobadas" className="space-y-4">
-                {renderTable(aprobadas, false)}
+                {renderTable(aprobadas, true)}
               </TabsContent>
             </Tabs>
           )}
@@ -472,14 +464,14 @@ export function AprobarSolicitudes({ solicitudes, loading, error, aprobarSolicit
                 >
                   Cancelar
                 </Button>
-                <Button
+                {isConsultor && <Button
                   type="submit"
                   className="gap-2"
                   disabled={isSubmitting}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {isSubmitting ? "Aprobando..." : "Confirmar Aprobación"}
-                </Button>
+                </Button>}
               </div>
             </form>
           )}
