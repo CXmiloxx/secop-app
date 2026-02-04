@@ -4,8 +4,8 @@ export type RolNombre =
   | 'Auditoría'
   | 'Rector'
   | 'consultor'
-  | 'Tesorería'
-  | 'Caja Menor'
+  | 'tesoreria'
+  | 'cajaMenor'
   | 'Contratista'
   | 'Ciencias'
   | 'Pagos'
@@ -32,4 +32,5 @@ export interface UserType {
   telefono: string;
   rol: RolType;
   area: AreaType;
+  estado: boolean;
 }

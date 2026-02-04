@@ -16,6 +16,7 @@ import {
   Box,
   ArrowRightLeft,
   User,
+  BookOpen,
 } from "lucide-react"
 
 
@@ -39,22 +40,28 @@ const menuItems: RouterType[] = [
     roles: ["admin"],
   },
   {
-    title: "Conceptos",
-    icon: Tags,
-    href: "/conceptos",
+    title: "Cuentas contables",
+    icon: BookOpen,
+    href: "/cuentas-contables",
     roles: ["admin"],
   },
   {
     title: "Presupuestos",
     icon: DollarSign,
     href: "/presupuestos",
-    roles: ["admin", "responsableArea", "Auditoría", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["admin", "responsableArea", "Auditoría", "consultor", "cajaMenor", "tesoreria"],
   },
   {
     title: "Solicitar Presupuesto",
     icon: FileText,
     href: "/solicitar-presupuesto",
-    roles: ["responsableArea", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
+  },
+  {
+    title: "Salida de Productos",
+    icon: Package,
+    href: "/salida-productos",
+    roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
   },
   {
     title: "Aprobación de Presupuesto Áreas",
@@ -66,99 +73,93 @@ const menuItems: RouterType[] = [
     title: "Requisiciones",
     icon: ClipboardList,
     href: "/requisiciones",
-    roles: ["admin", "responsableArea", "Consultor", "Caja Menor", "Tesorería"],
+    roles: ["responsableArea", "consultor", "cajaMenor", "tesoreria", "admin"],
   },
   {
     title: "Partidas No Presupuestadas",
     icon: FileText,
     href: "/partidas-no-presupuestadas",
-    roles: ["admin", "responsableArea", "Consultor", "Caja Menor", "Tesorería", "Auditoría"],
+    roles: ["admin", "responsableArea", "consultor", "cajaMenor", "tesoreria", "Auditoría"],
   },
   {
     title: "Aprobaciones",
     icon: CheckSquare,
     href: "/aprobaciones",
-    roles: ["Rector", "Consultor"],
+    roles: ["Rector", "consultor"],
   },
   {
-    title: "Caja Menor",
+    title: "caja Menor",
     icon: Wallet,
     href: "/caja-menor",
-    roles: ["Caja Menor", "admin"],
+    roles: ["cajaMenor", "admin"],
   },
   {
-    title: "Tesorería",
+    title: "tesoreria",
     icon: CreditCard,
     href: "/tesoreria",
-    roles: ["Tesorería", "Caja Menor"],
+    roles: ["tesoreria", "cajaMenor"],
   },
   {
     title: "Calificaciones",
     icon: Star,
     href: "/calificaciones",
-    roles: ["Consultor"],
-  },
-  {
-    title: "Calificar Consultor",
-    icon: Star,
-    href: "/calificar-consultor",
-    roles: ["responsableArea"],
+    roles: ["consultor", "responsableArea", "tesoreria", "cajaMenor", "admin"],
   },
   {
     title: "Compras",
     icon: ShoppingCart,
     href: "/compras",
-    roles: ["admin", "responsableArea", "Auditoría", "Consultor"],
+    roles: ["admin", "responsableArea", "Auditoría", "consultor", "cajaMenor", "tesoreria"],
   },
   {
     title: "Inventario",
     icon: Package,
     href: "/inventario",
-    roles: ["admin", "responsableArea", "Auditoría", "Consultor"],
+    roles: ["admin", "responsableArea", "Auditoría", "consultor", "cajaMenor", "tesoreria"],
   },
-  {
-    title: "Inventario de Activos",
-    icon: Box,
-    href: "/activos",
-    roles: ["admin", "responsableArea", "Auditoría"],
-  },
-  {
+  /*  {
+     title: "Inventario de Activos",
+     icon: Box,
+     href: "/activos",
+     roles: ["admin", "responsableArea", "Auditoría", "cajaMenor", "tesoreria", "consultor",],
+   }, */
+  /* {
     title: "Traslados de Activos",
     icon: ArrowRightLeft,
     href: "/traslados-activos",
     roles: ["admin", "responsableArea"],
-  },
+  }, */
   {
     title: "Reportes",
     icon: FileText,
     href: "/reportes",
-    roles: ["admin", "Auditoría", "responsableArea", "Consultor"],
+    roles: ["admin", "Auditoría", "consultor"],
   },
-  {
-    title: "Supervisión del Consultor",
+  /* {
+    title: "Supervisión del consultor",
     icon: Activity,
     href: "/supervision-consultor",
     roles: ["admin"],
-  }
+  } */
 ]
 
 const modules: ModuleRouterType[] = [
-  {
-    id: "contabilidad",
-    title: "Contabilidad",
-    icon: Calculator,
-    roles: ["admin"],
-    items: [
-      {
-        title: "Proyección",
-        href: "/proyeccion",
-      },
-      {
-        title: "Proyectos de Inversión",
-        href: "/proyectos-inversion",
-      },
-    ]
-  },
+  /*  {
+     id: "contabilidad",
+     title: "Contabilidad",
+     icon: Calculator,
+     roles: ["admin"],
+     items: [
+       {
+         title: "Proyección",
+         href: "/proyeccion",
+       },
+       {
+         title: "Proyectos de Inversión",
+         href: "/proyectos-inversion",
+       },
+     ]
+   }, */
 ]
 
 export {

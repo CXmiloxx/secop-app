@@ -6,57 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { getCurrentUser, type User } from "@/lib/auth"
-import { initializeSolicitudesTrasladoData, initializeHistorialMovimientosData } from "@/lib/data"
 import SolicitudTraslado from "@/components/traslados/solicitud-traslado"
 import AprobacionTraslados from "@/components/traslados/aprobacion-traslados"
 import HistorialTraslados from "@/components/traslados/historial-traslados"
+import useAuth from "@/hooks/useAuth"
 
 export default function TrasladosActivosPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const currentUser = getCurrentUser()
 
-      if (!currentUser) {
-        setTimeout(() => {
-          const retryUser = getCurrentUser()
-          if (!retryUser) {
-            router.push("/")
-          } else {
-            setUser(retryUser)
-            initializeSolicitudesTrasladoData()
-            initializeHistorialMovimientosData()
-            setIsLoading(false)
-          }
-        }, 100)
-        return
-      }
 
-      setUser(currentUser)
-      initializeSolicitudesTrasladoData()
-      initializeHistorialMovimientosData()
-      setIsLoading(false)
-    }
-
-    checkAuth()
-  }, [router])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Cargando...</p>
-      </div>
-    )
-  }
-
-  if (!user) return null
-
-  const canRequestTraslado = ["Administrador", "responsable_area"].includes(user.role)
-  const canApproveTraslado = user.role === "Administrador"
+  const canRequestTraslado = ["admin", "responsableArea"].includes(user?.rol?.nombre || "")
+  const canApproveTraslado = user?.rol?.nombre === "admin"
 
   return (
     <div className="min-h-screen bg-background">

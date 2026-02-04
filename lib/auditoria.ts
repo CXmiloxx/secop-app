@@ -2,7 +2,7 @@
 
 export interface SoporteDocumento {
   id: string
-  requisicionId: string
+  requisicionId: number
   nombre: string
   tipo: string
   archivo: string // Base64
@@ -25,7 +25,7 @@ export type TipoEvento =
 
 export interface EventoAuditoria {
   id: string
-  requisicionId: string
+  requisicionId: number
   timestamp: string
   usuario: string
   tipoEvento: TipoEvento
@@ -53,7 +53,7 @@ export function registrarEvento(evento: Omit<EventoAuditoria, "id" | "timestamp"
 }
 
 // Obtener todos los eventos de una requisición
-export function obtenerEventos(requisicionId: string): EventoAuditoria[] {
+export function obtenerEventos(requisicionId: number): EventoAuditoria[] {
   if (typeof window === "undefined") return []
   const stored = localStorage.getItem(`auditoria-${requisicionId}`)
   return stored ? JSON.parse(stored) : []
@@ -61,7 +61,7 @@ export function obtenerEventos(requisicionId: string): EventoAuditoria[] {
 
 // Agregar un soporte/factura con registro de auditoría
 export function agregarSoporte(
-  requisicionId: string,
+  requisicionId: number,
   archivo: File,
   archivoBase64: string,
   subidoPor: string,
@@ -105,7 +105,7 @@ export function agregarSoporte(
 }
 
 // Obtener todos los soportes de una requisición
-export function obtenerSoportes(requisicionId: string): SoporteDocumento[] {
+export function obtenerSoportes(requisicionId: number): SoporteDocumento[] {
   if (typeof window === "undefined") return []
   const stored = localStorage.getItem(`soportes-${requisicionId}`)
   return stored ? JSON.parse(stored) : []
@@ -113,7 +113,7 @@ export function obtenerSoportes(requisicionId: string): SoporteDocumento[] {
 
 // Cambiar estado de requisición con registro de auditoría
 export function cambiarEstadoRequisicion(
-  requisicionId: string,
+  requisicionId: number,
   estadoAnterior: string,
   estadoNuevo: string,
   usuario: string,

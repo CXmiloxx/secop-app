@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -19,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus, Pencil, Trash2, MessageSquare, ArrowLeft } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import useAuth from '@/hooks/useAuth'
 
 interface Proyeccion {
   id: string
@@ -172,7 +172,7 @@ export default function ProyeccionPage() {
 
   const { totalPresupuesto, totalProyectado } = calcularTotales()
 
-  if (user?.role !== "Administrador") {
+  if (user?.rol.nombre !== "admin") {
     return <div className="p-6">No tienes permisos para acceder a esta página.</div>
   }
 

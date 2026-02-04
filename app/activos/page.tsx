@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RegistroActivos from '@/components/activos/registro-activos';
 import ConsultaActivos from '@/components/activos/consulta-activos';
 import { useAuthStore } from '@/store/auth.store';
+import { UserType } from '@/types/user.types';
 
 export default function ActivosPage() {
   const {user} = useAuthStore()
-  const userAdmin = user?.rol?.nombre
+  const userAdmin = user?.rol?.nombre === 'consultor'
   return (
     <>
       <PageHeader
@@ -26,7 +27,7 @@ export default function ActivosPage() {
           </TabsList>
 
           <TabsContent value="consulta">
-            <ConsultaActivos user={user} />
+            <ConsultaActivos user={user as UserType} />
           </TabsContent>
 
           {userAdmin && (

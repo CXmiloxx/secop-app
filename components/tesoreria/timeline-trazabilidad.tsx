@@ -17,7 +17,7 @@ import {
 import { obtenerEventos, formatearFecha, type EventoAuditoria } from "@/lib/auditoria"
 
 interface TimelineTrazabilidadProps {
-  requisicionId: string
+  requisicionId: number
 }
 
 export default function TimelineTrazabilidad({ requisicionId }: TimelineTrazabilidadProps) {

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser } from "@/lib/auth"
-import type { User } from "@/lib/auth"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,27 +14,12 @@ import { Activity, CheckCircle, XCircle, Edit, Star, FileText, Search, ArrowLeft
 
 export default function SupervisionConsultorPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
   const [actividades, setActividades] = useState<ActividadConsultor[]>([])
   const [filteredActividades, setFilteredActividades] = useState<ActividadConsultor[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos")
 
-  useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      router.push("/")
-      return
-    }
 
-    if (currentUser.role !== "Administrador") {
-      router.push("/dashboard")
-      return
-    }
-
-    setUser(currentUser)
-    loadActividades()
-  }, [router])
 
   const loadActividades = () => {
     const acts = obtenerActividadesConsultor()
@@ -93,10 +77,6 @@ export default function SupervisionConsultorPage() {
       default:
         return "secondary"
     }
-  }
-
-  if (!user) {
-    return null
   }
 
   const totalActividades = actividades.length

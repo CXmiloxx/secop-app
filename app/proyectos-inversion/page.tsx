@@ -5,7 +5,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
-import { getCurrentUser } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +22,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Pencil, Trash2, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useAuthStore } from '@/store/auth.store'
+
 
 interface ProyectoInversion {
   id: string
@@ -44,7 +45,7 @@ interface ProyectoInversion {
 
 export default function ProyectosInversionPage() {
   const router = useRouter()
-  const [user, setUser] = useState(getCurrentUser())
+  const { user } = useAuth()
   const [proyectos, setProyectos] = useState<ProyectoInversion[]>([])
   const [añoFiltro, setAñoFiltro] = useState<number>(2025)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -79,7 +80,7 @@ export default function ProyectosInversionPage() {
   ]
 
   useEffect(() => {
-    if (!user || user.role !== "Administrador") {
+    if (!user || user.rol.nombre !== "admin") {
       router.push("/")
       return
     }
@@ -141,20 +142,20 @@ export default function ProyectosInversionPage() {
       const updatedProyectos = proyectos.map((p) =>
         p.id === editingProyecto.id
           ? {
-              ...editingProyecto,
-              seccion: formData.seccion,
-              descripcion: formData.descripcion,
-              cantidad: Number.parseFloat(formData.cantidad) || 0,
-              valorUnitario: Number.parseFloat(formData.valorUnitario) || 0,
-              valorTotal,
-              año: Number.parseInt(formData.año) || 2025,
-              presupuesto2025: Number.parseFloat(formData.presupuesto2025) || 0,
-              ejecutadoMes: Number.parseFloat(formData.ejecutadoMes) || 0,
-              mesEjecutado: formData.mesEjecutado,
-              partidasNoPresupuestadas: Number.parseFloat(formData.partidasNoPresupuestadas) || 0,
-              porEjecutar2025: porEjecutar,
-              justificacion: formData.justificacion,
-            }
+            ...editingProyecto,
+            seccion: formData.seccion,
+            descripcion: formData.descripcion,
+            cantidad: Number.parseFloat(formData.cantidad) || 0,
+            valorUnitario: Number.parseFloat(formData.valorUnitario) || 0,
+            valorTotal,
+            año: Number.parseInt(formData.año) || 2025,
+            presupuesto2025: Number.parseFloat(formData.presupuesto2025) || 0,
+            ejecutadoMes: Number.parseFloat(formData.ejecutadoMes) || 0,
+            mesEjecutado: formData.mesEjecutado,
+            partidasNoPresupuestadas: Number.parseFloat(formData.partidasNoPresupuestadas) || 0,
+            porEjecutar2025: porEjecutar,
+            justificacion: formData.justificacion,
+          }
           : p,
       )
       setProyectos(updatedProyectos)
@@ -247,7 +248,7 @@ export default function ProyectosInversionPage() {
   const añosDisponibles = Array.from(new Set(proyectos.map((p) => p.año).filter(Boolean))).sort((a, b) => b - a)
   if (añosDisponibles.length === 0) añosDisponibles.push(2025)
 
-  if (!user || user.role !== "Administrador") {
+  if (!user || user.rol.nombre !== "admin") {
     return null
   }
 

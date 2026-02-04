@@ -15,18 +15,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
 import { getActivos, guardarActivo, eliminarActivo, areas, categoriasActivos, type Activo } from "@/lib/data"
-import type { User } from "@/lib/auth"
 import { Search, Edit, Trash2, Eye, Package } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { UserType } from "@/types/user.types"
 
 interface ConsultaActivosProps {
-  user: User
+  user: UserType
 }
 
 export default function ConsultaActivos({ user }: ConsultaActivosProps) {
-  const { toast } = useToast()
   const [activos, setActivos] = useState<Activo[]>([])
   const [filteredActivos, setFilteredActivos] = useState<Activo[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -98,20 +96,12 @@ export default function ConsultaActivos({ user }: ConsultaActivosProps) {
     guardarActivo(editFormData)
     loadActivos()
     setIsEditDialogOpen(false)
-    toast({
-      title: "Activo actualizado",
-      description: "El activo ha sido actualizado exitosamente",
-    })
   }
 
   const handleDeleteActivo = (activoId: string) => {
     if (confirm("¿Estás seguro de que deseas eliminar este activo?")) {
       eliminarActivo(activoId)
       loadActivos()
-      toast({
-        title: "Activo eliminado",
-        description: "El activo ha sido eliminado del inventario",
-      })
     }
   }
 
@@ -130,7 +120,7 @@ export default function ConsultaActivos({ user }: ConsultaActivosProps) {
     }
   }
 
-  const canEdit = user.role === "Administrador"
+  const canEdit = user.rol.nombre === "admin"
 
   return (
     <div className="space-y-6">

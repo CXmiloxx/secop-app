@@ -9,17 +9,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
 import { areas, categoriasActivos, guardarActivo, type Activo } from "@/lib/data"
-import type { User } from "@/lib/auth"
 import { Plus } from "lucide-react"
+import { UserType } from "@/types/user.types"
 
 interface RegistroActivosProps {
-  user: User
+  user: UserType
 }
 
 export default function RegistroActivos({ user }: RegistroActivosProps) {
-  const { toast } = useToast()
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
@@ -43,11 +41,6 @@ export default function RegistroActivos({ user }: RegistroActivosProps) {
       !formData.areaAsignada ||
       !formData.ubicacionActual
     ) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
-        variant: "destructive",
-      })
       return
     }
 
@@ -64,7 +57,7 @@ export default function RegistroActivos({ user }: RegistroActivosProps) {
       categoria: formData.categoria,
       estado: formData.estado,
       areaAsignada: formData.areaAsignada,
-      responsableArea: user.username,
+      responsableArea: user.nombre,
       fechaRegistro: new Date().toISOString(),
       ubicacionActual: formData.ubicacionActual,
       valorAdquisicion: formData.valorAdquisicion ? Number.parseFloat(formData.valorAdquisicion) : undefined,
@@ -75,10 +68,6 @@ export default function RegistroActivos({ user }: RegistroActivosProps) {
 
     guardarActivo(nuevoActivo)
 
-    toast({
-      title: "Activo registrado",
-      description: `El activo ${codigo} ha sido registrado exitosamente`,
-    })
 
     // Limpiar formulario
     setFormData({
