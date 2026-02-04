@@ -7,14 +7,14 @@ import { EstadoActivo, InventarioArea, InventarioGeneral } from "@/types"
 import useAreas from "@/hooks/useAreas"
 import useConceptos from "@/hooks/useConceptos"
 import DetalleInventario from "./DetalleInventario"
-import { EditStockMinimoSchema } from "@/schema/inventario.schema"
+import { EditProducto } from "@/schema/inventario.schema"
 
 
 interface ConsultaInventarioProps {
   user: UserType | null
   inventarioGeneral?: InventarioGeneral | null
   inventarioArea?: InventarioArea | null
-  editStockMinimo: (data: EditStockMinimoSchema) => Promise<boolean | undefined>
+  editProducto: (data: EditProducto) => Promise<boolean | undefined>
   fetchInventarioGeneral?: (areaId?: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
   fetchInventarioArea?: (areaId: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
 }
@@ -23,7 +23,7 @@ export default function ConsultaInventario({
   user,
   inventarioGeneral,
   inventarioArea,
-  editStockMinimo,
+  editProducto,
   fetchInventarioGeneral,
   fetchInventarioArea
 }: ConsultaInventarioProps) {
@@ -59,7 +59,7 @@ export default function ConsultaInventario({
             tipoInventario="area"
             conceptosTotales={conceptosTotales}
             canEdit={canEdit}
-            editStockMinimo={editStockMinimo}
+            editProducto={editProducto}
             fetchInventarioArea={fetchInventarioArea}
             areaId={user?.area?.id}
           />

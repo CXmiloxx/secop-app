@@ -41,6 +41,7 @@ export interface ProductoInventarioGeneral {
   nombre: string;
   tipo: "GASTO" | "ACTIVO";
   cantidad: number;
+  ubicacion: string;
   areas?: string[] | null;
   area?: string;
 }
@@ -55,12 +56,14 @@ export interface ProductoInventarioArea {
   areaId: number;
   estado?: EstadoActivo;
   area: string;
+  ubicacion: string;
 }
 
-export interface EditStockMinimo {
+export interface EditProductoSeleccionado {
   id: number;
   areaId: number;
   stockMinimo: number;
+  ubicacion: string;
   nombre: string;
 }
 

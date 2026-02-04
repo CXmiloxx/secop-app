@@ -21,14 +21,14 @@ export default function InventarioPage() {
     inventarioArea,
     historialMovimientos,
     fetchHistorialMovimientos,
-    editStockMinimo,
+    editProducto,
   } = useInventario()
 
 
   const canManageMovements = user?.rol?.nombre === "consultor"
 
   const loadData = useCallback(async () => {
-    if ( !user?.area?.id) return
+    if (!user?.area?.id) return
     if (user?.rol?.nombre === "consultor") {
       await requisicionesPendientesInventario()
       await fetchHistorialMovimientos()
@@ -59,7 +59,7 @@ export default function InventarioPage() {
               user={user}
               inventarioGeneral={inventarioGeneral}
               inventarioArea={inventarioArea}
-              editStockMinimo={editStockMinimo}
+              editProducto={editProducto}
               fetchInventarioGeneral={fetchInventarioGeneral}
               fetchInventarioArea={fetchInventarioArea}
             />

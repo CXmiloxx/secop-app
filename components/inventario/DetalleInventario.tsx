@@ -1,4 +1,4 @@
-import { EditStockMinimo, EstadoActivo, InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
+import { EditProductoSeleccionado, EstadoActivo, InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Label } from "../ui/label"
 import { Badge, Eye, Pencil, Search, X } from "lucide-react"
@@ -13,7 +13,7 @@ import { Button } from "../ui/button"
 import clsx from "clsx"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 import { useForm } from "react-hook-form"
-import { editStockMinimoSchema, EditStockMinimoSchema } from "@/schema/inventario.schema"
+import { EditProducto, editProductoSchema } from "@/schema/inventario.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 interface DetalleInventarioProps {
@@ -23,7 +23,7 @@ interface DetalleInventarioProps {
   conceptosTotales: ConceptosType[]
   canEdit: boolean
   areaId?: number
-  editStockMinimo?: (data: EditStockMinimoSchema) => Promise<boolean | undefined>
+  editProducto?: (data: EditProducto) => Promise<boolean | undefined>
   fetchInventarioGeneral?: (areaId?: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
   fetchInventarioArea?: (areaId: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
 }
@@ -35,7 +35,7 @@ export default function DetalleInventario({
   conceptosTotales,
   canEdit,
   areaId,
-  editStockMinimo,
+  editProducto,
   fetchInventarioGeneral,
   fetchInventarioArea
 }: DetalleInventarioProps) {
@@ -45,7 +45,7 @@ export default function DetalleInventario({
     areaId: "todas",
     estado: "todas",
   })
-  const [selectedProduct, setSelectedProduct] = useState<EditStockMinimo | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<EditProductoSeleccionado | null>(null)
   const STOCK_BAJO_UMBRAL = 3
   const [openViewAreas, setOpenViewAreas] = useState(false)
   const [selectedAreas, setSelectedAreas] = useState<string[] | null>(null)
@@ -86,7 +86,7 @@ export default function DetalleInventario({
     useMemo(() => inventario?.productos.filter((p) => p.cantidad === 0), [inventario]);
 
 
-  const handleOpenEditProduct = (product: EditStockMinimo) => {
+  const handleOpenEditProduct = (product: EditProductoSeleccionado) => {
     setSelectedProduct(product)
   }
 
@@ -113,6 +113,7 @@ export default function DetalleInventario({
             <TableHead className="min-w-[120px]">Producto</TableHead>
             <TableHead className="min-w-[120px]">Categoría</TableHead>
             <TableHead className="min-w-[60px] text-center">Cantidad</TableHead>
+            <TableHead className="min-w-[100px] text-center">Ubicación</TableHead>
             <TableHead className="min-w-[100px] text-center">{tipoInventario === "area" ? "Área" : "Áreas"}</TableHead>
             <TableHead className="min-w-[100px] text-center">Tipo</TableHead>
             {tipoInventario === "area" && <TableHead className="min-w-[100px] text-center">Stock Mínimo</TableHead>}
@@ -151,6 +152,9 @@ export default function DetalleInventario({
                 </span>
               </TableCell>
               <TableCell className="text-center">
+                {product.ubicacion}
+              </TableCell>
+              <TableCell className="text-center">
                 {tipoInventario === "general" && filters.areaId === "todas" ? (
                   <Button
                     size="icon"
@@ -183,7 +187,7 @@ export default function DetalleInventario({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleOpenEditProduct(product as unknown as EditStockMinimo)}
+                    onClick={() => handleOpenEditProduct(product as unknown as EditProductoSeleccionado)}
                     className="hover:bg-primary/10"
                   >
                     <Pencil className="h-4 w-4 text-primary" />
@@ -224,12 +228,13 @@ export default function DetalleInventario({
     register,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<EditStockMinimoSchema>({
-    resolver: zodResolver(editStockMinimoSchema),
+  } = useForm<EditProducto>({
+    resolver: zodResolver(editProductoSchema),
     defaultValues: {
       areaId: 0,
       productoId: selectedProduct?.id ?? 0,
       stockMinimo: 0,
+      ubicacion: "",
     },
   })
 
@@ -243,9 +248,9 @@ export default function DetalleInventario({
 
 
 
-  const onSubmit = async (data: EditStockMinimoSchema) => {
-    if (editStockMinimo) {
-      const res = await editStockMinimo(data)
+  const onSubmit = async (data: EditProducto) => {
+    if (editProducto) {
+      const res = await editProducto(data)
       if (res) {
         handleCloseEditProduct()
         reset()
@@ -454,6 +459,16 @@ export default function DetalleInventario({
               <div className="space-y-2">
                 <Label>Producto</Label>
                 <Input value={selectedProduct?.nombre ?? ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Ubicación</Label>
+                <Input
+                  type="text"
+                  {...register('ubicacion')}
+                  placeholder="Ej: Sala de Informática"
+                  autoComplete="off"
+                />
+                {errors.ubicacion && <p className="text-red-500 text-sm">{errors.ubicacion.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Stock Actual (Solo lectura)</Label>

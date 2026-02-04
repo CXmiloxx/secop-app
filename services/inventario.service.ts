@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { EditStockMinimoSchema, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
+import { EditProducto, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
 import { EstadoActivo, InventarioArea, InventarioGeneral, MovimientoInventario, RequisicionPendienteInventario } from "@/types";
 
 export const InventarioService = {
@@ -7,7 +7,7 @@ export const InventarioService = {
 
   getParams(areaId?: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) {
     const params: Record<string, any> = {};
-  
+
     if (areaId) params.areaId = areaId;
     if (conceptoId) params.conceptoId = conceptoId;
     if (nombreProducto) params.nombreProducto = nombreProducto;
@@ -32,14 +32,14 @@ export const InventarioService = {
     const params = this.getParams(areaId, conceptoId, nombreProducto, estadoActivo);
     return await api.get<InventarioArea>(`/inventario/area/${areaId}`, { params })
   },
-  
+
   async historialMovimientos() {
     return await api.get<MovimientoInventario[]>(`/inventario/historial-movimientos`)
   },
 
 
-  async editStockMinimo(data: EditStockMinimoSchema) {
-    return await api.patch(`/inventario/stock-minimo`, data)
+  async editProducto(data: EditProducto) {
+    return await api.patch(`/inventario/producto`, data)
   }
 
 }

@@ -1,4 +1,4 @@
-import { EditStockMinimoSchema, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
+import { EditProducto, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
 import { InventarioService } from "@/services/inventario.service";
 import { usePeriodoStore } from "@/store/periodo.store";
 import { EstadoActivo, InventarioArea, InventarioGeneral, MovimientoInventario, RequisicionPendienteInventario, SolicitudInventario } from "@/types";
@@ -158,18 +158,19 @@ export default function useInventario() {
   }, [setHistorialMovimientos]);
 
 
-  const editStockMinimo = useCallback(async (data: EditStockMinimoSchema) => {
+  const editProducto = useCallback(async (data: EditProducto) => {
     setLoadingInventario(true);
     setErrorInventario(null);
     try {
-      const { status } = await InventarioService.editStockMinimo(data);
+      const { status } = await InventarioService.editProducto(data);
       if (status === 200) {
-        toast.success("Stock mínimo editado con exito");
+        toast.success("Producto editado con exito");
         await fetchInventarioArea(data.areaId);
+        await fetchInventarioGeneral();
         return true;
       }
     } catch (err) {
-      let errorMessage = "Error desconocido al editar el stock mínimo";
+      let errorMessage = "Error desconocido al editar el producto";
       if (err instanceof ApiError) {
         errorMessage = err.message;
       } else if (err instanceof Error) {
@@ -197,6 +198,6 @@ export default function useInventario() {
     fetchInventarioArea,
     historialMovimientos,
     fetchHistorialMovimientos,
-    editStockMinimo,
+    editProducto,
   };
 }
