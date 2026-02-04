@@ -15,13 +15,19 @@ export default function SalidaProductosPage() {
   const { productosDisponiblesArea,
     fetchProductosDisponiblesArea,
     solicitarSalida,
+    solicitarTraslado,
     fetchSolicitudesPendientes,
     fetchHistorialSolicitudes,
     aprobarSolicitud,
     solicitudesPendientes,
     historialSolicitudes,
     rechazarSolicitud,
-
+    fetchActivoSeleccionado,
+    activoSeleccionado,
+    fetchSolicitudesPendientesTraslado,
+    solicitudesPendientesTraslado,
+    aprobarSolicitudTraslado,
+    rechazarSolicitudTraslado,
   } = useSalidas()
   const canAprobar = user?.rol?.nombre === "consultor"
 
@@ -54,15 +60,22 @@ export default function SalidaProductosPage() {
             productosDisponiblesArea={productosDisponiblesArea}
             user={user as UserType}
             solicitarSalida={solicitarSalida}
+            solicitarTraslado={solicitarTraslado}
             historialSolicitudes={historialSolicitudes}
+            fetchActivoSeleccionado={fetchActivoSeleccionado}
+            activoSeleccionado={activoSeleccionado}
           />
         </TabsContent>
         {canAprobar && <TabsContent value="aprobar">
           <SolicitudesPendientes
             solicitudesPendientes={solicitudesPendientes}
             fetchSolicitudesPendientes={fetchSolicitudesPendientes}
+            fetchSolicitudesPendientesTraslado={fetchSolicitudesPendientesTraslado}
+            solicitudesPendientesTraslado={solicitudesPendientesTraslado}
             aprobarSolicitud={aprobarSolicitud}
             rechazarSolicitud={rechazarSolicitud}
+            aprobarSolicitudTraslado={aprobarSolicitudTraslado}
+            rechazarSolicitudTraslado={rechazarSolicitudTraslado}
             user={user as UserType}
           />
         </TabsContent>}

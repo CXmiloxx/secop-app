@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,69 +14,122 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
-import { getSolicitudesTraslado, aprobarTraslado, rechazarTraslado, type SolicitudTraslado } from "@/lib/data"
-import type { User } from "@/lib/auth"
 import { CheckCircle, XCircle, Clock } from "lucide-react"
+import { ActivoPendienteTrasladoType } from "@/types"
+import { aprobarTrasladoSchema, AprobarTrasladoSchema, rechazarTrasladoSchema, RechazarTrasladoSchema } from "@/schema/traslado.schema"
+import { rechazarSolicitudSchema, RechazarSolicitudSchema } from "@/schema/salida-producto.schema"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { UserType } from "@/types/user.types"
 
 interface AprobacionTrasladosProps {
-  user: User
+  solicitudesPendientesTraslado: ActivoPendienteTrasladoType[]
+  fetchSolicitudesPendientesTraslado: () => Promise<true | undefined>
+  aprobarSolicitudTraslado: (solicitud: AprobarTrasladoSchema) => Promise<boolean | undefined>
+  rechazarSolicitudTraslado: (solicitud: RechazarTrasladoSchema) => Promise<boolean | undefined>
+  user: UserType | null
 }
 
-export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) {
-  const { toast } = useToast()
-  const [solicitudes, setSolicitudes] = useState<SolicitudTraslado[]>([])
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<SolicitudTraslado[]>([])
-  const [selectedSolicitud, setSelectedSolicitud] = useState<SolicitudTraslado | null>(null)
+export default function AprobacionTraslados({
+  solicitudesPendientesTraslado,
+  fetchSolicitudesPendientesTraslado,
+  aprobarSolicitudTraslado,
+  rechazarSolicitudTraslado,
+  user,
+}: AprobacionTrasladosProps) {
+  const [selectedSolicitud, setSelectedSolicitud] = useState<ActivoPendienteTrasladoType | null>(null)
   const [isAprobarDialogOpen, setIsAprobarDialogOpen] = useState(false)
   const [isRechazarDialogOpen, setIsRechazarDialogOpen] = useState(false)
-  const [motivoRechazo, setMotivoRechazo] = useState("")
+
+  const getSolicitudes = useCallback(async () => {
+    await fetchSolicitudesPendientesTraslado()
+  }, [fetchSolicitudesPendientesTraslado])
 
   useEffect(() => {
-    loadSolicitudes()
+    getSolicitudes()
   }, [])
 
-  const loadSolicitudes = () => {
-    const data = getSolicitudesTraslado()
-    setSolicitudes(data)
-    setSolicitudesPendientes(data.filter((s) => s.estado === "Pendiente"))
+
+
+  const {
+    setValue,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<AprobarTrasladoSchema>({
+    resolver: zodResolver(aprobarTrasladoSchema),
+    defaultValues: {
+      idTraslado: 0,
+      aprobadorId: user?.id ?? "",
+    },
+  })
+
+  const {
+    setValue: setValueRechazar,
+    handleSubmit: handleSubmitRechazar,
+    register: registerRechazar,
+    formState: { errors: errorsRechazar, isSubmitting: isSubmittingRechazar },
+    reset: resetRechazar,
+  } = useForm<RechazarTrasladoSchema>({
+    resolver: zodResolver(rechazarTrasladoSchema),
+    defaultValues: {
+      idTraslado: 0,
+      rechazadorId: user?.id ?? "",
+      motivoRechazo: "",
+    },
+  })
+
+  const handleOpenAprobarDialog = (solicitud: ActivoPendienteTrasladoType) => {
+    setSelectedSolicitud(solicitud)
+    setIsAprobarDialogOpen(true)
+    setValue("idTraslado", Number(solicitud.id))
+    setValue("aprobadorId", user?.id ?? "")
   }
 
-  const handleAprobar = () => {
-    if (!selectedSolicitud) return
+  const handleOpenRechazarDialog = (solicitud: ActivoPendienteTrasladoType) => {
+    setSelectedSolicitud(solicitud)
+    setIsRechazarDialogOpen(true)
+    setValueRechazar("idTraslado", Number(solicitud.id))
+    setValueRechazar("rechazadorId", user?.id ?? "")
+  }
 
-    aprobarTraslado(selectedSolicitud.id, user.username)
-    loadSolicitudes()
+  const handleCloseAprobarDialog = () => {
     setIsAprobarDialogOpen(false)
-    setSelectedSolicitud(null)
-
-    toast({
-      title: "Traslado aprobado",
-      description: `El activo ha sido trasladado a ${selectedSolicitud.areaDestino}`,
-    })
+    reset()
   }
 
-  const handleRechazar = () => {
-    if (!selectedSolicitud || !motivoRechazo) {
-      toast({
-        title: "Error",
-        description: "Debes proporcionar un motivo de rechazo",
-        variant: "destructive",
-      })
-      return
-    }
-
-    rechazarTraslado(selectedSolicitud.id, user.username, motivoRechazo)
-    loadSolicitudes()
+  const handleCloseRechazarDialog = () => {
     setIsRechazarDialogOpen(false)
-    setSelectedSolicitud(null)
-    setMotivoRechazo("")
-
-    toast({
-      title: "Solicitud rechazada",
-      description: "La solicitud de traslado ha sido rechazada",
-    })
+    resetRechazar()
   }
+  const handleAprobar = async (data: AprobarTrasladoSchema) => {
+    const res = await aprobarSolicitudTraslado(data)
+    if (res) {
+      reset()
+      handleCloseAprobarDialog()
+    }
+  }
+
+  const handleRechazar = async (data: RechazarTrasladoSchema) => {
+    const res = await rechazarSolicitudTraslado(data)
+    if (res) {
+      resetRechazar()
+      handleCloseRechazarDialog()
+    }
+  }
+
+  useEffect(() => {
+    setValue("aprobadorId", user?.id ?? "")
+    setValue("idTraslado", selectedSolicitud?.id ?? 0)
+  }, [selectedSolicitud, user, setValue])
+
+  useEffect(() => {
+    setValueRechazar("rechazadorId", user?.id ?? "")
+    setValueRechazar("idTraslado", selectedSolicitud?.id ?? 0)
+  }, [selectedSolicitud, user, setValueRechazar])
+
+  console.log(errors)
+  console.log("errorsRechazar", errorsRechazar)
 
   return (
     <div className="space-y-6">
@@ -90,18 +143,17 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {solicitudesPendientes.length === 0 ? (
+            {solicitudesPendientesTraslado?.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">No hay solicitudes pendientes de aprobación</div>
             ) : (
-              solicitudesPendientes.map((solicitud) => (
+              solicitudesPendientesTraslado?.map((solicitud) => (
                 <div key={solicitud.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{solicitud.activoNombre}</h3>
-                        <Badge variant="outline">{solicitud.numeroSolicitud}</Badge>
+                        <h3 className="font-medium">{solicitud.producto}</h3>
                       </div>
-                      <p className="text-sm text-muted-foreground font-mono">{solicitud.activoCodigo}</p>
+                      <p className="text-sm text-muted-foreground font-mono">{solicitud.cantidad} unidades</p>
                     </div>
                     <Badge>{solicitud.estado}</Badge>
                   </div>
@@ -133,10 +185,7 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
                   <div className="flex gap-2 pt-2">
                     <Button
                       size="sm"
-                      onClick={() => {
-                        setSelectedSolicitud(solicitud)
-                        setIsAprobarDialogOpen(true)
-                      }}
+                      onClick={() => handleOpenAprobarDialog(solicitud)}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Aprobar
@@ -144,10 +193,7 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => {
-                        setSelectedSolicitud(solicitud)
-                        setIsRechazarDialogOpen(true)
-                      }}
+                      onClick={() => handleOpenRechazarDialog(solicitud)}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
                       Rechazar
@@ -161,18 +207,19 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
       </Card>
 
       {/* Dialog Aprobar */}
-      <Dialog open={isAprobarDialogOpen} onOpenChange={setIsAprobarDialogOpen}>
+      <Dialog open={isAprobarDialogOpen} onOpenChange={handleCloseAprobarDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Aprobar Traslado</DialogTitle>
             <DialogDescription>¿Estás seguro de que deseas aprobar este traslado?</DialogDescription>
           </DialogHeader>
           {selectedSolicitud && (
-            <div className="space-y-3">
+
+            <form onSubmit={handleSubmit(handleAprobar)} className="space-y-3">
               <div>
-                <Label className="text-muted-foreground">Activo</Label>
+                <Label className="text-muted-foreground">Producto</Label>
                 <p className="font-medium">
-                  {selectedSolicitud.activoCodigo} - {selectedSolicitud.activoNombre}
+                  {selectedSolicitud.producto} - {selectedSolicitud.cantidad}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -187,34 +234,37 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
               </div>
               <div className="bg-muted p-3 rounded-md">
                 <p className="text-sm">
-                  Al aprobar, el activo será trasladado automáticamente al área destino y se registrará en el historial
+                  Al aprobar, el producto será trasladado automáticamente al área destino y se registrará en el historial
                   de movimientos.
                 </p>
               </div>
-            </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleCloseAprobarDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>{
+
+                  isSubmitting ? "Aprobar Traslado..." : "Aprobar Traslado"
+                }</Button>
+              </DialogFooter>
+            </form>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAprobarDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAprobar}>Aprobar Traslado</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog Rechazar */}
-      <Dialog open={isRechazarDialogOpen} onOpenChange={setIsRechazarDialogOpen}>
+      <Dialog open={isRechazarDialogOpen} onOpenChange={handleCloseRechazarDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rechazar Solicitud</DialogTitle>
             <DialogDescription>Proporciona un motivo para rechazar esta solicitud de traslado</DialogDescription>
           </DialogHeader>
           {selectedSolicitud && (
-            <div className="space-y-4">
+            <form onSubmit={handleSubmitRechazar(handleRechazar)} className="space-y-4">
               <div>
                 <Label className="text-muted-foreground">Solicitud</Label>
                 <p className="font-medium">
-                  {selectedSolicitud.numeroSolicitud} - {selectedSolicitud.activoNombre}
+                  {selectedSolicitud.producto} - {selectedSolicitud.cantidad}
                 </p>
               </div>
               <div className="space-y-2">
@@ -223,22 +273,25 @@ export default function AprobacionTraslados({ user }: AprobacionTrasladosProps) 
                 </Label>
                 <Textarea
                   id="motivoRechazo"
-                  value={motivoRechazo}
-                  onChange={(e) => setMotivoRechazo(e.target.value)}
+                  {...registerRechazar("motivoRechazo")}
                   placeholder="Explica por qué se rechaza esta solicitud"
                   rows={4}
                 />
+                {errorsRechazar.motivoRechazo && (
+                  <p className="text-xs text-destructive font-medium">{errorsRechazar.motivoRechazo.message}</p>
+                )}
               </div>
-            </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleCloseRechazarDialog}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" type="submit" disabled={isSubmittingRechazar}>
+                  {
+                    isSubmittingRechazar ? "Rechazar Traslado..." : "Rechazar Traslado"
+                  }</Button>
+              </DialogFooter>
+            </form>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRechazarDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleRechazar}>
-              Rechazar Solicitud
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

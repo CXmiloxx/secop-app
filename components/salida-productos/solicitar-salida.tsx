@@ -13,21 +13,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { formatDate } from "@/lib"
 import { Textarea } from "../ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import SolicitudTrasladoComponent from "../traslados/solicitud-traslado"
+import { SolicitudTrasladoSchema } from "@/schema/traslado.schema"
+import { ActivoType } from "@/types"
 
 interface SolicitarSalidaProps {
   productosDisponiblesArea: ProductosDisponiblesAreaType[]
   user: UserType
   solicitarSalida: (solicitud: SolicitarSalidaProductoSchema) => Promise<boolean | undefined>
+  solicitarTraslado: (solicitud: SolicitudTrasladoSchema) => Promise<boolean | undefined>
   historialSolicitudes: HistorialSolicitudesType[]
+  activoSeleccionado: ActivoType | null
+  fetchActivoSeleccionado: (activoId: number, areaId: number) => Promise<boolean | undefined>
 }
 
 export default function SolicitarSalida({
   productosDisponiblesArea,
   user,
   solicitarSalida,
+  solicitarTraslado,
   historialSolicitudes,
+  fetchActivoSeleccionado,
+  activoSeleccionado,
 }: SolicitarSalidaProps) {
   const [openModal, setOpenModal] = useState(false)
+  const [openModalTraslado, setOpenModalTraslado] = useState(false)
   const [selectedProducto, setSelectedProducto] = useState<ProductosDisponiblesAreaType | null>(null)
 
   const {
@@ -56,6 +66,20 @@ export default function SolicitarSalida({
   const handleOpenModal = (producto: ProductosDisponiblesAreaType) => {
     setSelectedProducto(producto)
     setOpenModal(true)
+  }
+  const handleOpenModalTraslado = (producto: ProductosDisponiblesAreaType) => {
+    setSelectedProducto(producto)
+    setOpenModalTraslado(true)
+  }
+  const handleCloseModalTraslado = () => {
+    setOpenModalTraslado(false)
+    setSelectedProducto(null)
+    reset({
+      productoId: 0,
+      cantidad: 0,
+      areaId: user.area.id,
+      solicitadoPorId: user.id,
+    })
   }
   const handleCloseModal = () => {
     setOpenModal(false)
@@ -104,6 +128,7 @@ export default function SolicitarSalida({
                     <TableRow>
                       <TableHead>Producto</TableHead>
                       <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-center">Tipo</TableHead>
                       <TableHead className="text-center">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -112,10 +137,17 @@ export default function SolicitarSalida({
                       <TableRow key={producto.id?.toString() || ""}>
                         <TableCell className="font-medium">{producto.producto.nombre || ""}</TableCell>
                         <TableCell className="text-right">{producto.cantidad}</TableCell>
+                        <TableCell className="text-center">{producto.producto.tipo === 'ACTIVO' ? 'Activo' : 'Gasto'}</TableCell>
                         <TableCell className="text-center">
                           {
                             producto.cantidad > 0 ? (
-                              <Button onClick={() => handleOpenModal(producto)}>Solicitar</Button>
+                              <>
+                                {producto.producto.tipo === 'ACTIVO' ? (
+                                  <Button onClick={() => handleOpenModalTraslado(producto)}>Solicitar Traslado</Button>
+                                ) : (
+                                  <Button onClick={() => handleOpenModal(producto)}>Solicitar Salida</Button>
+                                )}
+                              </>
                             ) : (
                               <span className="text-muted-foreground">No hay stock disponible</span>
                             )
@@ -229,6 +261,24 @@ export default function SolicitarSalida({
             </div>
           </form>
         </div>
+      </Modal>
+      <Modal
+        isOpen={openModalTraslado}
+        onClose={handleCloseModalTraslado}
+        title={
+          selectedProducto ? `Solicitud de traslado de ${selectedProducto.producto.nombre}` : "Solicitud de traslado de producto"
+        }
+        description="Ingrese la cantidad de unidades a trasladar y confirme la solicitud."
+      >
+        <SolicitudTrasladoComponent
+          areaId={user.area.id}
+          activo={activoSeleccionado}
+          productoSeleccionadoId={selectedProducto?.producto.id ?? 0}
+          fetchActivoSeleccionado={fetchActivoSeleccionado}
+          solicitadoPorId={user.id}
+          solicitarTraslado={solicitarTraslado}
+          onSuccess={handleCloseModalTraslado}
+        />
       </Modal>
     </div>
   )
