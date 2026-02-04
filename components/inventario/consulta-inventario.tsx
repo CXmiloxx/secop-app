@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserType } from "@/types/user.types"
-import { InventarioArea, InventarioGeneral } from "@/types"
+import { EstadoActivo, InventarioArea, InventarioGeneral } from "@/types"
 import useAreas from "@/hooks/useAreas"
 import useConceptos from "@/hooks/useConceptos"
 import DetalleInventario from "./DetalleInventario"
@@ -15,13 +15,17 @@ interface ConsultaInventarioProps {
   inventarioGeneral?: InventarioGeneral | null
   inventarioArea?: InventarioArea | null
   editStockMinimo: (data: EditStockMinimoSchema) => Promise<boolean | undefined>
+  fetchInventarioGeneral?: (areaId?: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
+  fetchInventarioArea?: (areaId: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
 }
 
 export default function ConsultaInventario({
   user,
   inventarioGeneral,
   inventarioArea,
-  editStockMinimo
+  editStockMinimo,
+  fetchInventarioGeneral,
+  fetchInventarioArea
 }: ConsultaInventarioProps) {
   const { areas, fetchAreas } = useAreas()
   const { conceptosTotales, fetchConceptosTotales } = useConceptos()
@@ -53,10 +57,11 @@ export default function ConsultaInventario({
           <DetalleInventario
             inventario={inventarioArea ?? null}
             tipoInventario="area"
-            areas={areas}
             conceptosTotales={conceptosTotales}
             canEdit={canEdit}
             editStockMinimo={editStockMinimo}
+            fetchInventarioArea={fetchInventarioArea}
+            areaId={user?.area?.id}
           />
         </TabsContent>
         {user?.rol?.nombre === "consultor" && (
@@ -67,6 +72,7 @@ export default function ConsultaInventario({
               areas={areas}
               conceptosTotales={conceptosTotales}
               canEdit={false}
+              fetchInventarioGeneral={fetchInventarioGeneral}
             />
           </TabsContent>
         )}

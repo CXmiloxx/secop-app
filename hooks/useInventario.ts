@@ -1,7 +1,7 @@
 import { EditStockMinimoSchema, RegisterProductoInventarioSchema } from "@/schema/inventario.schema";
 import { InventarioService } from "@/services/inventario.service";
 import { usePeriodoStore } from "@/store/periodo.store";
-import { InventarioArea, InventarioGeneral, MovimientoInventario, RequisicionPendienteInventario, SolicitudInventario } from "@/types";
+import { EstadoActivo, InventarioArea, InventarioGeneral, MovimientoInventario, RequisicionPendienteInventario, SolicitudInventario } from "@/types";
 import { ApiError } from "@/utils/api-error";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -71,12 +71,16 @@ export default function useInventario() {
     }
   }, [periodo, setRequisicionesPendientes]);
 
-  const fetchInventarioGeneral = useCallback(async () => {
+  const fetchInventarioGeneral = useCallback(async (
+    areaId?: number,
+    conceptoId?: number,
+    nombreProducto?: string,
+    estadoActivo?: EstadoActivo) => {
     setLoadingInventario(true);
     setErrorInventario(null);
     setInventarioGeneral(null);
     try {
-      const { data, status } = await InventarioService.inventarioGeneral();
+      const { data, status } = await InventarioService.inventarioGeneral(areaId, conceptoId, nombreProducto, estadoActivo);
       if (status === 200) {
         setInventarioGeneral(data ?? null);
         toast.success("Inventario general obtenido con exito");
@@ -97,12 +101,16 @@ export default function useInventario() {
     }
   }, [setInventarioGeneral]);
 
-  const fetchInventarioArea = useCallback(async (areaId: number) => {
+  const fetchInventarioArea = useCallback(async (
+    areaId: number,
+    conceptoId?: number,
+    nombreProducto?: string,
+    estadoActivo?: EstadoActivo) => {
     setLoadingInventario(true);
     setErrorInventario(null);
     setInventarioArea(null);
     try {
-      const { data, status } = await InventarioService.inventarioArea(areaId);
+      const { data, status } = await InventarioService.inventarioArea(areaId, conceptoId, nombreProducto, estadoActivo);
       if (status === 200) {
         setInventarioArea(data ?? null);
         toast.success("Inventario area obtenido con exito");
@@ -164,7 +172,7 @@ export default function useInventario() {
       let errorMessage = "Error desconocido al editar el stock mínimo";
       if (err instanceof ApiError) {
         errorMessage = err.message;
-      }else if (err instanceof Error) {
+      } else if (err instanceof Error) {
         errorMessage = err.message;
       }
       setErrorInventario(errorMessage);

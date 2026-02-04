@@ -1,17 +1,9 @@
-export type EstadoProducto = 'activo' | 'inactivo';
+export type EstadoActivo = 'ACTIVO' | 'EN_REPARACION' | 'DADO_DE_BAJA' | 'EN_MANTENIMIENTO' | 'SIN_ESTADO';
 
 export type TipoMovimiento = 'Entrada' | 'Salida';
 
-export interface Producto {
-  id: string;
-  nombre: string;
-  cantidad: number;
-  unidad: string;
-  categoria: string;
-  costo: number;
-  ubicacion: string;
-  estado: EstadoProducto;
-}
+
+
 
 export interface MovimientoInventario {
   id: string;
@@ -49,7 +41,8 @@ export interface ProductoInventarioGeneral {
   nombre: string;
   tipo: "GASTO" | "ACTIVO";
   cantidad: number;
-  areas: string[];
+  areas?: string[] | null;
+  area?: string;
 }
 
 export interface ProductoInventarioArea {
@@ -60,6 +53,8 @@ export interface ProductoInventarioArea {
   cantidad: number;
   stockMinimo: number;
   areaId: number;
+  estado?: EstadoActivo;
+  area: string;
 }
 
 export interface EditStockMinimo {

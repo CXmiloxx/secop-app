@@ -1,13 +1,13 @@
-import { EditStockMinimo, InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
+import { EditStockMinimo, EstadoActivo, InventarioArea, InventarioGeneral, ProductoInventarioArea, ProductoInventarioGeneral } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Label } from "../ui/label"
-import { Pencil, Search, X } from "lucide-react"
+import { Badge, Eye, Pencil, Search, X } from "lucide-react"
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { AreaType } from "@/types/user.types"
 import { ConceptosType } from "@/types/conceptos.types"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import clsx from "clsx"
@@ -19,73 +19,71 @@ import { zodResolver } from "@hookform/resolvers/zod"
 interface DetalleInventarioProps {
   inventario: InventarioGeneral | InventarioArea | null
   tipoInventario: "general" | "area"
-  areas: AreaType[]
+  areas?: AreaType[]
   conceptosTotales: ConceptosType[]
   canEdit: boolean
+  areaId?: number
   editStockMinimo?: (data: EditStockMinimoSchema) => Promise<boolean | undefined>
+  fetchInventarioGeneral?: (areaId?: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
+  fetchInventarioArea?: (areaId: number, conceptoId?: number, nombreProducto?: string, estadoActivo?: EstadoActivo) => Promise<boolean | undefined>
 }
 
 export default function DetalleInventario({
-  inventario, tipoInventario, areas, conceptosTotales, canEdit, editStockMinimo
+  inventario,
+  tipoInventario,
+  areas,
+  conceptosTotales,
+  canEdit,
+  areaId,
+  editStockMinimo,
+  fetchInventarioGeneral,
+  fetchInventarioArea
 }: DetalleInventarioProps) {
   const [filters, setFilters] = useState({
-    nombre: "",
-    categoria: "todas",
-    area: "todas",
-    estado: "SIN_ESTADO",
+    nombreProducto: "",
+    conceptoId: "todas",
+    areaId: "todas",
+    estado: "todas",
   })
   const [selectedProduct, setSelectedProduct] = useState<EditStockMinimo | null>(null)
   const STOCK_BAJO_UMBRAL = 3
+  const [openViewAreas, setOpenViewAreas] = useState(false)
+  const [selectedAreas, setSelectedAreas] = useState<string[] | null>(null)
 
 
-  // Filtrado avanzado y cálculos
-  const filteredProducts: (ProductoInventarioGeneral | ProductoInventarioArea)[] = useMemo(() => {
-    let products = [...(inventario?.productos ?? [])]
-
-    // Filtrar por nombre
-    if (filters.nombre.trim() !== "") {
-      products = products.filter((p) =>
-        p.nombre.toLowerCase().includes(filters.nombre.trim().toLowerCase())
+  const fetchInventario = useCallback(async () => {
+    if (tipoInventario === "general") {
+      await fetchInventarioGeneral?.(
+        filters.areaId === "todas" ? undefined : Number(filters.areaId),
+        filters.conceptoId === "todas" ? undefined : Number(filters.conceptoId),
+        filters.nombreProducto,
+        filters.estado === "todas" ? undefined : filters.estado as EstadoActivo
+      )
+    } else {
+      await fetchInventarioArea?.(areaId ?? 0,
+        filters.conceptoId === "todas" ? undefined : Number(filters.conceptoId),
+        filters.nombreProducto,
+        filters.estado === "todas" ? undefined : filters.estado as EstadoActivo
       )
     }
+  }, [tipoInventario,
+    filters.areaId,
+    filters.conceptoId,
+    filters.nombreProducto,
+    filters.estado,
+    fetchInventarioGeneral,
+    fetchInventarioArea
+  ])
 
-    // Filtrar por categoría (nombre de categoría, aquí corregido)
-    if (filters.categoria !== "todas") {
-      products = products.filter((p) => {
-        // Convertimos ambos a string, pero usamos el nombre, afinando filtrado
-        const catObj = conceptosTotales.find((cat) => String(cat.id) === String(p.categoria))
-        return (
-          catObj?.nombre === filters.categoria ||
-          String(p.categoria) === String(filters.categoria)
-        )
-      })
-    }
-
-    // Filtrar por área
-    if (filters.area !== "todas") {
-      products = products.filter((product: ProductoInventarioGeneral | ProductoInventarioArea) =>
-        "areas" in product && product.areas.some((a: string) => a === filters.area)
-      )
-    }
-
-    // Filtrar por estado
-    if (filters.estado !== "SIN_ESTADO") {
-      products = products.filter((product: ProductoInventarioGeneral | ProductoInventarioArea) =>
-        "estado" in product && product.estado === filters.estado
-      )
-    }
-
-    // Ordenar por cantidad bajando (primero más alto, para llamar visualmente más la atención)
-    products.sort((a, b) => b.cantidad - a.cantidad)
-
-    return products
-  }, [inventario, filters, tipoInventario, conceptosTotales])
+  useEffect(() => {
+    fetchInventario()
+  }, [fetchInventario])
 
   // Cálculo para stock bajo y productos agotados
   const stockBajoProducts =
-    useMemo(() => filteredProducts.filter((p) => p.cantidad > 0 && p.cantidad <= STOCK_BAJO_UMBRAL), [filteredProducts]);
+    useMemo(() => inventario?.productos.filter((p) => p.cantidad > 0 && p.cantidad <= STOCK_BAJO_UMBRAL), [inventario]);
   const agotadosProducts =
-    useMemo(() => filteredProducts.filter((p) => p.cantidad === 0), [filteredProducts]);
+    useMemo(() => inventario?.productos.filter((p) => p.cantidad === 0), [inventario]);
 
 
   const handleOpenEditProduct = (product: EditStockMinimo) => {
@@ -96,8 +94,18 @@ export default function DetalleInventario({
     setSelectedProduct(null)
   }
 
+  const handleOpenViewAreas = (product: ProductoInventarioGeneral) => {
+    setOpenViewAreas(true)
+    setSelectedAreas(product.areas ?? null)
+  }
 
-  const renderProductTable = (products: (ProductoInventarioGeneral | ProductoInventarioArea)[]) => (
+  const handleCloseViewAreas = () => {
+    setSelectedAreas(null)
+    setOpenViewAreas(false)
+  }
+
+
+  const renderProductTable = (products: ProductoInventarioGeneral[] | ProductoInventarioArea[]) => (
     <div className="overflow-x-auto rounded-lg border border-muted/50">
       <Table>
         <TableHeader>
@@ -105,6 +113,7 @@ export default function DetalleInventario({
             <TableHead className="min-w-[120px]">Producto</TableHead>
             <TableHead className="min-w-[120px]">Categoría</TableHead>
             <TableHead className="min-w-[60px] text-center">Cantidad</TableHead>
+            <TableHead className="min-w-[100px] text-center">{tipoInventario === "area" ? "Área" : "Áreas"}</TableHead>
             <TableHead className="min-w-[100px] text-center">Tipo</TableHead>
             {tipoInventario === "area" && <TableHead className="min-w-[100px] text-center">Stock Mínimo</TableHead>}
             <TableHead className="min-w-[100px] text-center">Estado</TableHead>
@@ -140,6 +149,21 @@ export default function DetalleInventario({
                 >
                   {product.cantidad}
                 </span>
+              </TableCell>
+              <TableCell className="text-center">
+                {tipoInventario === "general" && filters.areaId === "todas" ? (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleOpenViewAreas(product as unknown as ProductoInventarioGeneral)}
+                    className="hover:bg-primary/10 p-0"
+                  >
+                    <Eye className="h-4 w-4 text-primary" />
+                    <span className="sr-only">Ver áreas</span>
+                  </Button>
+                ) : (
+                  <span className="text-center">{product.area}</span>
+                )}
               </TableCell>
               <TableCell className="text-center">
                 {product.tipo}
@@ -248,7 +272,7 @@ export default function DetalleInventario({
         )}
         {renderStatCard(
           "Productos Agotados",
-          agotadosProducts.length,
+          agotadosProducts?.length ?? 0,
           "",
           null,
         )}
@@ -280,18 +304,22 @@ export default function DetalleInventario({
                   id="filterNombre"
                   type="text"
                   placeholder="Buscar producto"
-                  value={filters.nombre}
+                  value={filters.nombreProducto}
                   onChange={(e) =>
-                    setFilters({ ...filters, nombre: e.target.value })
+                    setFilters({ ...filters, nombreProducto: e.target.value.replace(/^\s+|\s+$/g, "") })
                   }
                   className="pl-10 bg-muted/70 focus:bg-white transition"
                   autoComplete="off"
+                  // Elimina espacios al inicio y final del input automáticamente
+                  onBlur={(e) =>
+                    setFilters({ ...filters, nombreProducto: e.target.value.trim() })
+                  }
                 />
-                {filters.nombre.trim() !== "" && (
+                {filters.nombreProducto.trim() !== "" && (
                   <X
                     className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer"
                     onClick={() =>
-                      setFilters({ ...filters, nombre: "" })
+                      setFilters({ ...filters, nombreProducto: "" })
                     }
                   />
                 )}
@@ -304,9 +332,9 @@ export default function DetalleInventario({
                 Categoría
               </Label>
               <Select
-                value={filters.categoria}
+                value={filters.conceptoId}
                 onValueChange={(value) =>
-                  setFilters({ ...filters, categoria: value })
+                  setFilters({ ...filters, conceptoId: value })
                 }
               >
                 <SelectTrigger className="bg-muted/70 focus:bg-white transition">
@@ -315,7 +343,7 @@ export default function DetalleInventario({
                 <SelectContent>
                   <SelectItem value="todas">Todas las categorías</SelectItem>
                   {conceptosTotales.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.nombre}>
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.nombre}
                     </SelectItem>
                   ))}
@@ -330,9 +358,9 @@ export default function DetalleInventario({
                   Área
                 </Label>
                 <Select
-                  value={filters.area}
+                  value={filters.areaId}
                   onValueChange={(value) =>
-                    setFilters({ ...filters, area: value })
+                    setFilters({ ...filters, areaId: value })
                   }
                 >
                   <SelectTrigger className="bg-muted/70 focus:bg-white transition">
@@ -340,8 +368,8 @@ export default function DetalleInventario({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas las áreas</SelectItem>
-                    {areas.map((area) => (
-                      <SelectItem key={area.id} value={area.nombre}>
+                    {areas?.map((area) => (
+                      <SelectItem key={area.id} value={area.id.toString()}>
                         {area.nombre}
                       </SelectItem>
                     ))}
@@ -362,10 +390,10 @@ export default function DetalleInventario({
                 }
               >
                 <SelectTrigger className="bg-muted/70 focus:bg-white transition">
-                  <SelectValue placeholder="Sin Estado" />
+                  <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SIN_ESTADO">Sin Estado</SelectItem>
+                  <SelectItem value="todas">Todos los estados</SelectItem>
                   <SelectItem value="ACTIVO">Activo</SelectItem>
                   <SelectItem value="EN_REPARACION">En Reparación</SelectItem>
                   <SelectItem value="DADO_DE_BAJA">Dado de Baja</SelectItem>
@@ -380,15 +408,15 @@ export default function DetalleInventario({
       <Tabs defaultValue="todos" className="w-full mt-2">
         <TabsList className="w-full flex justify-start gap-2 overflow-x-auto bg-transparent mb-2">
           <TabsTrigger value="todos" className="text-xs font-semibold px-4 py-1.5 rounded-md">
-            Todos ({filteredProducts.length})
+            Todos ({inventario?.totalProductos ?? 0})
           </TabsTrigger>
           {tipoInventario === "area" && (
             <>
               <TabsTrigger value="stockBajo" className="text-xs font-semibold px-4 py-1.5 rounded-md">
-                Stock bajo ({stockBajoProducts.length})
+                Stock bajo ({stockBajoProducts?.length ?? 0})
               </TabsTrigger>
               <TabsTrigger value="agotados" className="text-xs font-semibold px-4 py-1.5 rounded-md">
-                Agotados ({agotadosProducts.length})
+                Agotados ({agotadosProducts?.length ?? 0})
               </TabsTrigger>
             </>
           )}
@@ -399,16 +427,16 @@ export default function DetalleInventario({
             <CardHeader>
               <CardTitle className="text-base">Inventario Completo</CardTitle>
               <CardDescription>
-                {filteredProducts.length} producto(s) encontrado(s)
+                {inventario?.totalProductos ?? 0} producto(s) encontrado(s)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredProducts.length === 0 ? (
+              {inventario?.totalProductos === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   No se encontraron productos
                 </div>
               ) : (
-                renderProductTable(filteredProducts)
+                renderProductTable(inventario?.productos ?? [])
               )}
             </CardContent>
           </Card>
@@ -451,6 +479,23 @@ export default function DetalleInventario({
               </div>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={openViewAreas} onOpenChange={handleCloseViewAreas}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Áreas del Producto</DialogTitle>
+          </DialogHeader>
+          <DialogContent>
+            <div className="space-y-2">
+              <Label>Áreas</Label>
+              <div className="space-y-2 flex flex-wrap gap-2">
+                {selectedAreas?.join(", ") ?? "No hay áreas definidas"}
+              </div>
+            </div>
+          </DialogContent>
         </DialogContent>
       </Dialog>
     </div>
