@@ -3,4 +3,5 @@ export interface ProductosType {
   nombre: string
   idCuentaContable: number
   codigo: number
+  tipo: 'ACTIVO' | 'GASTO'
 }
