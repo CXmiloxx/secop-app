@@ -143,8 +143,6 @@ export default function ReportesPage() {
                       <ReporteConsultor
                         fetchReporteConsultor={fetchReporteConsultor}
                         reporteConsultor={reporteConsultor}
-                        fetchAreas={fetchAreas}
-                        areas={areas}
                       />
                     </TabsContent>
                   )}
