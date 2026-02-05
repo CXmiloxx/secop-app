@@ -106,7 +106,7 @@ export default function CajaMenorPage() {
         Icon={Wallet}
         subTitle={isAdmin ? "Historial de solicitudes de presupuesto de caja menor" : "Gestión de caja menor"}
         actionButtonText="Solicitar Presupuesto"
-        actionModal={{
+        actionModal={ isAdmin ? undefined : {
           isOpen: showSolicitudDialog,
           onOpenChange: setShowSolicitudDialog,
           modalTitle: "Solicitar Presupuesto",
