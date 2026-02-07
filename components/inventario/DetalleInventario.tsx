@@ -50,6 +50,39 @@ export default function DetalleInventario({
   const [openViewAreas, setOpenViewAreas] = useState(false)
   const [selectedAreas, setSelectedAreas] = useState<string[] | null>(null)
 
+  // ------- FORM MANAGEMENT PARA EDICIÓN DE PRODUCTO ---------
+  const {
+    setValue,
+    handleSubmit,
+    register,
+    formState: { errors, isSubmitting },
+    reset,
+    watch,
+  } = useForm<EditProducto>({
+    resolver: zodResolver(editProductoSchema),
+    defaultValues: {
+      areaId: 0,
+      productoId: 0,
+      stockMinimo: 0,
+      ubicacion: "",
+      estado: undefined,
+    },
+  })
+
+  // Cuando cambia el producto seleccionado, "resetea" el form a datos actuales del producto
+  useEffect(() => {
+    if (selectedProduct) {
+      reset({
+        areaId: selectedProduct.areaId,
+        productoId: selectedProduct.id,
+        stockMinimo: selectedProduct.stockMinimo,
+        ubicacion: selectedProduct.ubicacion ?? "",
+        estado: selectedProduct.estado ?? undefined,
+      })
+    }
+  }, [selectedProduct, reset])
+
+  // ------- END FORM MANAGEMENT ---------
 
   const fetchInventario = useCallback(async () => {
     if (tipoInventario === "general") {
@@ -92,6 +125,7 @@ export default function DetalleInventario({
 
   const handleCloseEditProduct = () => {
     setSelectedProduct(null)
+    reset()
   }
 
   const handleOpenViewAreas = (product: ProductoInventarioGeneral) => {
@@ -103,7 +137,6 @@ export default function DetalleInventario({
     setSelectedAreas(null)
     setOpenViewAreas(false)
   }
-
 
   const renderProductTable = (products: ProductoInventarioGeneral[] | ProductoInventarioArea[]) => (
     <div className="overflow-x-auto rounded-lg border border-muted/50">
@@ -179,7 +212,7 @@ export default function DetalleInventario({
               )}
               {(
                 <TableCell className="text-center">
-                  {(product as ProductoInventarioArea)?.estado ?? 'No definido'}
+                  {(product as ProductoInventarioArea)?.estado ?? 'Sin estado'}
                 </TableCell>
               )}
               {canEdit && (
@@ -222,32 +255,6 @@ export default function DetalleInventario({
     </Card>
   )
 
-  const {
-    setValue,
-    handleSubmit,
-    register,
-    formState: { errors, isSubmitting },
-    reset,
-  } = useForm<EditProducto>({
-    resolver: zodResolver(editProductoSchema),
-    defaultValues: {
-      areaId: 0,
-      productoId: selectedProduct?.id ?? 0,
-      stockMinimo: 0,
-      ubicacion: "",
-    },
-  })
-
-  useEffect(() => {
-    if (selectedProduct) {
-      setValue('areaId', selectedProduct.areaId)
-      setValue('productoId', selectedProduct.id)
-      setValue('stockMinimo', selectedProduct.stockMinimo)
-    }
-  }, [selectedProduct, setValue])
-
-
-
   const onSubmit = async (data: EditProducto) => {
     if (editProducto) {
       const res = await editProducto(data)
@@ -257,6 +264,9 @@ export default function DetalleInventario({
       }
     }
   }
+
+  // Observar los valores del formulario mientras edita
+  const formValues = watch()
 
   return (
     <div className="space-y-6">
@@ -448,11 +458,12 @@ export default function DetalleInventario({
         </TabsContent>
       </Tabs>
 
+      {/* FORMULARIO MODAL DE EDITAR PRODUCTO */}
       <Dialog open={!!selectedProduct} onOpenChange={handleCloseEditProduct}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Stock Mínimo</DialogTitle>
-            <DialogDescription>Modifique el stock mínimo del producto</DialogDescription>
+            <DialogTitle>Editar Detalles del Producto</DialogTitle>
+            <DialogDescription>Modifique los detalles del producto</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4 py-4">
@@ -467,12 +478,35 @@ export default function DetalleInventario({
                   {...register('ubicacion')}
                   placeholder="Ej: Sala de Informática"
                   autoComplete="off"
+                  // La lógica de deshabilitar solo si DADO_DE_BAJA
+                  disabled={formValues.estado === "DADO_DE_BAJA"}
                 />
                 {errors.ubicacion && <p className="text-red-500 text-sm">{errors.ubicacion.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Stock Actual (Solo lectura)</Label>
-                <Input value={selectedProduct?.stockMinimo ?? 0} disabled />
+                <Label>Stock Actual</Label>
+                <Input
+                  value={selectedProduct?.cantidad ?? ""}
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select
+                  value={formValues.estado ?? ""}
+                  onValueChange={(value) => setValue('estado', value as EstadoActivo, { shouldValidate: true })}
+                >
+                  <SelectTrigger className="bg-muted/70 focus:bg-white transition">
+                    <SelectValue placeholder="Selecciona un estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVO">Activo</SelectItem>
+                    <SelectItem value="EN_REPARACION">En Reparación</SelectItem>
+                    <SelectItem value="DADO_DE_BAJA">Dado de Baja</SelectItem>
+                    <SelectItem value="EN_MANTENIMIENTO">En Mantenimiento</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.estado && <p className="text-red-500 text-sm">{String(errors.estado?.message)}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-stock-minimo">Nuevo Stock Mínimo</Label>
@@ -485,7 +519,7 @@ export default function DetalleInventario({
                 {errors.stockMinimo && <p className="text-red-500 text-sm">{errors.stockMinimo.message}</p>}
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleCloseEditProduct}>
+                <Button variant="outline" type="button" onClick={handleCloseEditProduct}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>{
@@ -497,7 +531,7 @@ export default function DetalleInventario({
         </DialogContent>
       </Dialog>
 
-
+      {/* MODAL DE ÁREAS */}
       <Dialog open={openViewAreas} onOpenChange={handleCloseViewAreas}>
         <DialogContent>
           <DialogHeader>

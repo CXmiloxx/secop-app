@@ -65,6 +65,8 @@ export interface EditProductoSeleccionado {
   stockMinimo: number;
   ubicacion: string;
   nombre: string;
+  estado?: EstadoActivo;
+  cantidad: number;
 }
 
 

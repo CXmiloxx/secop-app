@@ -17,6 +17,7 @@ export const editProductoSchema = z.object({
   productoId: z.number().min(1, 'El id es obligatorio'),
   stockMinimo: z.number().min(1, 'El stock mínimo es obligatorio'),
   ubicacion: z.string().optional(),
+  estado: z.string().optional(),
 });
 
 export type RegisterProductoInventarioSchema = z.infer<typeof registerProductoInventarioSchema>;
