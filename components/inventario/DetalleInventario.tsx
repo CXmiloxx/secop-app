@@ -502,7 +502,6 @@ export default function DetalleInventario({
                   <SelectContent>
                     <SelectItem value="ACTIVO">Activo</SelectItem>
                     <SelectItem value="EN_REPARACION">En Reparación</SelectItem>
-                    <SelectItem value="DADO_DE_BAJA">Dado de Baja</SelectItem>
                     <SelectItem value="EN_MANTENIMIENTO">En Mantenimiento</SelectItem>
                   </SelectContent>
                 </Select>
